@@ -1,0 +1,374 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Lumina Graph — Custom Styles
+   Talentbank Tech Hackathon 2026
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:       #0B1117;
+  --surface:  #111827;
+  --surface2: #1a2332;
+  --border:   rgba(255,255,255,0.08);
+  --primary:  #6C5CE7;
+  --primary-light: rgba(108,92,231,0.15);
+  --accent:   #FDE047;
+  --text:     #E6F1F2;
+  --muted:    #88A3A5;
+  --success:  #22C55E;
+  --warning:  #F59E0B;
+  --danger:   #EF4444;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Nav glassmorphism ─────────────────────────────────────────────────── */
+.nav-glass {
+  background: rgba(11, 17, 23, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.card-glass {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.card-hover {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.card-hover:hover {
+  border-color: rgba(108,92,231,0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(108,92,231,0.15);
+}
+
+/* ── Gradient text ─────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #6C5CE7, #a78bfa, #FDE047);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-subtle {
+  background: linear-gradient(135deg, #a78bfa, #E6F1F2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Hero glow ─────────────────────────────────────────────────────────── */
+.hero-glow {
+  position: relative;
+}
+.hero-glow::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse at center, rgba(108,92,231,0.2) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Score ring ────────────────────────────────────────────────────────── */
+.score-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Skill badge ───────────────────────────────────────────────────────── */
+.skill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border: 1px solid;
+  transition: all 0.15s;
+}
+
+.skill-explicit  { background: rgba(108,92,231,0.12); border-color: rgba(108,92,231,0.35); color: #a78bfa; }
+.skill-inferred  { background: rgba(253,224,71,0.08); border-color: rgba(253,224,71,0.25); color: #FDE047; }
+.skill-verified  { background: rgba(34,197,94,0.10);  border-color: rgba(34,197,94,0.30);  color: #4ade80; }
+.skill-emerging  { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.30); color: #fbbf24; }
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+.progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), #a78bfa);
+  transition: width 1s ease;
+}
+.progress-fill-green  { background: linear-gradient(90deg, #22C55E, #4ade80); }
+.progress-fill-amber  { background: linear-gradient(90deg, #F59E0B, #fbbf24); }
+.progress-fill-accent { background: linear-gradient(90deg, #FDE047, #fef08a); }
+
+/* ── Step list (AI processing) ─────────────────────────────────────────── */
+.ai-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  opacity: 0.35;
+  transition: all 0.3s;
+}
+.ai-step.active  { opacity: 1; }
+.ai-step.done    { opacity: 0.7; }
+
+.ai-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.ai-step.active .ai-step-dot  { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+.ai-step.done   .ai-step-dot  { background: var(--success); }
+
+/* ── Candidate card ────────────────────────────────────────────────────── */
+.candidate-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.candidate-card:hover,
+.candidate-card.selected {
+  border-color: rgba(108,92,231,0.5);
+  background: rgba(108,92,231,0.05);
+}
+.candidate-card.selected { box-shadow: 0 0 0 2px rgba(108,92,231,0.3); }
+
+/* ── Score circle ──────────────────────────────────────────────────────── */
+.score-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ── Modal / drawer ────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal-box { transform: scale(1); }
+
+/* ── Architecture diagram ──────────────────────────────────────────────── */
+.arch-node {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.arch-node.primary { border-color: rgba(108,92,231,0.4); background: rgba(108,92,231,0.1); }
+.arch-node.accent  { border-color: rgba(253,224,71,0.4); background: rgba(253,224,71,0.08); color: #FDE047; }
+.arch-node.success { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+
+.arch-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+/* ── Gap badge ─────────────────────────────────────────────────────────── */
+.gap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gap-high   { background: rgba(239,68,68,0.15);  color: #f87171; }
+.gap-medium { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.gap-low    { background: rgba(34,197,94,0.12);  color: #4ade80; }
+
+/* ── Section label ─────────────────────────────────────────────────────── */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* ── Pulse animation ───────────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0px rgba(108,92,231,0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(108,92,231,0); }
+  100% { box-shadow: 0 0 0 0px rgba(108,92,231,0); }
+}
+.pulse { animation: pulse-ring 2s infinite; }
+
+/* ── Fade in ───────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.4s ease forwards; }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+
+/* ── Button ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary:hover { background: #5b4dd4; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,92,231,0.4); }
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: transparent;
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-outline:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+
+/* ── Tooltip ───────────────────────────────────────────────────────────── */
+.tooltip {
+  position: relative;
+}
+.tooltip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #1e293b;
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── Chart container ───────────────────────────────────────────────────── */
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Demo flow step ────────────────────────────────────────────────────── */
+.demo-step {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+}
+.demo-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  border: 1px solid rgba(108,92,231,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+
+/* ── Responsive adjustments ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .hero-glow::before { width: 300px; height: 200px; }
+}

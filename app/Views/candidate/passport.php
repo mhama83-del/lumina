@@ -5,6 +5,8 @@ helper('ui');
 $p = $profile;
 $riskClass = $risk === 'On track' ? 'ok' : ($risk === 'Needs a nudge' ? 'nudge' : 'risk');
 $evidenceLines = array_filter(array_map('trim', preg_split('/[;.]/', $p['evidence_text'] ?? '')));
+$skillTotal = count($p['skills'] ?? []);
+$skillInferred = 0; foreach (($p['skills'] ?? []) as $s) { if (($s['source'] ?? '') === 'inferred') $skillInferred++; }
 ?>
 
 <section class="hero">
@@ -13,7 +15,9 @@ $evidenceLines = array_filter(array_map('trim', preg_split('/[;.]/', $p['evidenc
   <p class="purpose">This is your living portfolio — built from what you've already done.<?php if (!empty($p['animalLabel'])): ?> Work style: <strong class="gold"><?= esc($p['animalLabel']) ?></strong>.<?php endif; ?></p>
 </section>
 
-<section class="section">
+<section class="section" style="padding-top:6px">
+  <?= lumina_journey('portfolio') ?>
+  <?= lumina_note("We read your evidence and found {$skillTotal} skills — {$skillInferred} you didn't even list.") ?>
   <div class="grid grid-3">
 
     <!-- Readiness -->

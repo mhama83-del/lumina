@@ -1,0 +1,119 @@
+<?= $this->extend('layouts/main') ?>
+<?= $this->section('content') ?>
+<?php helper('ui'); ?>
+
+<section class="hero">
+  <div class="section-label">Resume Analysis · AI</div>
+  <h1>Paste your resume. Watch Lumina read it.</h1>
+  <p class="purpose">Lumina extracts your skills, scores your readiness, and finds your best match — in seconds.</p>
+</section>
+
+<section class="section">
+  <div class="grid grid-2">
+    <!-- Input -->
+    <div class="card">
+      <div class="section-label">Your resume</div>
+      <textarea id="resumeText" placeholder="Paste your resume or a summary of your experience here…&#10;&#10;e.g. Final-year Computer Science student. Treasurer of the Robotics Club. Built an attendance app with Python. Led a data analysis project."></textarea>
+      <div style="margin-top:12px" class="row">
+        <button class="btn btn-gold btn-lg" id="analyzeBtn">Analyze with AI →</button>
+        <button class="btn btn-ghost" id="sampleBtn">Use a sample</button>
+      </div>
+    </div>
+
+    <!-- Processing + results -->
+    <div class="card">
+      <div class="section-label">AI analysis</div>
+
+      <!-- idle -->
+      <div id="idle" class="muted" style="padding:20px 0">Your analysis will appear here.</div>
+
+      <!-- processing steps -->
+      <div id="processing" style="display:none">
+        <div class="ai-step" data-s="0"><span class="ai-step-dot"></span> Reading your resume…</div>
+        <div class="ai-step" data-s="1"><span class="ai-step-dot"></span> Extracting explicit skills…</div>
+        <div class="ai-step" data-s="2"><span class="ai-step-dot"></span> Inferring hidden skills from evidence…</div>
+        <div class="ai-step" data-s="3"><span class="ai-step-dot"></span> Matching to roles…</div>
+        <div class="ai-step" data-s="4"><span class="ai-step-dot"></span> Scoring your readiness…</div>
+      </div>
+
+      <!-- results -->
+      <div id="results" style="display:none">
+        <div class="donut-wrap" id="rDonut"></div>
+        <div id="rBest" style="text-align:center;margin:6px 0 14px"></div>
+        <div class="section-label">Skills detected</div>
+        <div id="rSkills" style="margin-bottom:8px"></div>
+        <div id="rGap" class="muted" style="font-size:13px"></div>
+        <div class="row" style="margin-top:14px">
+          <a class="btn btn-gold" href="<?= base_url('compass') ?>">See my career paths →</a>
+          <a class="btn btn-ghost" href="<?= base_url('passport') ?>">View portfolio</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const ANALYZE_URL = "<?= base_url('resume/analyze') ?>";
+const SAMPLE = "Final-year Computer Science student at USM. Treasurer of the Robotics Club for 2 years. Built an attendance app with Python. Volunteered in a community coding programme. Led a small data analysis project and built dashboards for the faculty.";
+
+function donutSVG(pct, color){
+  const r=45, c=2*Math.PI*r, off=c*(1-pct/100);
+  return '<svg class="donut" viewBox="0 0 120 120">'+
+    '<circle class="track" cx="60" cy="60" r="'+r+'"></circle>'+
+    '<circle class="val" cx="60" cy="60" r="'+r+'" style="stroke:'+color+';stroke-dasharray:'+c.toFixed(1)+';stroke-dashoffset:'+c.toFixed(1)+'"></circle>'+
+    '<text class="pct" x="60" y="68" text-anchor="middle">0%</text></svg>'+
+    '<div class="donut-label">Readiness · <span id="rRole"></span></div>';
+}
+
+function runSteps(done){
+  const steps = document.querySelectorAll('#processing .ai-step');
+  let i = 0;
+  steps.forEach(s=>s.classList.remove('active','done'));
+  const tick = ()=>{
+    if(i>0) steps[i-1].classList.remove('active'), steps[i-1].classList.add('done');
+    if(i<steps.length){ steps[i].classList.add('active'); i++; setTimeout(tick, 480); }
+    else { done(); }
+  };
+  tick();
+}
+
+function analyze(text){
+  document.getElementById('idle').style.display='none';
+  document.getElementById('results').style.display='none';
+  document.getElementById('processing').style.display='block';
+
+  const body = new URLSearchParams(); body.append('resume_text', text);
+  const fetchP = fetch(ANALYZE_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body}).then(r=>r.json());
+
+  runSteps(()=>{
+    fetchP.then(data=>{
+      if(data.error){ document.getElementById('processing').style.display='none'; document.getElementById('idle').style.display='block'; document.getElementById('idle').textContent='Please paste some text first.'; return; }
+      document.getElementById('processing').style.display='none';
+      const res = document.getElementById('results'); res.style.display='block';
+      const color = data.best ? data.best.color : '#6C5CE7';
+      document.getElementById('rDonut').innerHTML = donutSVG(data.readiness, color);
+      document.getElementById('rRole').textContent = data.best ? data.best.title : data.domain;
+      // animate donut
+      setTimeout(()=>{ const v=document.querySelector('#rDonut .val'), t=document.querySelector('#rDonut .pct');
+        const r=45,c=2*Math.PI*r; v.style.strokeDashoffset=(c*(1-data.readiness/100)).toFixed(1); t.textContent=data.readiness+'%'; }, 60);
+      // best match
+      if(data.best){ document.getElementById('rBest').innerHTML =
+        '<strong style="color:var(--text)">'+data.best.title+'</strong> @ '+data.best.company+' · '+data.best.match+'% match'; }
+      // skills
+      document.getElementById('rSkills').innerHTML = data.skills.map(s=>{
+        const cls = s.source==='inferred' ? 'skill inferred' : 'skill';
+        const conf = s.source==='inferred' ? '<span class="conf">'+s.conf+'%</span>' : '';
+        return '<span class="'+cls+'">'+s.label+' '+conf+'</span>';
+      }).join('');
+      // gap
+      document.getElementById('rGap').innerHTML = (data.best && data.best.gap.length)
+        ? 'To reach a strong match, add: <strong style="color:var(--gold)">'+data.best.gap.join(', ')+'</strong>.'
+        : 'Strong match — no major gaps.';
+    });
+  });
+}
+
+document.getElementById('analyzeBtn').onclick = ()=>{ const t=document.getElementById('resumeText').value.trim(); if(t) analyze(t); };
+document.getElementById('sampleBtn').onclick = ()=>{ document.getElementById('resumeText').value = SAMPLE; analyze(SAMPLE); };
+</script>
+<?= $this->endSection() ?>

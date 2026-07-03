@@ -11,6 +11,11 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
   <p class="purpose">Matched by readiness and trajectory — not just keywords.</p>
 </section>
 
+<section class="section" style="padding-top:6px">
+  <?= lumina_journey('match') ?>
+  <?= lumina_note("Matched to opportunities by readiness and trajectory — not keywords.") ?>
+</section>
+
 <section class="section">
   <div class="grid grid-3">
     <?php foreach ($opps as $o):

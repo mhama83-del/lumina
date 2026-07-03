@@ -59,3 +59,29 @@ if (! function_exists('lumina_skill')) {
         return '<span class="' . $cls . '">' . esc($label) . ' ' . $c . '</span>';
     }
 }
+
+if (! function_exists('lumina_journey')) {
+    /** Candidate journey progress bar. $active in: portfolio | compass | match */
+    function lumina_journey(string $active): string
+    {
+        $steps = [['portfolio', 'Build portfolio'], ['compass', 'Find direction'], ['match', 'Match']];
+        $seen = false; $html = '<div class="journey">';
+        foreach ($steps as $i => [$key, $label]) {
+            $isActive = ($key === $active);
+            if ($i > 0) $html .= '<div class="jsep"></div>';
+            $html .= '<div class="jstep ' . ($isActive ? 'active' : '') . '">'
+                   . '<span class="jdot">' . ($i + 1) . '</span><span>' . esc($label) . '</span></div>';
+        }
+        return $html . '</div>';
+    }
+}
+
+if (! function_exists('lumina_note')) {
+    /** A green "what just happened" caption line. */
+    function lumina_note(string $text): string
+    {
+        return '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);'
+             . 'border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;'
+             . 'font-size:13px;margin:0 0 16px"><span>✓</span><span>' . $text . '</span></div>';
+    }
+}

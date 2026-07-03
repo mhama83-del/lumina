@@ -206,6 +206,62 @@ class Candidate extends BaseController
     public function placed()  { return $this->soon('Placed / Growing', 'Fasa 6', 'Your career keeps growing after you are hired.'); }
     private function soon($name, $phase, $desc) { return view('home/soon', compact('name', 'phase', 'desc') + ['title' => "Lumina · $name"]); }
 
+    // ---------- Resume Analysis (v1 feature, simulated AI) ----------
+    public function resume()
+    {
+        return view('candidate/resume', ['title' => 'Lumina · Resume Analysis']);
+    }
+
+    /** AJAX: analyse pasted resume text, build profile, return JSON. */
+    public function resumeAnalyze()
+    {
+        $text = trim((string) $this->request->getPost('resume_text'));
+        if ($text === '') return $this->response->setJSON(['error' => 'empty']);
+
+        $svc    = new ScoreService();
+        $skills = $svc->inferSkills($text, []);
+        $domain = $this->guessDomain(array_keys($skills));
+
+        // persist profile so the user can continue into Compass/Match
+        $this->buildProfile($text, [], $domain, session('profile')['animal'] ?? null, 0, session('profile')['name'] ?? 'You');
+
+        $cand = $this->buildSignal(session('profile'));
+        $best = null;
+        foreach (\App\Libraries\Catalog::roles() as $role) {
+            $m = $svc->match($cand, $role);
+            if (! $best || $m['matchScore'] > $best['match']) {
+                $best = ['title' => $role['title'], 'company' => $role['company'], 'color' => $role['hex'],
+                         'match' => $m['matchScore'], 'label' => $m['label'],
+                         'gap' => \App\Libraries\Catalog::labels($m['gap'])];
+            }
+        }
+        $readiness = $svc->readiness($cand, \App\Libraries\Catalog::role($this->roleKeyForDomain($domain)));
+
+        $skillOut = [];
+        foreach ($skills as $code => $s) {
+            $skillOut[] = ['label' => \App\Libraries\Catalog::label($code), 'source' => $s['source'], 'conf' => round($s['confidence'] * 100)];
+        }
+
+        return $this->response->setJSON([
+            'skills'    => $skillOut,
+            'readiness' => $readiness['score'],
+            'best'      => $best,
+            'domain'    => $domain,
+        ]);
+    }
+
+    private function guessDomain(array $codes): string
+    {
+        if (array_intersect($codes, ['sql', 'python', 'data_analysis', 'dashboarding'])) return 'Data';
+        if (array_intersect($codes, ['software', 'cloud'])) return 'Engineering';
+        return 'Business';
+    }
+
+    private function roleKeyForDomain(string $d): string
+    {
+        return match ($d) { 'Engineering' => 'backend_engineer', 'Business' => 'product_exec', default => 'data_analyst' };
+    }
+
     // ================= helpers =================
 
     private function buildProfile(string $text, array $stated, string $domain, ?string $animal, int $verified, ?string $name): void

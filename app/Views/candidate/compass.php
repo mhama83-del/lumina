@@ -8,6 +8,11 @@
   <p class="purpose">Pick a path, then add a skill and watch your readiness move.</p>
 </section>
 
+<section class="section" style="padding-top:6px">
+  <?= lumina_journey('compass') ?>
+  <?= lumina_note("Based on your portfolio, here are 3 real directions — and how ready you are for each.") ?>
+</section>
+
 <!-- Path cards -->
 <section class="section">
   <div class="grid grid-3">

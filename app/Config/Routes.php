@@ -25,6 +25,8 @@ $routes->get('start/sample',    'Candidate::sample');
 $routes->match(['get', 'post'], 'onboard/animal', 'Candidate::animal');
 $routes->match(['get', 'post'], 'onboard/input',  'Candidate::input');
 $routes->get('passport',        'Candidate::passport');
+$routes->get('resume',          'Candidate::resume');            // Resume Analysis
+$routes->post('resume/analyze', 'Candidate::resumeAnalyze');     // Resume Analysis AJAX
 
 // ---- Stubs for later phases ----
 $routes->get('compass', 'Candidate::compass');        // Fasa 4
