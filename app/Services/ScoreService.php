@@ -11,17 +11,32 @@ class ScoreService
 {
     /** Keyword -> inferred skills map (extend freely). */
     private array $map = [
-        'treasurer'  => ['budgeting' => 0.80, 'stakeholder_mgmt' => 0.70],
-        'club'       => ['leadership' => 0.70],
-        'president'  => ['leadership' => 0.80],
-        'led'        => ['leadership' => 0.70],
-        'built'      => ['software' => 0.70],
-        'app'        => ['software' => 0.70],
-        'data'       => ['data_analysis' => 0.70],
-        'analysis'   => ['data_analysis' => 0.70],
-        'volunteer'  => ['community' => 0.70],
-        'startup'    => ['entrepreneurship' => 0.75],
-        'design'     => ['design_thinking' => 0.65],
+        'treasurer'    => ['budgeting' => 0.80, 'stakeholder_mgmt' => 0.70],
+        'club'         => ['leadership' => 0.70],
+        'president'    => ['leadership' => 0.80],
+        'led'          => ['leadership' => 0.70],
+        'lead'         => ['leadership' => 0.65],
+        'mentor'       => ['leadership' => 0.70],
+        'built'        => ['software' => 0.70],
+        'build'        => ['software' => 0.65],
+        'app'          => ['software' => 0.70],
+        'backend'      => ['software' => 0.75],
+        'microservice' => ['software' => 0.75, 'cloud' => 0.6],
+        'program'      => ['software' => 0.65],
+        'python'       => ['python' => 0.9],
+        'sql'          => ['sql' => 0.9],
+        'cloud'        => ['cloud' => 0.8],
+        'docker'       => ['cloud' => 0.75],
+        'data'         => ['data_analysis' => 0.70],
+        'analytics'    => ['data_analysis' => 0.75],
+        'analysis'     => ['data_analysis' => 0.70],
+        'dashboard'    => ['dashboarding' => 0.75],
+        'excel'        => ['excel' => 0.7],
+        'volunteer'    => ['community' => 0.70],
+        'community'    => ['community' => 0.70],
+        'startup'      => ['entrepreneurship' => 0.75],
+        'design'       => ['design_thinking' => 0.65],
+        'communicat'   => ['communication' => 0.7],
     ];
 
     /** 6.1 Infer skills from free-text evidence + stated skills. */
@@ -43,6 +58,26 @@ class ScoreService
             $out[$code] = ['confidence' => 1.0, 'source' => 'stated'];
         }
         return $out;
+    }
+
+    /** Build a full candidate signal from evidence text (used by Employer ranking + candidate). */
+    public function signal(string $text, array $stated = [], int $verified = 0, string $domain = 'Data'): array
+    {
+        $skills = $this->inferSkills($text, $stated);
+        $t = strtolower($text);
+        $projects   = substr_count($t, 'project') + substr_count($t, 'app') + substr_count($t, 'built') + substr_count($t, 'dashboard');
+        $activities = (int) (str_contains($t, 'club') || str_contains($t, 'treasurer'))
+                    + (int) str_contains($t, 'volunteer')
+                    + (int) (str_contains($t, 'led') || str_contains($t, 'president') || str_contains($t, 'mentor'))
+                    + (int) str_contains($t, 'internship');
+        return [
+            'skills'     => $skills,
+            'top_domain' => $domain,
+            'verified'   => $verified,
+            'projects'   => max(1, $projects),
+            'activities' => max(1, $activities),
+            'pace'       => 'Steady',
+        ];
     }
 
     /** 6.2 Readiness for a target role (0-100) + sub-scores. */

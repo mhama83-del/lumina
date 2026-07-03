@@ -39,6 +39,16 @@
     Talentbank Tech Hackathon 2026 · Lumina v1.0 · AI Talent Intelligence Layer for Career OS
   </footer>
 
+  <!-- Reusable global drawer (Fasa 5) -->
+  <div class="drawer-backdrop" id="gBackdrop"></div>
+  <aside class="drawer" id="gDrawer" aria-label="Details">
+    <div class="row" style="justify-content:space-between">
+      <h3 id="gTitle">Why</h3>
+      <button class="btn btn-ghost" data-gclose="1">✕</button>
+    </div>
+    <div id="gBody"></div>
+  </aside>
+
   <script src="<?= base_url('js/app.js') ?>"></script>
 </body>
 </html>

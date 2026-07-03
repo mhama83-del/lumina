@@ -42,3 +42,18 @@ document.addEventListener('click', function (e) {
     if (d) d.classList.remove('open'); if (b) b.classList.remove('open');
   }
 });
+
+/* ===== Fasa 5: reusable global drawer ===== */
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-drawer]');
+  if (t) {
+    document.getElementById('gTitle').textContent = t.getAttribute('data-title') || 'Details';
+    document.getElementById('gBody').innerHTML = t.getAttribute('data-body') || '';
+    document.getElementById('gDrawer').classList.add('open');
+    document.getElementById('gBackdrop').classList.add('open');
+  }
+  if (e.target.closest('[data-gclose]') || e.target.id === 'gBackdrop') {
+    document.getElementById('gDrawer').classList.remove('open');
+    document.getElementById('gBackdrop').classList.remove('open');
+  }
+});

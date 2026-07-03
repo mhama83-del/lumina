@@ -166,8 +166,43 @@ class Candidate extends BaseController
         return $this->response->setJSON($w);
     }
 
-    // ---------- Stubs (Fasa 5+) ----------
-    public function smatch()  { return $this->soon('Smart Matching', 'Fasa 5', 'Best / Growth / Stretch opportunities with reasons.'); }
+    // ---------- Fasa 5: Smart Matching (candidate) ----------
+    public function smatch()
+    {
+        $profile = session('profile');
+        if (! $profile) { $this->sample(); $profile = session('profile'); }
+
+        $svc  = new ScoreService();
+        $cand = $this->buildSignal($profile);
+
+        $opps = [];
+        foreach (\App\Libraries\Catalog::roles() as $role) {
+            $m = $svc->match($cand, $role);
+            $opps[] = [
+                'title'   => $role['title'],
+                'company' => $role['company'],
+                'location' => $role['location'],
+                'salary'  => $role['salary'],
+                'color'   => $role['color'],
+                'match'   => $m['matchScore'],
+                'label'   => $m['label'],
+                'matched' => \App\Libraries\Catalog::labels($m['matched']),
+                'gap'     => \App\Libraries\Catalog::labels($m['gap']),
+                'reason'  => \App\Libraries\Explain::match($m, $role['domain']),
+            ];
+        }
+        usort($opps, fn ($a, $b) => $b['match'] <=> $a['match']);
+        $opps = array_slice($opps, 0, 3);
+        $display = ['Best fit', 'Growth fit', 'Stretch fit'];
+        foreach ($opps as $i => &$o) { $o['fit'] = $display[$i] ?? 'Fit'; }
+        unset($o);
+
+        return view('candidate/match', [
+            'title'   => 'Lumina · Smart Matching',
+            'profile' => $profile,
+            'opps'    => $opps,
+        ]);
+    }
     public function placed()  { return $this->soon('Placed / Growing', 'Fasa 6', 'Your career keeps growing after you are hired.'); }
     private function soon($name, $phase, $desc) { return view('home/soon', compact('name', 'phase', 'desc') + ['title' => "Lumina · $name"]); }
 
