@@ -50,5 +50,6 @@
   </aside>
 
   <script src="<?= base_url('js/app.js') ?>"></script>
+  <script src="<?= base_url('js/tour.js') ?>"></script>
 </body>
 </html>
