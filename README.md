@@ -1,69 +1,55 @@
-# CodeIgniter 4 Application Starter
+# Lumina — Fasa 0–2 (PHP · CodeIgniter 4 · MySQL)
 
-## What is CodeIgniter?
+Starter files for the Lumina prototype, matching the demo's navy editorial style.
+**Module names use our own (Living Portfolio · Smart Matching · Learning Velocity · Adaptive Readiness · University Intelligence)** — confirmed not mandatory by Talentbank's Build Phase Briefing.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## What's included (Fasa 0–2)
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+| Fasa | Delivered |
+|---|---|
+| **0 — Design system** | `public/css/app.css` (tokens + components), `app/Helpers/ui_helper.php`, `layouts/main.php`, `public/js/app.js`, `/styleguide` page |
+| **1 — DB + engine** | `database/schema.sql` (13 tables), `database/seed_sample.sql`, `app/Services/ScoreService.php`, `app/Libraries/Explain.php`, models, `/selftest` page |
+| **2 — Shell + entry + login** | top bar + role/stage switcher, `Home`, `Demo` (one-click login), landing page, role landings, stubs (no 404s) |
+| **3 — Candidate cold-start** | Work Animal onboarding, evidence input (paste / transcript / 5Q), **Living Portfolio** + inferred skills + readiness donut + **Why? drawer** |
+| **4 — Career Compass** | 3 path cards, **What-If simulator** (AJAX, donut animates), trajectory chart, 30/60/90 plan |
+| **5 — Smart Matching + Employer** | candidate Best/Growth/Stretch cards + Why drawer; **Employer dashboard** ranks DB students + "Why this candidate?" (reason + evidence + 3 interview Qs) |
+| **6 — Graduate Outcomes Dashboard** | University view: 8 KPI cards (computed live), **employability-by-faculty bar**, **student bands** doughnut (On track / Needs a nudge / At risk), **outcome heatmap** by programme, recommended intervention |
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Install
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+1. Create the CI4 base: `composer create-project codeigniter4/appstarter lumina`
+2. **Copy these files over** the appstarter (same paths): `app/…`, `public/css`, `public/js`, `database/…`.
+3. Create a MySQL DB in Hostinger hPanel, then import:
+   ```
+   mysql -u USER -p DBNAME < database/schema.sql
+   mysql -u USER -p DBNAME < database/seed_sample.sql
+   ```
+4. Edit `.env`: set `app.baseURL`, `database.default.*`, `CI_ENVIRONMENT = production`.
+5. Local run: `php spark serve` → open `http://localhost:8080`.
+6. Hostinger: point the subdomain document root to `public/`.
 
-## Installation & updates
+## Verify Fasa 0–2 (Definition of Done)
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+- [ ] `/styleguide` matches the demo look on desktop + mobile  → **Fasa 0 done**
+- [ ] `/selftest` shows Aiman's readiness + a **positive** what-if delta  → **Fasa 1 done**
+- [ ] Top-bar buttons enter Candidate/Employer/University in one click; stage dropdown loads a persona; no 404s  → **Fasa 2 done**
+- [ ] `/start` → pick Work Animal / input / sample; `/onboard/animal` → result; `/onboard/input` (paste, transcript, 5Q) → `/passport` populated; donut + inferred chips + working **Why?** drawer  → **Fasa 3 done**
+- [ ] `/compass` → 3 path cards; tick a gap skill → **readiness donut animates up** + delta; trajectory chart + 30/60/90 update  → **Fasa 4 done**
+- [ ] `/match` → 3 Best/Growth/Stretch cards + **Why this match?** drawer; `/employer` → pick role → candidates re-rank + **Why this candidate?**  → **Fasa 5 done**
+- [ ] `/university` → 8 KPI cards, faculty bar chart, segmentation doughnut, outcome heatmap, recommended intervention  → **Fasa 6 done**
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+`/selftest` expected output (engine verified):
+```
+Readiness 58%  ·  Match 62% (stretch)  ·  What-if 58% -> 79% (+21)
+```
 
-## Setup
+## Notes
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+- **Demo numbers:** the engine is honest. To match the "72% → 84%" storyline in the deck, tune Aiman's seed (give one more matched skill, or raise verified/projects/activities) — adjust `seed_sample.sql`, not the formula.
+- **Scale data:** expand `students` to ~1,500 with the prompt at the bottom of `seed_sample.sql`.
+- **Work Animal:** the personas use placeholder animals (owl/fox/eagle). Replace with the real traits from yourworkanimal.com before Fasa 3.
+- **AI:** fully simulated in `ScoreService` — no external calls, per Talentbank rules.
 
-## Important Change with index.php
+## Next (Fasa 7)
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
-
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
-
-**Please** read the user guide for a better explanation of how CI4 works!
-
-## Repository Management
-
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
-
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
-
-## Server Requirements
-
-PHP version 8.2 or higher is required, with the following extensions installed:
-
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+Guided Demo Mode (Driver.js) — the 10-step coachmark tour that walks a judge through the golden path, plus final polish.
