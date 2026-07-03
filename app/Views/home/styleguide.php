@@ -33,7 +33,7 @@
 
 <section class="section">
   <div class="section-label">Pillar chips</div>
-  <div class="grid" style="grid-template-columns:repeat(5,1fr); gap:12px">
+  <div class="pillars">
     <?= lumina_chip('Living Portfolio','indigo') ?>
     <?= lumina_chip('Smart Matching','gold') ?>
     <?= lumina_chip('Learning Velocity','green') ?>

@@ -6,9 +6,10 @@
   <div class="section-label">AI Talent Intelligence Layer · Career OS</div>
   <h1>Discover your direction. Build your readiness. Match your future.</h1>
   <p class="lead">Lumina turns who you already are — even with no resume — into a career direction, a readiness score, and the next step. Then it shows employers why you fit.</p>
+  <p class="muted" style="margin-top:6px">Opportunity for all — SDG 4, 8 &amp; 10.</p>
   <div class="row" style="margin-top:18px">
     <a href="#" class="btn btn-gold btn-lg" data-tour="1">▶ Start the 3-minute guided tour</a>
-    <a href="<?= base_url('styleguide') ?>" class="btn btn-ghost">View style guide</a>
+    <a href="<?= base_url('demo/candidate-19-22') ?>" class="btn btn-ghost">Explore as a candidate</a>
   </div>
 </section>
 
@@ -37,10 +38,20 @@
   </div>
 </section>
 
+<!-- Impact & sustainability -->
+<section class="section">
+  <div class="section-label">Impact &amp; sustainability</div>
+  <div class="grid grid-3">
+    <div class="card"><h3>SDG 4 · Quality Education</h3><p class="muted">Turns learning and activities into recognised, actionable skills.</p></div>
+    <div class="card"><h3>SDG 8 · Decent Work</h3><p class="muted">Connects young people to suitable opportunities on evidence — faster.</p></div>
+    <div class="card"><h3>SDG 10 · Reduced Inequalities</h3><p class="muted">No-resume mode lets capable students without polished CVs be seen.</p></div>
+  </div>
+</section>
+
 <!-- Pillars (original Lumina names) -->
 <section class="section">
   <div class="section-label">The Lumina engine</div>
-  <div class="grid grid-5" style="grid-template-columns:repeat(5,1fr); gap:12px">
+  <div class="pillars">
     <?= lumina_chip('Living Portfolio','indigo') ?>
     <?= lumina_chip('Smart Matching','gold') ?>
     <?= lumina_chip('Learning Velocity','green') ?>

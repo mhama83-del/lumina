@@ -14,7 +14,8 @@ Starter files for the Lumina prototype, matching the demo's navy editorial style
 | **4 — Career Compass** | 3 path cards, **What-If simulator** (AJAX, donut animates), trajectory chart, 30/60/90 plan |
 | **5 — Smart Matching + Employer** | candidate Best/Growth/Stretch cards + Why drawer; **Employer dashboard** ranks DB students + "Why this candidate?" (reason + evidence + 3 interview Qs) |
 | **6 — Graduate Outcomes Dashboard** | University: 8 KPI cards, faculty bar, student bands doughnut, outcome heatmap, recommended intervention |
-| **7 — Guided Demo Mode** | Cross-page **10-step guided tour** (custom engine, resumes across navigation) — walks a judge through the golden path; page stays interactive |
+| **7 — Guided Demo Mode** | Cross-page **10-step guided tour** — walks a judge through the golden path; page stays interactive |
+| **8 — Polish & acceptance** | **Impact/SDG section** (4·8·10), mobile fixes (responsive pillars, scrollable heatmap), judge-friendly CTA, **video script + acceptance checklist** (VIDEO_SCRIPT.md) |
 
 ## Install
 
@@ -38,7 +39,8 @@ Starter files for the Lumina prototype, matching the demo's navy editorial style
 - [ ] `/compass` → 3 path cards; tick a gap skill → **readiness donut animates up** + delta; trajectory chart + 30/60/90 update  → **Fasa 4 done**
 - [ ] `/match` → 3 Best/Growth/Stretch cards + **Why this match?** drawer; `/employer` → pick role → candidates re-rank + **Why this candidate?**  → **Fasa 5 done**
 - [ ] `/university` → 8 KPI cards, faculty bar, segmentation doughnut, outcome heatmap, intervention  → **Fasa 6 done**
-- [ ] Click **▶ Guided tour** (top bar) → 10-step tour auto-walks Home → Passport → Compass (What-If) → Match → Employer → University → Home; Back/Next/Skip work; page stays clickable  → **Fasa 7 done**
+- [ ] Click **▶ Guided tour** → 10-step tour auto-walks Home → Passport → Compass (What-If) → Match → Employer → University → Home; page stays clickable  → **Fasa 7 done**
+- [ ] Homepage shows SDG line + Impact section; pillars wrap on mobile; heatmap scrolls on mobile; run the full acceptance list in `VIDEO_SCRIPT.md`  → **Fasa 8 done · PROTOTYPE COMPLETE**
 
 `/selftest` expected output (engine verified):
 ```
@@ -52,6 +54,6 @@ Readiness 58%  ·  Match 62% (stretch)  ·  What-if 58% -> 79% (+21)
 - **Work Animal:** the personas use placeholder animals (owl/fox/eagle). Replace with the real traits from yourworkanimal.com before Fasa 3.
 - **AI:** fully simulated in `ScoreService` — no external calls, per Talentbank rules.
 
-## Next (Fasa 8)
+## Done 🎉
 
-Final polish + acceptance pass: mobile check, copy pass, SDG line, one full demo rehearsal, walkthrough video.
+All 8 phases complete. Before submitting: replace Work Animal traits (yourworkanimal.com), scale sample students to ~1,500, record the walkthrough video (see `VIDEO_SCRIPT.md`), run the acceptance checklist.

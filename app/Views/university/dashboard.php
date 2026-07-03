@@ -44,7 +44,7 @@ function heatColor($v){ return $v >= 75 ? 'var(--ok)' : ($v >= 50 ? 'var(--nudge
   <div class="grid grid-2">
     <div class="card">
       <div class="section-label">Outcome heatmap · by programme</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
+      <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
         <thead><tr>
           <th style="text-align:left;padding:8px;color:var(--muted)">Programme</th>
           <th style="padding:8px;color:var(--muted)">Career-ready</th>
@@ -65,7 +65,7 @@ function heatColor($v){ return $v >= 75 ? 'var(--ok)' : ($v >= 50 ? 'var(--nudge
           <?php endforeach; ?>
           <?php if (empty($heat)): ?><tr><td colspan="4" class="muted" style="padding:8px">No data.</td></tr><?php endif; ?>
         </tbody>
-      </table>
+      </table></div>
     </div>
 
     <div class="card">

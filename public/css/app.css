@@ -251,3 +251,8 @@ select.field{ appearance:none; }
 .tour-pop .prog{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
 .tour-pop .row{ margin-top:12px; gap:8px; }
 @media (max-width:820px){ .tour-pop{ bottom:12px; } }
+
+/* ===== Fasa 8: polish ===== */
+.pillars{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.table-wrap{ overflow-x:auto; }
+@media (max-width:820px){ .pillars{ grid-template-columns:repeat(2,1fr); } }
