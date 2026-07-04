@@ -7,9 +7,16 @@
   <h1>Discover your direction. Build your readiness. Match your future.</h1>
   <p class="lead">Lumina turns who you already are — even with no resume — into a career direction, a readiness score, and the next step. Then it shows employers why you fit.</p>
   <p class="muted" style="margin-top:6px">Opportunity for all — SDG 4, 8 &amp; 10.</p>
+
   <div class="row" style="margin-top:18px">
     <a href="#" class="btn btn-gold btn-lg" data-tour="1">▶ Start the 3-minute guided tour</a>
-    <a href="<?= base_url('demo/candidate-19-22') ?>" class="btn btn-ghost">Explore as a candidate</a>
+  </div>
+
+  <!-- Persona entry (no login — choose a mode) -->
+  <div class="row persona-cta" style="margin-top:14px;gap:10px;flex-wrap:wrap">
+    <a href="<?= base_url('demo/candidate-' . (session('stage') ?? '19-22')) ?>" class="btn btn-ghost">I am a Candidate</a>
+    <a href="<?= base_url('demo/employer') ?>" class="btn btn-ghost">I am an Employer</a>
+    <a href="<?= base_url('demo/university') ?>" class="btn btn-ghost">I am a University</a>
   </div>
 </section>
 
@@ -27,13 +34,13 @@
   <div class="section-label">Choose how to explore</div>
   <div class="grid grid-3">
     <a class="card" href="<?= base_url('demo/candidate-' . (session('stage') ?? '19-22')) ?>" style="text-decoration:none">
-      <h3>I'm a Candidate</h3><p class="muted">Build a living portfolio and see your readiness and matches.</p>
+      <h3>I am a Candidate</h3><p class="muted">Build a living portfolio and see your readiness and matches.</p>
     </a>
     <a class="card" href="<?= base_url('demo/employer') ?>" style="text-decoration:none">
-      <h3>I'm an Employer</h3><p class="muted">Find the right people — with the reasons why, and interview questions.</p>
+      <h3>I am an Employer</h3><p class="muted">Find the right people — with the reasons why, and interview questions.</p>
     </a>
     <a class="card" href="<?= base_url('demo/university') ?>" style="text-decoration:none">
-      <h3>I'm a University</h3><p class="muted">See which talent is almost ready — and what unlocks them.</p>
+      <h3>I am a University</h3><p class="muted">See which talent is almost ready — and what unlocks them.</p>
     </a>
   </div>
 </section>
@@ -59,5 +66,4 @@
     <?= lumina_chip('University Intelligence','violet') ?>
   </div>
 </section>
-
 <?= $this->endSection() ?>
