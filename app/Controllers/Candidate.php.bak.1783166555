@@ -43,12 +43,14 @@ class Candidate extends BaseController
             $answers = $this->request->getPost('a') ?? [];
             $id = WorkAnimal::score(array_values($answers));
             $a = WorkAnimal::get($id);
+
             $profile = session('profile') ?? [];
             $profile['animal']      = $id;
             $profile['animalLabel'] = $a['label'];
             $profile['traits']      = $a['traits'];
             $profile['domains']     = $a['domains'];
             session()->set('profile', $profile);
+
             return redirect()->to(base_url('onboard/input'));
         }
         return view('candidate/animal', [
@@ -201,9 +203,7 @@ class Candidate extends BaseController
             'opps'    => $opps,
         ]);
     }
-
     public function placed()  { return $this->soon('Placed / Growing', 'Fasa 6', 'Your career keeps growing after you are hired.'); }
-
     private function soon($name, $phase, $desc) { return view('home/soon', compact('name', 'phase', 'desc') + ['title' => "Lumina · $name"]); }
 
     // ---------- Resume Analysis (v1 feature, simulated AI) ----------
@@ -212,7 +212,7 @@ class Candidate extends BaseController
         return view('candidate/resume', ['title' => 'Lumina · Resume Analysis']);
     }
 
-    /** AJAX: analyse pasted resume text, build profile, persist, return JSON. */
+    /** AJAX: analyse pasted resume text, build profile, return JSON. */
     public function resumeAnalyze()
     {
         $text = trim((string) $this->request->getPost('resume_text'));
@@ -222,11 +222,10 @@ class Candidate extends BaseController
         $explained = $svc->inferSkillsExplained($text, []);
         $domain    = $this->guessDomain(array_keys($explained));
 
-        // persist profile (session) so the user can continue into Compass/Match
+        // persist profile so the user can continue into Compass/Match
         $this->buildProfile($text, [], $domain, session('profile')['animal'] ?? null, 0, session('profile')['name'] ?? 'You');
         $cand = $this->buildSignal(session('profile'));
 
-        // top role matches
         $matches = [];
         foreach (\App\Libraries\Catalog::roles() as $role) {
             $m = $svc->match($cand, $role);
@@ -238,10 +237,8 @@ class Candidate extends BaseController
         $top = array_slice($matches, 0, 3);
 
         // readiness vs the best-fit role
-        $bestRole  = \App\Libraries\Catalog::role($this->bestRoleKey($cand, $svc));
-        $bestM     = $svc->match($cand, $bestRole);
+        $bestRole = \App\Libraries\Catalog::role($this->bestRoleKey($cand, $svc));
         $readiness = $svc->readiness($cand, $bestRole);
-        $band      = $svc->risk($readiness['score']);
 
         $skillOut = [];
         foreach ($explained as $code => $s) {
@@ -255,80 +252,13 @@ class Candidate extends BaseController
             if (stripos($text, $u) !== false) { $foundUni = $u; break; }
         }
 
-        // benchmark this readiness against the cohort (same field)
+        // benchmark this readiness against the 1,500-student cohort (same field)
         $cohort = $this->benchmark($svc, $domain, $readiness['score']);
 
-        // ---- Fasa 2: richer extracted profile + recommendations ----
-        $parser = new \App\Services\ResumeParserService();
-        $rec    = new \App\Services\RecommendationService();
-        $projects    = $parser->detectProjects($text);
-        $leadership  = $parser->detectLeadership($text);
-        $cluster     = $parser->careerCluster($domain);
-        $animal      = $parser->animalFromEvidence($cand['skills'], $text);
-        $internships = $rec->internships($domain);
-        $feedback    = $rec->feedback($text, $cand['skills'], $readiness['score'], $projects, $leadership);
-        $nextAction  = $rec->nextAction($band, $bestM['gap'], $bestM['matched']);
-        $courses     = $rec->microCourses($bestM['gap']);
-
-        // ---- Fasa 2: persist to DB (demo-safe: never breaks the demo) ----
-        $savedId = null;
-        try {
-            $sk   = session_id();
-            $name = session('profile')['name'] ?? 'You';
-            $savedId = (new \App\Models\ResumeAnalysisModel())->insert([
-                'session_key'        => $sk,
-                'source'             => 'resume',
-                'name'               => $name,
-                'raw_text'           => $text,
-                'target_domain'      => $domain,
-                'career_cluster'     => $cluster,
-                'readiness'          => $readiness['score'],
-                'employability_band' => $band,
-                'animal_primary'     => $animal['primary']['id'],
-                'animal_secondary'   => $animal['secondary']['id'],
-                'animal_growth'      => $animal['growth']['id'],
-                'skills_json'        => json_encode($skillOut),
-                'projects_json'      => json_encode($projects),
-                'leadership_json'    => json_encode($leadership),
-                'feedback_json'      => json_encode($feedback),
-                'next_action'        => $nextAction,
-            ], true);
-            (new \App\Models\CandidateProfileModel())->insert([
-                'analysis_id'   => $savedId,
-                'session_key'   => $sk,
-                'name'          => $name,
-                'stage'         => session('stage') ?? '19-22',
-                'target_domain' => $domain,
-                'animal'        => $animal['primary']['id'],
-                'verified'      => 0,
-                'evidence_text' => $text,
-                'skills_json'   => json_encode(array_keys($cand['skills'])),
-                'readiness'     => $readiness['score'],
-            ]);
-        } catch (\Throwable $e) {
-            log_message('error', 'Lumina persist failed: ' . $e->getMessage());
-        }
-
         return $this->response->setJSON([
-            'skills'     => $skillOut,
-            'readiness'  => $readiness['score'],
-            'matches'    => $top,
-            'domain'     => $domain,
-            'field'      => $this->fieldName($domain),
-            'university' => $foundUni,
-            'cohort'     => $cohort,
-            // ---- Fasa 2 additions ----
-            'career_cluster' => $cluster,
-            'band'           => $band,
-            'projects'       => $projects,
-            'leadership'     => $leadership,
-            'animal'         => $animal,
-            'internships'    => $internships,
-            'feedback'       => $feedback,
-            'next_action'    => $nextAction,
-            'courses'        => $courses,
-            'saved'          => (bool) $savedId,
-            'saved_id'       => $savedId,
+            'skills' => $skillOut, 'readiness' => $readiness['score'],
+            'matches' => $top, 'domain' => $domain, 'field' => $this->fieldName($domain),
+            'university' => $foundUni, 'cohort' => $cohort,
         ]);
     }
 
@@ -396,6 +326,7 @@ class Candidate extends BaseController
     {
         $svc = new ScoreService();
         $skills = $svc->inferSkills($text, $stated);
+
         $profile = session('profile') ?? [];
         $profile = array_merge($profile, [
             'name'          => $name ?: ($profile['name'] ?? 'You'),

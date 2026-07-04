@@ -5,7 +5,7 @@
 <section class="hero">
   <div class="section-label">Resume Analysis · AI</div>
   <h1>Paste your resume. Watch Lumina read it.</h1>
-  <p class="purpose">Lumina extracts your skills, scores your readiness, and finds your best match — in seconds.</p>
+  <p class="purpose">Lumina extracts your skills, scores your readiness, reads your Work Animal, and finds your best match — in seconds.</p>
 </section>
 
 <section class="section">
@@ -18,6 +18,7 @@
         <button class="btn btn-gold btn-lg" id="analyzeBtn">Analyze with AI →</button>
         <button class="btn btn-ghost" id="sampleBtn">Use a sample</button>
       </div>
+      <p class="muted" style="font-size:12px;margin-top:10px">No resume? Try the <a href="<?= base_url('start') ?>" class="gold">guided No-Resume builder →</a></p>
     </div>
 
     <!-- Processing + results -->
@@ -32,21 +33,53 @@
         <div class="ai-step" data-s="0"><span class="ai-step-dot"></span> Reading your resume…</div>
         <div class="ai-step" data-s="1"><span class="ai-step-dot"></span> Extracting explicit skills…</div>
         <div class="ai-step" data-s="2"><span class="ai-step-dot"></span> Inferring hidden skills from evidence…</div>
-        <div class="ai-step" data-s="3"><span class="ai-step-dot"></span> Matching to roles…</div>
-        <div class="ai-step" data-s="4"><span class="ai-step-dot"></span> Scoring your readiness…</div>
+        <div class="ai-step" data-s="3"><span class="ai-step-dot"></span> Reading your Work Animal…</div>
+        <div class="ai-step" data-s="4"><span class="ai-step-dot"></span> Matching to roles &amp; scoring readiness…</div>
       </div>
 
       <!-- results -->
       <div id="results" style="display:none">
+        <!-- Layer 1 · summary -->
         <div class="donut-wrap" id="rDonut"></div>
+        <div id="rBand" style="text-align:center;margin:2px 0 6px"></div>
         <div id="rBench" style="margin:8px 0"></div>
-        <div id="rField" style="text-align:center;margin:6px 0 14px"></div>
+        <div id="rField" style="text-align:center;margin:6px 0 2px"></div>
+        <div id="rCluster" style="text-align:center;margin:0 0 14px"></div>
+
+        <!-- Layer 2 · Work Animal -->
+        <div class="section-label">Your Work Animal · from evidence</div>
+        <div id="rAnimal" style="margin-bottom:14px"></div>
+
+        <!-- Top matches -->
         <div class="section-label">Top role matches · from the taxonomy</div>
         <div id="rMatches" class="stack" style="margin-bottom:12px"></div>
+
+        <!-- Skills -->
         <div class="section-label">Skills detected</div>
         <div id="rSkills" style="margin-bottom:8px"></div>
-        <div id="rGap" class="muted" style="font-size:13px"></div>
-        <div class="row" style="margin-top:14px">
+        <div id="rGap" class="muted" style="font-size:13px;margin-bottom:14px"></div>
+
+        <!-- Evidence: projects + leadership -->
+        <div id="rEvidence"></div>
+
+        <!-- Feedback -->
+        <div class="section-label">Resume feedback</div>
+        <ul id="rFeedback" class="muted" style="font-size:13px;margin:0 0 14px;padding-left:18px"></ul>
+
+        <!-- Internships -->
+        <div class="section-label">Recommended internship roles</div>
+        <div id="rInternships" style="margin-bottom:14px"></div>
+
+        <!-- Next best action -->
+        <div id="rNext" style="margin-bottom:14px"></div>
+
+        <!-- Micro-courses -->
+        <div class="section-label">Micro-courses to close gaps</div>
+        <div id="rCourses" class="muted" style="font-size:13px;margin-bottom:12px"></div>
+
+        <div id="rSaved" class="muted" style="font-size:12px;margin-bottom:10px"></div>
+
+        <div class="row" style="margin-top:6px">
           <a class="btn btn-gold" href="<?= base_url('compass') ?>">See my career paths →</a>
           <a class="btn btn-ghost" href="<?= base_url('passport') ?>">View portfolio</a>
         </div>
@@ -59,9 +92,9 @@
   <div class="card">
     <div class="section-label">How this works · under the hood</div>
     <div class="grid grid-3">
-      <div><h3>1 · Read &amp; extract</h3><p class="muted">Lumina scans your text for skill signals, mapping words to skills and separating what you <em>stated</em> from what it <em>inferred</em> — e.g. \"treasurer\" &rarr; budgeting.</p></div>
+      <div><h3>1 · Read &amp; extract</h3><p class="muted">Lumina scans your text for skill signals, separating what you <em>stated</em> from what it <em>inferred</em> — e.g. "treasurer" &rarr; budgeting.</p></div>
       <div><h3>2 · Score readiness</h3><p class="muted">A transparent weighted formula: skill coverage 40% + evidence 25% + activity 20% + learning pace 15%. No black box.</p></div>
-      <div><h3>3 · Match roles</h3><p class="muted">Your skills are compared to each role\'s required skills (overlap) + readiness + trajectory &rarr; a match %. Your best fit is shown.</p></div>
+      <div><h3>3 · Match &amp; recommend</h3><p class="muted">Skills are compared to each role's requirements &rarr; a match %, plus feedback, internships and next best action.</p></div>
     </div>
     <p class="purpose" style="margin-top:12px">Simulated AI for the demo &mdash; deterministic and explainable, designed to plug into real APIs later.</p>
   </div>
@@ -79,7 +112,6 @@ function donutSVG(pct, color){
     '<text class="pct" x="60" y="68" text-anchor="middle">0%</text></svg>'+
     '<div class="donut-label">Readiness · <span id="rRole"></span></div>';
 }
-
 function runSteps(done){
   const steps = document.querySelectorAll('#processing .ai-step');
   let i = 0;
@@ -91,15 +123,14 @@ function runSteps(done){
   };
   tick();
 }
+function pillClass(band){ return band==='On track'?'ok':(band==='Needs a nudge'?'nudge':'risk'); }
 
 function analyze(text){
   document.getElementById('idle').style.display='none';
   document.getElementById('results').style.display='none';
   document.getElementById('processing').style.display='block';
-
   const body = new URLSearchParams(); body.append('resume_text', text);
   const fetchP = fetch(ANALYZE_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body}).then(r=>r.json());
-
   runSteps(()=>{
     fetchP.then(data=>{
       if(data.error){ document.getElementById('processing').style.display='none'; document.getElementById('idle').style.display='block'; document.getElementById('idle').textContent='Please paste some text first.'; return; }
@@ -107,38 +138,81 @@ function analyze(text){
       const res = document.getElementById('results'); res.style.display='block';
       const top = (data.matches && data.matches[0]) || null;
       const color = top ? top.color : '#6C5CE7';
+
+      // donut
       document.getElementById('rDonut').innerHTML = donutSVG(data.readiness, color);
       document.getElementById('rRole').textContent = top ? top.title : data.domain;
-      // animate donut
       setTimeout(()=>{ const v=document.querySelector('#rDonut .val'), t=document.querySelector('#rDonut .pct');
         const r=45,c=2*Math.PI*r; v.style.strokeDashoffset=(c*(1-data.readiness/100)).toFixed(1); t.textContent=data.readiness+'%'; }, 60);
+
+      // band + cluster
+      document.getElementById('rBand').innerHTML = '<span class="pill '+pillClass(data.band)+'">'+data.band+'</span> <span class="muted" style="font-size:12px">employability band</span>';
+      document.getElementById('rCluster').innerHTML = data.career_cluster ? ('Career cluster: <strong class="gold">'+data.career_cluster+'</strong>') : '';
+
       // field alignment
-      document.getElementById('rField').innerHTML = 'Your profile aligns with <strong class=\"gold\">'+data.field+'</strong>'+(data.university?(' \u00b7 detected: '+data.university):'');
-      if(data.cohort && data.cohort.size){ var c=data.cohort;
-        document.getElementById('rBench').innerHTML = '<div style=\"background:rgba(108,92,231,.10);border:1px solid rgba(108,92,231,.35);border-radius:10px;padding:10px 13px;font-size:13px\">Benchmarked against <strong>'+c.size+'</strong> '+c.domain+' students in the cohort: your readiness <strong class=\"gold\">'+c.you+'%</strong> is higher than <strong>'+c.percentile+'%</strong> of them (cohort average '+c.avg+'%).</div>'; }
+      document.getElementById('rField').innerHTML = 'Your profile aligns with <strong class="gold">'+data.field+'</strong>'+(data.university?(' · detected: '+data.university):'');
+
+      // benchmark
+      if(data.cohort && data.cohort.size){ var cb=data.cohort;
+        document.getElementById('rBench').innerHTML = '<div style="background:rgba(108,92,231,.10);border:1px solid rgba(108,92,231,.35);border-radius:10px;padding:10px 13px;font-size:13px">Benchmarked against <strong>'+cb.size+'</strong> '+cb.domain+' students in the cohort: your readiness <strong class="gold">'+cb.you+'%</strong> is higher than <strong>'+cb.percentile+'%</strong> of them (cohort average '+cb.avg+'%).</div>'; }
+      else { document.getElementById('rBench').innerHTML=''; }
+
+      // Work Animal
+      if(data.animal){ var a=data.animal;
+        var chip=function(x,role){ return '<span class="skill">'+x.label+' <span class="conf">'+role+'</span></span>'; };
+        document.getElementById('rAnimal').innerHTML =
+          '<div class="card card-tight">'+
+          '<div style="margin-bottom:8px">'+chip(a.primary,'primary')+' '+chip(a.secondary,'secondary')+' '+chip(a.growth,'growth')+'</div>'+
+          '<div class="muted" style="font-size:13px">'+a.line+' <span class="gold">Confidence '+a.confidence+'%</span></div>'+
+          '<div class="muted" style="font-size:12px;margin-top:6px">Traits: '+(a.primary.traits||[]).join(' · ')+'</div>'+
+          '</div>';
+      }
+
       // top-3 role matches
-      document.getElementById('rMatches').innerHTML = (data.matches||[]).map((m,i)=>{
-        const fit = m.label==='best'?'ok':(m.label==='growth'?'nudge':'risk');
-        const gap = m.gap.length ? ' · gap: '+m.gap.join(', ') : ' · strong match';
+      document.getElementById('rMatches').innerHTML = (data.matches||[]).map(function(m,i){
+        var fit = m.label==='best'?'ok':(m.label==='growth'?'nudge':'risk');
+        var gap = m.gap.length ? ' · gap: '+m.gap.join(', ') : ' · strong match';
         return '<div class="ev" style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
           '<span>'+(i+1)+'. <strong>'+m.title+'</strong> <span class="muted">@ '+m.company+gap+'</span></span>'+
           '<span class="pill '+fit+'">'+m.match+'%</span></div>';
       }).join('');
+
       // skills
-      document.getElementById('rSkills').innerHTML = data.skills.map(s=>{
-        const cls = s.source==='inferred' ? 'skill inferred' : 'skill';
-        const tip = s.from ? ('inferred from: "'+s.from+'"') : 'you stated this';
-        const tag = s.from ? ' <span class="conf">\u2190 '+s.from+'</span>' : '';
+      document.getElementById('rSkills').innerHTML = data.skills.map(function(s){
+        var cls = s.source==='inferred' ? 'skill inferred' : 'skill';
+        var tip = s.from ? ('inferred from: "'+s.from+'"') : 'you stated this';
+        var tag = s.from ? ' <span class="conf">&larr; '+s.from+'</span>' : '';
         return '<span class="'+cls+'" title="'+tip+'">'+s.label+tag+'</span>';
       }).join('');
+
       // gap
       document.getElementById('rGap').innerHTML = (top && top.gap.length)
         ? 'To reach a stronger match for '+top.title+', add: <strong style="color:var(--gold)">'+top.gap.join(', ')+'</strong>.'
         : 'Strong match — no major gaps.';
+
+      // evidence: projects + leadership
+      var ev='';
+      if(data.projects && data.projects.length){ ev+='<div class="section-label">Projects detected</div><ul class="muted" style="font-size:13px;margin:0 0 12px;padding-left:18px">'+data.projects.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>'; }
+      if(data.leadership && data.leadership.length){ ev+='<div class="section-label">Leadership detected</div><ul class="muted" style="font-size:13px;margin:0 0 12px;padding-left:18px">'+data.leadership.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>'; }
+      document.getElementById('rEvidence').innerHTML = ev;
+
+      // feedback
+      document.getElementById('rFeedback').innerHTML = (data.feedback||[]).map(function(f){return '<li>'+f+'</li>';}).join('');
+
+      // internships
+      document.getElementById('rInternships').innerHTML = (data.internships||[]).map(function(x){return '<span class="skill">'+x+'</span>';}).join(' ');
+
+      // next best action
+      document.getElementById('rNext').innerHTML = '<div style="background:rgba(245,197,24,.10);border:1px solid rgba(245,197,24,.35);border-radius:10px;padding:11px 13px;font-size:13px"><strong>Next best action:</strong> '+data.next_action+'</div>';
+
+      // micro-courses
+      document.getElementById('rCourses').innerHTML = (data.courses||[]).map(function(c){return '<div>• <strong>'+c.skill+'</strong> — '+c.course+'</div>';}).join('');
+
+      // saved
+      document.getElementById('rSaved').textContent = data.saved ? ('Saved to your Lumina record (#'+data.saved_id+').') : '';
     });
   });
 }
-
 document.getElementById('analyzeBtn').onclick = ()=>{ const t=document.getElementById('resumeText').value.trim(); if(t) analyze(t); };
 document.getElementById('sampleBtn').onclick = ()=>{ document.getElementById('resumeText').value = SAMPLE; analyze(SAMPLE); };
 </script>
