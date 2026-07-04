@@ -402,6 +402,7 @@ class LuminaJdGenerator
         $total = min(count($domainSlots), count($levelSlots), count($countrySlots));
         $famCounter = ['Data' => 0, 'Engineering' => 0, 'Design' => 0, 'Business' => 0];
         $empCounter = [];
+        $titleCount = [];
         $records = [];
 
         for ($k = 0; $k < $total; $k++) {
@@ -422,6 +423,13 @@ class LuminaJdGenerator
 
             $roleLevel   = self::resolveLevel($bucket, $domain);
             $title       = self::title($famName, $bucket);
+            // QC rule 1: max 2 identical titles per employer -> add a realistic differentiator
+            $dk = $e[0] . '|' . $title;
+            $titleCount[$dk] = ($titleCount[$dk] ?? 0) + 1;
+            if ($titleCount[$dk] > 2) {
+                $variants = [' (Consumer)', ' (Enterprise)', ' (Regional)', ' (Growth)', ' (Operations)', ' (Digital)'];
+                $title .= $variants[($titleCount[$dk] - 3) % count($variants)];
+            }
             $salary      = self::salaryBand($country, $bucket);
             $arrangement = self::arrangement($domain, $bucket);
             $jdCode      = sprintf('JD%04d', $k + 1);
