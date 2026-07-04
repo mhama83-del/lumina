@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Libraries\Catalog;
 use App\Libraries\Explain;
 use App\Services\ScoreService;
-use App\Services\EmployerComparisonService;
 
 class Employer extends BaseController
 {
@@ -20,46 +19,11 @@ class Employer extends BaseController
         $ranked = $this->rankCandidates($role);
 
         return view('employer/index', [
-            'title'     => 'Lumina · Employer',
-            'roles'     => $roles,
-            'selected'  => $role,
-            'ranked'    => $ranked,
-            'shortlist' => session('shortlist') ?? [],
+            'title'    => 'Lumina · Employer',
+            'roles'    => $roles,
+            'selected' => $role,
+            'ranked'   => $ranked,
         ]);
-    }
-
-    /** Compare 2–4 selected candidates against the chosen role. */
-    public function compare()
-    {
-        $roles = Catalog::roles();
-        $key   = (string) ($this->request->getGet('role') ?? '');
-        $role  = $roles[$key] ?? array_values($roles)[0];
-
-        $ids = $this->request->getGet('ids') ?? [];
-        $ids = array_slice(array_map('intval', (array) $ids), 0, 4);
-
-        $cands = (new EmployerComparisonService())->compare($role, $ids);
-
-        return view('employer/compare', [
-            'title' => 'Lumina · Compare candidates',
-            'role'  => $role,
-            'roles' => $roles,
-            'cands' => $cands,
-        ]);
-    }
-
-    /** Toggle a candidate in the session shortlist, return to the list. */
-    public function shortlist()
-    {
-        $id   = (int) $this->request->getGet('id');
-        $role = (string) ($this->request->getGet('role') ?? '');
-        $list = session('shortlist') ?? [];
-        if ($id) {
-            if (in_array($id, $list, true)) $list = array_values(array_diff($list, [$id]));
-            else $list[] = $id;
-        }
-        session()->set('shortlist', $list);
-        return redirect()->to(base_url('employer') . ($role ? ('?role=' . $role) : ''));
     }
 
     /** Rank all students in the DB against a role. */
@@ -87,8 +51,8 @@ class Employer extends BaseController
             $stated = $statedMap[$s['id']] ?? [];
             $cand   = $svc->signal($s['evidence_text'] ?? '', $stated, (int) ($s['has_resume'] ?? 0), $s['target_domain'] ?? 'Data');
             $m      = $svc->match($cand, $role);
+
             $out[] = [
-                'id'         => (int) $s['id'],
                 'name'       => $s['name'],
                 'university' => $s['university'],
                 'programme'  => $s['programme'],

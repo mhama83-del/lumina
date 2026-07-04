@@ -4,7 +4,7 @@ use CodeIgniter\Router\RouteCollection;
 
 /**
  * @var RouteCollection $routes
- * Lumina routes — Fasa 0-4 live; Fasa 5+ stubbed (no 404s).
+ * Lumina routes — Fasa 0-3 live; Fasa 4+ stubbed (no 404s).
  */
 
 $routes->get('/', 'Home::index');
@@ -19,10 +19,6 @@ $routes->get('candidate', 'Candidate::home');
 $routes->get('employer', 'Employer::index');
 $routes->get('university', 'University::dashboard');
 
-// ---- Fasa 4: employer compare + shortlist ----
-$routes->get('employer/compare',   'Employer::compare');
-$routes->get('employer/shortlist', 'Employer::shortlist');
-
 // ---- Fasa 3: candidate cold-start ----
 $routes->get('start',           'Candidate::start');
 $routes->get('start/sample',    'Candidate::sample');
@@ -32,10 +28,8 @@ $routes->get('passport',        'Candidate::passport');
 $routes->get('resume',          'Candidate::resume');            // Resume Analysis
 $routes->post('resume/analyze', 'Candidate::resumeAnalyze');     // Resume Analysis AJAX
 
-// ---- Fasa 4: candidate career compass ----
-$routes->get('compass', 'Candidate::compass');
-$routes->post('whatif', 'Candidate::whatif');
-
-// ---- Later phases ----
-$routes->get('match',   'Candidate::smatch');    // Smart matching (candidate)
+// ---- Stubs for later phases ----
+$routes->get('compass', 'Candidate::compass');        // Fasa 4
+$routes->post('whatif', 'Candidate::whatif');         // Fasa 4 AJAX
+$routes->get('match',   'Candidate::smatch');    // Fasa 5  (method renamed: 'match' is a PHP keyword)
 $routes->get('placed',  'Candidate::placed');    // Fasa 6
