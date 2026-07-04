@@ -39,7 +39,10 @@
       <!-- results -->
       <div id="results" style="display:none">
         <div class="donut-wrap" id="rDonut"></div>
-        <div id="rBest" style="text-align:center;margin:6px 0 14px"></div>
+        <div id="rBench" style="margin:8px 0"></div>
+        <div id="rField" style="text-align:center;margin:6px 0 14px"></div>
+        <div class="section-label">Top role matches · from the taxonomy</div>
+        <div id="rMatches" class="stack" style="margin-bottom:12px"></div>
         <div class="section-label">Skills detected</div>
         <div id="rSkills" style="margin-bottom:8px"></div>
         <div id="rGap" class="muted" style="font-size:13px"></div>
@@ -102,15 +105,25 @@ function analyze(text){
       if(data.error){ document.getElementById('processing').style.display='none'; document.getElementById('idle').style.display='block'; document.getElementById('idle').textContent='Please paste some text first.'; return; }
       document.getElementById('processing').style.display='none';
       const res = document.getElementById('results'); res.style.display='block';
-      const color = data.best ? data.best.color : '#6C5CE7';
+      const top = (data.matches && data.matches[0]) || null;
+      const color = top ? top.color : '#6C5CE7';
       document.getElementById('rDonut').innerHTML = donutSVG(data.readiness, color);
-      document.getElementById('rRole').textContent = data.best ? data.best.title : data.domain;
+      document.getElementById('rRole').textContent = top ? top.title : data.domain;
       // animate donut
       setTimeout(()=>{ const v=document.querySelector('#rDonut .val'), t=document.querySelector('#rDonut .pct');
         const r=45,c=2*Math.PI*r; v.style.strokeDashoffset=(c*(1-data.readiness/100)).toFixed(1); t.textContent=data.readiness+'%'; }, 60);
-      // best match
-      if(data.best){ document.getElementById('rBest').innerHTML =
-        '<strong style="color:var(--text)">'+data.best.title+'</strong> @ '+data.best.company+' · '+data.best.match+'% match'; }
+      // field alignment
+      document.getElementById('rField').innerHTML = 'Your profile aligns with <strong class=\"gold\">'+data.field+'</strong>'+(data.university?(' \u00b7 detected: '+data.university):'');
+      if(data.cohort && data.cohort.size){ var c=data.cohort;
+        document.getElementById('rBench').innerHTML = '<div style=\"background:rgba(108,92,231,.10);border:1px solid rgba(108,92,231,.35);border-radius:10px;padding:10px 13px;font-size:13px\">Benchmarked against <strong>'+c.size+'</strong> '+c.domain+' students in the cohort: your readiness <strong class=\"gold\">'+c.you+'%</strong> is higher than <strong>'+c.percentile+'%</strong> of them (cohort average '+c.avg+'%).</div>'; }
+      // top-3 role matches
+      document.getElementById('rMatches').innerHTML = (data.matches||[]).map((m,i)=>{
+        const fit = m.label==='best'?'ok':(m.label==='growth'?'nudge':'risk');
+        const gap = m.gap.length ? ' · gap: '+m.gap.join(', ') : ' · strong match';
+        return '<div class="ev" style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+          '<span>'+(i+1)+'. <strong>'+m.title+'</strong> <span class="muted">@ '+m.company+gap+'</span></span>'+
+          '<span class="pill '+fit+'">'+m.match+'%</span></div>';
+      }).join('');
       // skills
       document.getElementById('rSkills').innerHTML = data.skills.map(s=>{
         const cls = s.source==='inferred' ? 'skill inferred' : 'skill';
@@ -119,8 +132,8 @@ function analyze(text){
         return '<span class="'+cls+'" title="'+tip+'">'+s.label+tag+'</span>';
       }).join('');
       // gap
-      document.getElementById('rGap').innerHTML = (data.best && data.best.gap.length)
-        ? 'To reach a strong match, add: <strong style="color:var(--gold)">'+data.best.gap.join(', ')+'</strong>.'
+      document.getElementById('rGap').innerHTML = (top && top.gap.length)
+        ? 'To reach a stronger match for '+top.title+', add: <strong style="color:var(--gold)">'+top.gap.join(', ')+'</strong>.'
         : 'Strong match — no major gaps.';
     });
   });

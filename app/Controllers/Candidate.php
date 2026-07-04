@@ -226,17 +226,19 @@ class Candidate extends BaseController
         $this->buildProfile($text, [], $domain, session('profile')['animal'] ?? null, 0, session('profile')['name'] ?? 'You');
         $cand = $this->buildSignal(session('profile'));
 
-        $best = null; $bestRole = null;
+        $matches = [];
         foreach (\App\Libraries\Catalog::roles() as $role) {
             $m = $svc->match($cand, $role);
-            if (! $best || $m['matchScore'] > $best['match']) {
-                $bestRole = $role;
-                $best = ['title' => $role['title'], 'company' => $role['company'], 'color' => $role['hex'],
-                         'match' => $m['matchScore'], 'label' => $m['label'],
-                         'gap' => \App\Libraries\Catalog::labels($m['gap'])];
-            }
+            $matches[] = ['title' => $role['title'], 'company' => $role['company'], 'color' => $role['hex'],
+                          'match' => $m['matchScore'], 'label' => $m['label'],
+                          'gap' => \App\Libraries\Catalog::labels($m['gap'])];
         }
-        $readiness = $svc->readiness($cand, $bestRole ?? \App\Libraries\Catalog::role('data_analyst'));
+        usort($matches, fn ($a, $b) => $b['match'] <=> $a['match']);
+        $top = array_slice($matches, 0, 3);
+
+        // readiness vs the best-fit role
+        $bestRole = \App\Libraries\Catalog::role($this->bestRoleKey($cand, $svc));
+        $readiness = $svc->readiness($cand, $bestRole);
 
         $skillOut = [];
         foreach ($explained as $code => $s) {
@@ -244,9 +246,65 @@ class Candidate extends BaseController
                            'conf' => round($s['confidence'] * 100), 'from' => $s['from']];
         }
 
+        // detect a university named in the resume (optional display)
+        $foundUni = null;
+        foreach (['UM','USM','UKM','UPM','UTM','UiTM','UUM','IIUM','UMS','UNIMAS','UMT','UPSI','USIM','UMK','UTHM','UTeM','UMP','UniMAP','Taylor','Sunway','MMU','UTP','UNITEN','UCSI','APU','Monash','Nottingham','Xiamen','Heriot'] as $u) {
+            if (stripos($text, $u) !== false) { $foundUni = $u; break; }
+        }
+
+        // benchmark this readiness against the 1,500-student cohort (same field)
+        $cohort = $this->benchmark($svc, $domain, $readiness['score']);
+
         return $this->response->setJSON([
-            'skills' => $skillOut, 'readiness' => $readiness['score'], 'best' => $best, 'domain' => $domain,
+            'skills' => $skillOut, 'readiness' => $readiness['score'],
+            'matches' => $top, 'domain' => $domain, 'field' => $this->fieldName($domain),
+            'university' => $foundUni, 'cohort' => $cohort,
         ]);
+    }
+
+    /** Where does this readiness sit among cohort students of the same domain? */
+    private function benchmark(ScoreService $svc, string $domain, int $myReadiness): array
+    {
+        try {
+            $peers = \Config\Database::connect()->table('students')
+                ->select('evidence_text, has_resume')->where('target_domain', $domain)
+                ->get()->getResultArray();
+        } catch (\Throwable $e) { $peers = []; }
+
+        $n = count($peers); $below = 0; $sum = 0;
+        foreach ($peers as $p) {
+            $pc = $svc->signal($p['evidence_text'] ?? '', [], (int) ($p['has_resume'] ?? 0), $domain);
+            $pr = $svc->readiness($pc, \App\Libraries\Catalog::role($this->bestRoleKey($pc, $svc)))['score'];
+            $sum += $pr;
+            if ($pr < $myReadiness) $below++;
+        }
+        return [
+            'domain'     => $domain,
+            'size'       => $n,
+            'percentile' => $n ? (int) round(100 * $below / $n) : 0,
+            'avg'        => $n ? (int) round($sum / $n) : 0,
+            'you'        => $myReadiness,
+        ];
+    }
+
+    private function bestRoleKey(array $cand, ScoreService $svc): string
+    {
+        $bestKey = 'data_analyst'; $bestScore = -1;
+        foreach (\App\Libraries\Catalog::roles() as $key => $role) {
+            $m = $svc->match($cand, $role);
+            if ($m['matchScore'] > $bestScore) { $bestScore = $m['matchScore']; $bestKey = $key; }
+        }
+        return $bestKey;
+    }
+
+    private function fieldName(string $domain): string
+    {
+        return [
+            'Data'        => 'Data, Analytics & Computing',
+            'Engineering' => 'Engineering & Technology',
+            'Design'      => 'Design & Creative',
+            'Business'    => 'Business, Finance & Communication',
+        ][$domain] ?? $domain;
     }
 
     private function guessDomain(array $codes): string
