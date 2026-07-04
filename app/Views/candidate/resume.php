@@ -52,6 +52,18 @@
   </div>
 </section>
 
+<section class="section">
+  <div class="card">
+    <div class="section-label">How this works · under the hood</div>
+    <div class="grid grid-3">
+      <div><h3>1 · Read &amp; extract</h3><p class="muted">Lumina scans your text for skill signals, mapping words to skills and separating what you <em>stated</em> from what it <em>inferred</em> — e.g. \"treasurer\" &rarr; budgeting.</p></div>
+      <div><h3>2 · Score readiness</h3><p class="muted">A transparent weighted formula: skill coverage 40% + evidence 25% + activity 20% + learning pace 15%. No black box.</p></div>
+      <div><h3>3 · Match roles</h3><p class="muted">Your skills are compared to each role\'s required skills (overlap) + readiness + trajectory &rarr; a match %. Your best fit is shown.</p></div>
+    </div>
+    <p class="purpose" style="margin-top:12px">Simulated AI for the demo &mdash; deterministic and explainable, designed to plug into real APIs later.</p>
+  </div>
+</section>
+
 <script>
 const ANALYZE_URL = "<?= base_url('resume/analyze') ?>";
 const SAMPLE = "Final-year Computer Science student at USM. Treasurer of the Robotics Club for 2 years. Built an attendance app with Python. Volunteered in a community coding programme. Led a small data analysis project and built dashboards for the faculty.";
@@ -102,8 +114,9 @@ function analyze(text){
       // skills
       document.getElementById('rSkills').innerHTML = data.skills.map(s=>{
         const cls = s.source==='inferred' ? 'skill inferred' : 'skill';
-        const conf = s.source==='inferred' ? '<span class="conf">'+s.conf+'%</span>' : '';
-        return '<span class="'+cls+'">'+s.label+' '+conf+'</span>';
+        const tip = s.from ? ('inferred from: "'+s.from+'"') : 'you stated this';
+        const tag = s.from ? ' <span class="conf">\u2190 '+s.from+'</span>' : '';
+        return '<span class="'+cls+'" title="'+tip+'">'+s.label+tag+'</span>';
       }).join('');
       // gap
       document.getElementById('rGap').innerHTML = (data.best && data.best.gap.length)

@@ -40,8 +40,8 @@ class University extends BaseController
             $stated = $statedMap[$s['id']] ?? [];
             $cand   = $svc->signal($s['evidence_text'] ?? '', $stated, (int) $s['has_resume'], $s['target_domain'] ?? 'Data');
             $role   = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));
-            $r      = $svc->readiness($cand, $role)['score'];
-            $m      = $svc->match($cand, $role);
+            $r      = $svc->employability($cand);      // holistic, field-agnostic
+            $m      = $svc->match($cand, $role);        // for gap frequency
             $band   = $svc->risk($r);
             $bands[$band]++;
 

@@ -218,42 +218,42 @@ class Candidate extends BaseController
         $text = trim((string) $this->request->getPost('resume_text'));
         if ($text === '') return $this->response->setJSON(['error' => 'empty']);
 
-        $svc    = new ScoreService();
-        $skills = $svc->inferSkills($text, []);
-        $domain = $this->guessDomain(array_keys($skills));
+        $svc       = new ScoreService();
+        $explained = $svc->inferSkillsExplained($text, []);
+        $domain    = $this->guessDomain(array_keys($explained));
 
         // persist profile so the user can continue into Compass/Match
         $this->buildProfile($text, [], $domain, session('profile')['animal'] ?? null, 0, session('profile')['name'] ?? 'You');
-
         $cand = $this->buildSignal(session('profile'));
-        $best = null;
+
+        $best = null; $bestRole = null;
         foreach (\App\Libraries\Catalog::roles() as $role) {
             $m = $svc->match($cand, $role);
             if (! $best || $m['matchScore'] > $best['match']) {
+                $bestRole = $role;
                 $best = ['title' => $role['title'], 'company' => $role['company'], 'color' => $role['hex'],
                          'match' => $m['matchScore'], 'label' => $m['label'],
                          'gap' => \App\Libraries\Catalog::labels($m['gap'])];
             }
         }
-        $readiness = $svc->readiness($cand, \App\Libraries\Catalog::role($this->roleKeyForDomain($domain)));
+        $readiness = $svc->readiness($cand, $bestRole ?? \App\Libraries\Catalog::role('data_analyst'));
 
         $skillOut = [];
-        foreach ($skills as $code => $s) {
-            $skillOut[] = ['label' => \App\Libraries\Catalog::label($code), 'source' => $s['source'], 'conf' => round($s['confidence'] * 100)];
+        foreach ($explained as $code => $s) {
+            $skillOut[] = ['label' => \App\Libraries\Catalog::label($code), 'source' => $s['source'],
+                           'conf' => round($s['confidence'] * 100), 'from' => $s['from']];
         }
 
         return $this->response->setJSON([
-            'skills'    => $skillOut,
-            'readiness' => $readiness['score'],
-            'best'      => $best,
-            'domain'    => $domain,
+            'skills' => $skillOut, 'readiness' => $readiness['score'], 'best' => $best, 'domain' => $domain,
         ]);
     }
 
     private function guessDomain(array $codes): string
     {
-        if (array_intersect($codes, ['sql', 'python', 'data_analysis', 'dashboarding'])) return 'Data';
-        if (array_intersect($codes, ['software', 'cloud'])) return 'Engineering';
+        if (array_intersect($codes, ['ui_ux', 'figma', 'graphic_design'])) return 'Design';
+        if (array_intersect($codes, ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'])) return 'Data';
+        if (array_intersect($codes, ['software', 'cloud', 'java', 'javascript', 'api'])) return 'Engineering';
         return 'Business';
     }
 
