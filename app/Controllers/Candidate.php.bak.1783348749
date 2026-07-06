@@ -98,7 +98,7 @@ class Candidate extends BaseController
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
-        $role = $this->targetRoleFor($profile['target_domain'] ?? 'Data', $cand);
+        $role = $this->targetRoleFor($profile['target_domain'] ?? 'Data');
 
         $readiness = $svc->readiness($cand, $role);
         $match     = $svc->match($cand, $role);
@@ -125,7 +125,7 @@ class Candidate extends BaseController
         $cand = $this->buildSignal($profile);
 
         $paths = [];
-        foreach ($this->pathRoles($cand) as $role) {
+        foreach ($this->pathRoles() as $role) {
             $r = $svc->readiness($cand, $role);
             $m = $svc->match($cand, $role);
             $paths[] = [
@@ -157,7 +157,7 @@ class Candidate extends BaseController
         $cand    = $this->buildSignal($profile);
         $key     = (string) $this->request->getPost('role');
         $add     = $this->request->getPost('add') ?? [];
-        $roles   = $this->pathRoles($cand);
+        $roles   = $this->pathRoles();
         $role    = $roles[$key] ?? array_values($roles)[0];
 
         $svc = new ScoreService();
@@ -451,12 +451,7 @@ class Candidate extends BaseController
     {
         if (array_intersect($codes, ['ui_ux', 'figma', 'graphic_design'])) return 'Design';
         if (array_intersect($codes, ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'])) return 'Data';
-        $engineering = ['software', 'cloud', 'java', 'javascript', 'api',
-            'mechanical_design', 'cad', 'fea', 'manufacturing', 'six_sigma',
-            'aerodynamics', 'aircraft_systems', 'avionics', 'structural_engineering',
-            'circuit_design', 'plc', 'electrical_schematics', 'embedded', 'robotics', 'control_systems',
-            'process_safety', 'chemical_processing', 'project_planning'];
-        if (array_intersect($codes, $engineering)) return 'Engineering';
+        if (array_intersect($codes, ['software', 'cloud', 'java', 'javascript', 'api'])) return 'Engineering';
         return 'Business';
     }
 
@@ -501,23 +496,13 @@ class Candidate extends BaseController
         ];
     }
 
-    /** Best-fitting role for a domain, chosen dynamically from the shared Catalog (not hardcoded). */
-    private function targetRoleFor(string $domain, ?array $cand = null): array
+    private function targetRoleFor(string $domain): array
     {
-        $domain = $this->normaliseDomain($domain);
-        $inDomain = array_values(array_filter(\App\Libraries\Catalog::roles(), fn ($r) => $r['domain'] === $domain));
-        $best = $inDomain[0] ?? null;
-        if ($cand && count($inDomain) > 1) {
-            $svc = new ScoreService(); $bestScore = -1;
-            foreach ($inDomain as $r) {
-                $m = $svc->match($cand, $r)['matchScore'];
-                if ($m > $bestScore) { $bestScore = $m; $best = $r; }
-            }
-        }
-        if (! $best) {
-            return ['title' => 'Data Analyst', 'domain' => 'Data', 'required' => ['sql', 'dashboarding', 'python', 'data_analysis'], 'color' => 'var(--indigo)'];
-        }
-        return ['title' => $best['title'], 'domain' => $best['domain'], 'required' => $best['required'], 'color' => $best['color']];
+        return match ($this->normaliseDomain($domain)) {
+            'Engineering' => ['title' => 'Backend Engineer', 'domain' => 'Engineering', 'required' => ['software', 'cloud', 'python', 'communication'], 'color' => 'var(--teal)'],
+            'Business'    => ['title' => 'Product Executive', 'domain' => 'Business',    'required' => ['stakeholder_mgmt', 'communication', 'leadership'], 'color' => 'var(--gold)'],
+            default       => ['title' => 'Data Analyst',      'domain' => 'Data',        'required' => ['sql', 'dashboarding', 'python', 'data_analysis'], 'color' => 'var(--indigo)'],
+        };
     }
 
     private function normaliseDomain(string $d): string
@@ -689,31 +674,13 @@ class Candidate extends BaseController
     }
 
     // ---------- Fasa 4 helpers ----------
-
-    /** Best-fitting role per domain (Data/Engineering/Business), chosen dynamically from the shared Catalog. */
-    private function pathRoles(?array $cand = null): array
+    private function pathRoles(): array
     {
-        $all = \App\Libraries\Catalog::roles();
-        $svc = new ScoreService();
-        $out = [];
-        foreach (['Data', 'Engineering', 'Business'] as $domain) {
-            $inDomain = array_values(array_filter($all, fn ($r) => $r['domain'] === $domain));
-            $best = $inDomain[0] ?? null;
-            if ($cand && count($inDomain) > 1) {
-                $bestScore = -1;
-                foreach ($inDomain as $r) {
-                    $m = $svc->match($cand, $r)['matchScore'];
-                    if ($m > $bestScore) { $bestScore = $m; $best = $r; }
-                }
-            }
-            if ($best) {
-                $out[$best['key']] = [
-                    'key' => $best['key'], 'title' => $best['title'], 'domain' => $domain,
-                    'color' => $best['color'], 'hex' => $best['hex'], 'required' => $best['required'],
-                ];
-            }
-        }
-        return $out;
+        return [
+            'data_analyst'     => ['key' => 'data_analyst',     'title' => 'Data Analyst',      'domain' => 'Data',        'color' => 'var(--indigo)', 'hex' => '#6D5DFB', 'required' => ['sql', 'dashboarding', 'python', 'data_analysis']],
+            'backend_engineer' => ['key' => 'backend_engineer', 'title' => 'Backend Engineer',  'domain' => 'Engineering', 'color' => 'var(--teal)',   'hex' => '#14B8A6', 'required' => ['software', 'cloud', 'python', 'communication']],
+            'product_exec'     => ['key' => 'product_exec',     'title' => 'Product Executive', 'domain' => 'Business',    'color' => 'var(--gold)',   'hex' => '#F5C518', 'required' => ['stakeholder_mgmt', 'communication', 'leadership']],
+        ];
     }
 
     private function skillLabel(string $c): string
@@ -721,7 +688,7 @@ class Candidate extends BaseController
         $m = ['sql' => 'SQL', 'dashboarding' => 'Dashboarding', 'python' => 'Python', 'data_analysis' => 'Data Analysis',
               'software' => 'Software Dev', 'cloud' => 'Cloud', 'communication' => 'Communication',
               'stakeholder_mgmt' => 'Stakeholder Mgmt', 'leadership' => 'Leadership', 'budgeting' => 'Budgeting', 'teamwork' => 'Teamwork'];
-        return $m[$c] ?? \App\Libraries\Catalog::label($c);
+        return $m[$c] ?? ucwords(str_replace('_', ' ', $c));
     }
 
     private function planFor(array $gap): array
