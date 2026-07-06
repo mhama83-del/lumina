@@ -224,100 +224,72 @@ class TaxonomyService
         return array_keys($out);
     }
 
-    // ============ NOVEL SKILL EXTRACTION (graph grows + maps new vocabulary) ============
-    /** Detect skills/tools the graph does NOT know yet. Each carries a domain hint (or null). */
+    // ============ NOVEL SKILL EXTRACTION (graph grows with new vocabulary) ============
+    /** Detect skills/tools in the resume that the graph does NOT know yet. */
     public function extractNovel(string $text): array
     {
-        // needle => [label, domain hint]
-        $lex = [
-            'Rust'=>['Rust','Engineering'],'Golang'=>['Go','Engineering'],'Kotlin'=>['Kotlin','Engineering'],
-            'Swift'=>['Swift','Engineering'],'Scala'=>['Scala','Engineering'],'TypeScript'=>['TypeScript','Engineering'],
-            'Solidity'=>['Solidity','Engineering'],'Ethereum'=>['Ethereum','Engineering'],'Flutter'=>['Flutter','Engineering'],
-            'Dart'=>['Dart','Engineering'],'Kubernetes'=>['Kubernetes','Engineering'],'Terraform'=>['Terraform','Engineering'],
-            'Ansible'=>['Ansible','Engineering'],'Jenkins'=>['Jenkins','Engineering'],'GraphQL'=>['GraphQL','Data'],
-            'MongoDB'=>['MongoDB','Data'],'PostgreSQL'=>['PostgreSQL','Data'],'Redis'=>['Redis','Data'],
-            'Kafka'=>['Kafka','Data'],'Hadoop'=>['Hadoop','Data'],'Airflow'=>['Airflow','Data'],'Snowflake'=>['Snowflake','Data'],
-            'TensorFlow'=>['TensorFlow','Data'],'PyTorch'=>['PyTorch','Data'],'Keras'=>['Keras','Data'],'OpenCV'=>['OpenCV','Data'],
-            'SPSS'=>['SPSS','Data'],'Stata'=>['Stata','Data'],'QGIS'=>['QGIS','Data'],'ArcGIS'=>['ArcGIS','Data'],
-            'Blender'=>['Blender','Design'],'SketchUp'=>['SketchUp','Design'],'Unity'=>['Unity','Design'],
-            'Godot'=>['Godot','Design'],'Premiere Pro'=>['Premiere Pro','Design'],'After Effects'=>['After Effects','Design'],
-            'SolidWorks'=>['SolidWorks','Engineering'],'CATIA'=>['CATIA','Engineering'],'Solid Edge'=>['Solid Edge','Engineering'],
-            'MATLAB'=>['MATLAB','Engineering'],'Simulink'=>['Simulink','Engineering'],'Revit'=>['Revit','Engineering'],
-            'Arduino'=>['Arduino','Engineering'],'Raspberry Pi'=>['Raspberry Pi','Engineering'],'LabVIEW'=>['LabVIEW','Engineering'],
-            'Selenium'=>['Selenium','Engineering'],'Postman'=>['Postman','Engineering'],'Jira'=>['Jira','Business'],
-            'Salesforce'=>['Salesforce','Business'],'HubSpot'=>['HubSpot','Business'],'SAP'=>['SAP','Business'],
-            'Notion'=>['Notion','Business'],'Webflow'=>['Webflow','Design'],
-        ];
         $found = [];
-        foreach ($lex as $needle => $meta) {
+
+        // 1) curated (expandable) tech/tool lexicon — matched as whole words
+        $lex = [
+            'Rust'=>'Rust','Golang'=>'Go','Kotlin'=>'Kotlin','Swift'=>'Swift','Scala'=>'Scala',
+            'TypeScript'=>'TypeScript','Solidity'=>'Solidity','Flutter'=>'Flutter','Dart'=>'Dart',
+            'Kubernetes'=>'Kubernetes','Terraform'=>'Terraform','Ansible'=>'Ansible','Jenkins'=>'Jenkins',
+            'GraphQL'=>'GraphQL','MongoDB'=>'MongoDB','PostgreSQL'=>'PostgreSQL','Redis'=>'Redis',
+            'Kafka'=>'Kafka','Hadoop'=>'Hadoop','Airflow'=>'Airflow','Snowflake'=>'Snowflake',
+            'TensorFlow'=>'TensorFlow','PyTorch'=>'PyTorch','Keras'=>'Keras','OpenCV'=>'OpenCV',
+            'Blender'=>'Blender','SolidWorks'=>'SolidWorks','CATIA'=>'CATIA','MATLAB'=>'MATLAB',
+            'Simulink'=>'Simulink','SPSS'=>'SPSS','Stata'=>'Stata','Salesforce'=>'Salesforce',
+            'HubSpot'=>'HubSpot','Notion'=>'Notion','Webflow'=>'Webflow','Unity'=>'Unity',
+            'Godot'=>'Godot','Revit'=>'Revit','SketchUp'=>'SketchUp','Arduino'=>'Arduino',
+            'Raspberry Pi'=>'Raspberry Pi','LabVIEW'=>'LabVIEW','QGIS'=>'QGIS','ArcGIS'=>'ArcGIS',
+            'Selenium'=>'Selenium','Postman'=>'Postman','Jira'=>'Jira','Premiere Pro'=>'Premiere Pro',
+            'After Effects'=>'After Effects','Solid Edge'=>'Solid Edge','Ethereum'=>'Ethereum',
+        ];
+        foreach ($lex as $needle => $label) {
             if (preg_match('/\b' . preg_quote($needle, '/') . '\b/i', $text)) {
-                $found[$this->slug($meta[0])] = ['label' => $meta[0], 'domain' => $meta[1]];
+                $found[$this->slug($label)] = $label;
             }
         }
+
+        // 2) tokens from an explicit Skills / Tools / Tech stack line
         if (preg_match('/(?:skills?|technologies|tools|tech\s*stack|proficient in|familiar with|competencies)\s*[:\-]\s*([^\n\r]{3,200})/i', $text, $m)) {
             foreach (preg_split('/[,;|\/•]+/', $m[1]) as $tok) {
                 $tok = trim($tok);
-                if ($tok === '' || mb_strlen($tok) < 2 || mb_strlen($tok) > 28 || str_word_count($tok) > 3) continue;
+                if ($tok === '' || mb_strlen($tok) < 2 || mb_strlen($tok) > 28) continue;
+                if (str_word_count($tok) > 3) continue;
                 $code = $this->slug($tok);
-                if ($code !== '' && ! isset($found[$code])) $found[$code] = ['label' => ucwords($tok), 'domain' => null];
+                if ($code === '') continue;
+                if (! isset($found[$code])) $found[$code] = ucwords($tok);
             }
         }
+
         if (! $found) return [];
         $known = [];
-        foreach ($this->db->table('taxonomy_skills')->select('code')->whereIn('code', array_keys($found))->get()->getResultArray() as $r) { $known[$r['code']] = true; }
+        foreach ($this->db->table('taxonomy_skills')->select('code')->whereIn('code', array_keys($found))->get()->getResultArray() as $r) {
+            $known[$r['code']] = true;
+        }
         $out = [];
-        foreach ($found as $code => $meta) {
+        foreach ($found as $code => $label) {
             if (isset($known[$code])) continue;
-            $out[] = ['code' => $code, 'label' => $meta['label'], 'domain' => $meta['domain']];
+            $out[] = ['code' => $code, 'label' => $label];
         }
         return array_slice($out, 0, 8);
     }
 
-    /**
-     * Insert novel skills into the graph AND map them:
-     * - domain: lexicon hint, else the resume's domain
-     * - related: the co-occurring skills in this resume (edges both ways)
-     * - pattern: added to the candidate's domain|programme pattern
-     * Returns labels actually added.
-     */
-    public function learnNovel(array $novel, string $resumeDomain = 'Data', array $coSkills = [], string $programme = ''): array
+    /** Insert novel skills into the graph. Returns labels actually added. */
+    public function learnNovel(array $novel, string $domain = 'Data'): array
     {
-        $now = date('Y-m-d H:i:s'); $added = []; $addedCodes = [];
-        $coSkills = array_values(array_unique($coSkills));
-
+        $now = date('Y-m-d H:i:s'); $added = [];
         foreach ($novel as $n) {
             if ($this->db->table('taxonomy_skills')->where('code', $n['code'])->countAllResults()) continue;
-            $dom = ! empty($n['domain']) ? $n['domain'] : $resumeDomain;
             $this->db->table('taxonomy_skills')->insert([
-                'code' => $n['code'], 'label' => $n['label'], 'domain' => $dom,
-                'aliases_json' => json_encode([]),
-                'related_skills_json' => json_encode(array_slice($coSkills, 0, 6)),  // edges to resume skills
+                'code' => $n['code'], 'label' => $n['label'], 'domain' => $domain,
+                'aliases_json' => json_encode([]), 'related_skills_json' => json_encode([]),
                 'common_evidence_json' => json_encode([]), 'frequency' => 1,
                 'created_at' => $now, 'updated_at' => $now,
             ]);
-            $added[] = $n['label']; $addedCodes[] = $n['code'];
-        }
-
-        // reciprocal edges: existing co-skills gain the new codes as related
-        if ($addedCodes && $coSkills) {
-            foreach ($this->db->table('taxonomy_skills')->whereIn('code', $coSkills)->get()->getResultArray() as $r) {
-                $rel = json_decode($r['related_skills_json'] ?? '[]', true) ?: [];
-                $rel = array_values(array_unique(array_merge($rel, $addedCodes)));
-                $this->db->table('taxonomy_skills')->where('id', $r['id'])
-                    ->update(['related_skills_json' => json_encode(array_slice($rel, 0, 10)), 'updated_at' => $now]);
-            }
-        }
-
-        // pattern membership: add new codes to the candidate's pattern
-        if ($addedCodes) {
-            $key = $resumeDomain . '|' . ($programme ?: 'General');
-            $pat = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
-            if ($pat) {
-                $typ = json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [];
-                $typ = array_values(array_unique(array_merge($typ, $addedCodes)));
-                $this->db->table('taxonomy_patterns')->where('pattern_key', $key)
-                    ->update(['typical_skills_json' => json_encode(array_slice($typ, 0, 14)), 'updated_at' => $now]);
-            }
+            $added[] = $n['label'];
         }
         return $added;
     }
