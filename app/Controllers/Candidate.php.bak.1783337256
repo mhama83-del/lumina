@@ -277,9 +277,7 @@ class Candidate extends BaseController
         $graph      = $tax->enrich($detCodes, '', $domain);
         $graphLearn = $tax->learn($detCodes, $text, '', $domain);
         $graphStats = $tax->stats();
-        $novel      = $tax->extractNovel($text);
-        $graphNew   = $tax->learnNovel($novel, $domain, $detCodes, '');
-        $tax->reinforce(array_merge($detCodes, array_column($novel, 'code')));
+        $graphNew   = $tax->learnNovel($tax->extractNovel($text), $domain, $detCodes, '');
         $graphStats = $tax->stats();
 
         // ---- Fasa 2: persist to DB (demo-safe: never breaks the demo) ----
@@ -550,9 +548,7 @@ class Candidate extends BaseController
         $graph      = $tax->enrich($detCodes, $programme, $domain);
         $tax->learn($detCodes, $text, $programme, $domain);
         $graphStats = $tax->stats();
-        $novel      = $tax->extractNovel($text);
-        $graphNew   = $tax->learnNovel($novel, $domain, $detCodes, $programme);
-        $tax->reinforce(array_merge($detCodes, array_column($novel, 'code')));
+        $graphNew   = $tax->learnNovel($tax->extractNovel($text), $domain, $detCodes, $programme);
         $graphStats = $tax->stats();
 
         // persist (demo-safe)

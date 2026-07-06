@@ -101,14 +101,6 @@ class TaxonomyService
         }
         foreach (array_chunk($skillRows, 100) as $chunk) { $this->db->table('taxonomy_skills')->insertBatch($chunk); }
 
-        // ---- edges (weighted co-occurrence) ----
-        $this->db->table('taxonomy_edges')->truncate();
-        $edgeRows = [];
-        foreach ($cooc as $a => $bs) {
-            foreach ($bs as $b => $w) { $edgeRows[] = ['a_code' => $a, 'b_code' => $b, 'weight' => $w, 'updated_at' => $now]; }
-        }
-        foreach (array_chunk($edgeRows, 500) as $chunk) { $this->db->table('taxonomy_edges')->insertBatch($chunk); }
-
         // ---- insert patterns (keep meaningful ones) ----
         $patRows = [];
         foreach ($patterns as $key => $d) {
@@ -213,13 +205,10 @@ class TaxonomyService
 
     public function stats(): array
     {
-        $edges = 0;
-        try { $edges = (int) $this->db->table('taxonomy_edges')->countAllResults(); } catch (\Throwable $e) {}
         return [
             'skills'   => (int) $this->db->table('taxonomy_skills')->countAllResults(),
             'patterns' => (int) $this->db->table('taxonomy_patterns')->countAllResults(),
             'profiles_learned' => (int) ($this->db->table('taxonomy_patterns')->selectSum('sample_count', 't')->get()->getRowArray()['t'] ?? 0),
-            'connections' => (int) floor($edges / 2),
         ];
     }
 
@@ -336,44 +325,6 @@ class TaxonomyService
     private function slug(string $s): string
     {
         return trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($s))), '_');
-    }
-
-    // ============ CONTINUOUS LEARNING (edges grow with every resume) ============
-    public function reinforce(array $codes): void
-    {
-        $codes = array_values(array_unique(array_filter($codes)));
-        $n = count($codes);
-        if ($n < 2) return;
-        $now = date('Y-m-d H:i:s');
-        $vals = [];
-        for ($i = 0; $i < $n; $i++) {
-            for ($j = $i + 1; $j < $n; $j++) {
-                $a = $this->db->escape($codes[$i]); $b = $this->db->escape($codes[$j]); $t = $this->db->escape($now);
-                $vals[] = "($a,$b,1,$t)";
-                $vals[] = "($b,$a,1,$t)";
-            }
-        }
-        if (! $vals) return;
-        try {
-            $this->db->query('INSERT INTO taxonomy_edges (a_code,b_code,weight,updated_at) VALUES '
-                . implode(',', $vals) . ' ON DUPLICATE KEY UPDATE weight = weight + 1, updated_at = VALUES(updated_at)');
-        } catch (\Throwable $e) { return; }
-        $this->refreshRelated($codes);
-    }
-
-    /** Refresh the cached related_skills for these codes from the strongest edges. */
-    private function refreshRelated(array $codes): void
-    {
-        $now = date('Y-m-d H:i:s');
-        foreach ($codes as $c) {
-            $top = $this->db->table('taxonomy_edges')->select('b_code')
-                ->where('a_code', $c)->orderBy('weight', 'DESC')->limit(8)->get()->getResultArray();
-            $rel = array_column($top, 'b_code');
-            if ($rel) {
-                $this->db->table('taxonomy_skills')->where('code', $c)
-                    ->update(['related_skills_json' => json_encode($rel), 'updated_at' => $now]);
-            }
-        }
     }
 
     // ============ helpers ============

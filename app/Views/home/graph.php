@@ -8,8 +8,9 @@
 </section>
 
 <section class="section">
-  <div class="grid grid-3">
+  <div class="grid grid-4">
     <?= lumina_kpi(number_format($stats['skills']), 'Skills in the graph', 'canonical + learned') ?>
+    <?= lumina_kpi(number_format($stats['connections'] ?? 0), 'Connections', 'skill relationships') ?>
     <?= lumina_kpi(number_format($stats['patterns']), 'Profile patterns', 'domain × programme') ?>
     <?= lumina_kpi(number_format($stats['profiles_learned']), 'Profiles learned', 'and counting') ?>
   </div>
