@@ -4,15 +4,18 @@
 helper('ui');
 $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk'];
 ?>
+
 <section class="hero">
   <div class="section-label">Smart Matching · <?= esc($profile['name'] ?? 'You') ?></div>
   <h1>Opportunities that fit where you're going.</h1>
-  <p class="purpose">Matched by readiness and trajectory — not just keywords. <em>Example roles inspired by market patterns — synthetic demo data, not live postings.</em></p>
+  <p class="purpose">Matched by readiness and trajectory — not just keywords.</p>
 </section>
+
 <section class="section" style="padding-top:6px">
   <?= lumina_journey('match') ?>
   <?= lumina_note("Matched to opportunities by readiness and trajectory — not keywords.") ?>
 </section>
+
 <section class="section">
   <div class="grid grid-3">
     <?php foreach ($opps as $o):
@@ -28,7 +31,6 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
         </div>
         <h3 style="margin:10px 0 2px"><?= esc($o['title']) ?></h3>
         <p class="muted" style="margin:0"><?= esc($o['company']) ?> · <?= esc($o['location']) ?> · <?= esc($o['salary']) ?></p>
-        <p class="muted" style="font-size:10px;margin:3px 0 0;opacity:.75">Example role · synthetic demo data</p>
         <p class="muted" style="margin:10px 0 0">
           <?php if ($o['gap']): ?>Gap: <?= esc(implode(', ', $o['gap'])) ?><?php else: ?>Strong match — no gaps.<?php endif; ?>
         </p>
@@ -38,6 +40,7 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
       </div>
     <?php endforeach; ?>
   </div>
+
   <div class="row" style="margin-top:18px">
     <a class="btn btn-gold btn-lg" href="<?= base_url('compass') ?>">Improve my match →</a>
     <a class="btn btn-ghost" href="<?= base_url('passport') ?>">← Back to portfolio</a>
