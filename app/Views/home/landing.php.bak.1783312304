@@ -12,26 +12,11 @@
     <a href="#" class="btn btn-gold btn-lg" data-tour="1">▶ Start the 3-minute guided tour</a>
   </div>
 
+  <!-- Persona entry (no login — choose a mode) -->
   <div class="row persona-cta" style="margin-top:14px;gap:10px;flex-wrap:wrap">
     <a href="<?= base_url('demo/candidate-' . (session('stage') ?? '19-22')) ?>" class="btn btn-ghost">I am a Candidate</a>
     <a href="<?= base_url('demo/employer') ?>" class="btn btn-ghost">I am an Employer</a>
     <a href="<?= base_url('demo/university') ?>" class="btn btn-ghost">I am a University</a>
-  </div>
-</section>
-
-<!-- Problem statement + journey flow -->
-<section class="section">
-  <div class="card" style="border-left:3px solid var(--gold)">
-    <p class="lead" style="margin:0">Students aren't invisible because they lack talent — they're invisible because their <strong class="gold">evidence is scattered</strong>. Lumina turns scattered evidence into a career direction, a readiness score, and employer-ready matching.</p>
-  </div>
-  <div class="section-label" style="margin-top:18px">How Lumina connects the dots</div>
-  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px">
-    <span class="skill">No Resume</span><span class="muted">&rarr;</span>
-    <span class="skill">Living Portfolio</span><span class="muted">&rarr;</span>
-    <span class="skill">Readiness Score</span><span class="muted">&rarr;</span>
-    <span class="skill">Career Path</span><span class="muted">&rarr;</span>
-    <span class="skill" style="background:rgba(245,197,24,.15);border-color:rgba(245,197,24,.4)">Employer Match</span><span class="muted">&rarr;</span>
-    <span class="skill" style="background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.4)">University Intervention</span>
   </div>
 </section>
 
@@ -70,7 +55,7 @@
   </div>
 </section>
 
-<!-- Pillars -->
+<!-- Pillars (original Lumina names) -->
 <section class="section">
   <div class="section-label">The Lumina engine</div>
   <div class="pillars">
