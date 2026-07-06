@@ -22,6 +22,7 @@ class Home extends BaseController
         $tax = new \App\Services\TaxonomyService();
         $stats        = $tax->stats();
         $topSkills    = $db->table('taxonomy_skills')->orderBy('frequency', 'DESC')->limit(16)->get()->getResultArray();
+        $topPatterns  = $db->table('taxonomy_patterns')->where('programme NOT LIKE', 'JD:%')->orderBy('sample_count', 'DESC')->limit(10)->get()->getResultArray();
         $rolePatterns = $db->table('taxonomy_patterns')->where('programme LIKE', 'JD:%')->orderBy('domain', 'ASC')->orderBy('programme', 'ASC')->get()->getResultArray();
         $newest       = $db->table('taxonomy_skills')->orderBy('id', 'DESC')->limit(8)->get()->getResultArray();
         foreach ($newest as &$ns) {
@@ -49,7 +50,7 @@ class Home extends BaseController
         );
         return view('home/graph', [
             'title' => 'Lumina Graph', 'stats' => $stats,
-            'topSkills' => $topSkills, 'rolePatterns' => $rolePatterns,
+            'topSkills' => $topSkills, 'topPatterns' => $topPatterns, 'rolePatterns' => $rolePatterns,
             'newest' => $newest, 'freshCodes' => $freshCodes,
         ]);
     }

@@ -53,25 +53,44 @@ $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
 </section>
 <?php endif; ?>
 <section class="section">
-  <div class="card">
-    <div class="section-label">Top skills · and what they connect to</div>
-    <div class="stack" style="margin-top:6px">
-      <?php foreach ($topSkills as $s): $rel = json_decode($s['related_skills_json'] ?? '[]', true) ?: []; ?>
-        <div class="card card-tight">
-          <div class="row" style="justify-content:space-between">
-            <strong><?= esc($s['label']) ?></strong>
-            <span class="muted" style="font-size:12px"><?= (int)$s['frequency'] ?> uses</span>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="section-label">Top skills · and what they connect to</div>
+      <div class="stack" style="margin-top:6px">
+        <?php foreach ($topSkills as $s): $rel = json_decode($s['related_skills_json'] ?? '[]', true) ?: []; ?>
+          <div class="card card-tight">
+            <div class="row" style="justify-content:space-between">
+              <strong><?= esc($s['label']) ?></strong>
+              <span class="muted" style="font-size:12px"><?= (int)$s['frequency'] ?> uses</span>
+            </div>
+            <?php if ($rel): ?><div class="muted" style="font-size:12px;margin-top:4px">→ <?= esc(implode(' · ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($rel,0,5)))) ?></div><?php endif; ?>
           </div>
-          <?php if ($rel): ?><div class="muted" style="font-size:12px;margin-top:4px">→ <?= esc(implode(' · ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($rel,0,5)))) ?></div><?php endif; ?>
-        </div>
-      <?php endforeach; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Profile patterns · learned from the cohort</div>
+      <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
+        <thead><tr><th style="text-align:left;padding:8px;color:var(--muted)">Pattern</th><th style="padding:8px;color:var(--muted)">Profiles</th></tr></thead>
+        <tbody>
+          <?php foreach ($topPatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; ?>
+            <tr>
+              <td style="padding:8px">
+                <strong><?= esc($p['pattern_key']) ?></strong>
+                <div class="muted" style="font-size:12px"><?= esc(implode(', ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($ts,0,5)))) ?></div>
+              </td>
+              <td style="padding:8px;text-align:center"><?= (int)$p['sample_count'] ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table></div>
     </div>
   </div>
 </section>
 <?php if (!empty($rolePatterns)): ?>
 <section class="section">
   <div class="section-label">Role-market patterns · from 1,000 real job descriptions</div>
-  <p class="muted" style="font-size:12px;margin:2px 0 6px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions. Colour = domain (Data · Engineering · Design · Business). A "new" tag on the title means this pattern was inserted/refreshed in the last 24 hours.</p>
+  <p class="muted" style="font-size:12px;margin:2px 0 6px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above. Colour = domain (Data · Engineering · Design · Business). A "new" tag on the title means this pattern was inserted/refreshed in the last 24 hours.</p>
   <p class="muted" style="font-size:11px;margin:0 0 8px"><span style="color:var(--gold);font-weight:700">Gold skill name</span> = that skill itself was added to the graph in the last 24 hours.</p>
   <div class="grid grid-3">
     <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; $dc = $domColor[$p['domain']] ?? 'var(--muted)'; $isFresh = !empty($p['updated_at']) && strtotime($p['updated_at']) >= strtotime('-1 day'); ?>
