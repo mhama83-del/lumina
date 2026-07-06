@@ -38,19 +38,18 @@ class AnimalInferenceService
     private static function signals(): array
     {
         return [
-            // Leadership spread: Lion = command/persuasion, Wolf = team/ops leadership, Eagle = vision
-            'lion'     => ['kw'=>['president','captain','chair','director','negotiat','pitch','debate','persuad','spokes'], 'sk'=>['stakeholder_mgmt','sales']],
-            'eagle'    => ['kw'=>['found','startup','vision','innovat','launch','entrepreneur','strategy'], 'sk'=>['entrepreneurship','innovation']],
-            'wolf'     => ['kw'=>[' led','lead ','manage','head ','coordinat','operations','cross-functional','logistics','supply','rotation','team lead'], 'sk'=>['leadership','project_mgmt']],
-            'owl'      => ['kw'=>['analy','data','research','statistic',' sql','python','dashboard','audit','detail','report','treasurer'], 'sk'=>['data_analysis','sql','statistics','machine_learning','research','accounting','finance','dashboarding','budgeting']],
-            'dolphin'  => ['kw'=>['volunteer','community','help','customer','communicat','collaborat','service','charity','outreach'], 'sk'=>['communication','customer_service','community','teamwork']],
-            'peacock'  => ['kw'=>['market','brand','content','social media','campaign','public speaking','present','creative','host','perform','emcee'], 'sk'=>['marketing','social_media','content','seo']],
-            'elephant' => ['kw'=>['mentor','teach','tutor','coach','guide','train','facilitat','advis'], 'sk'=>['teaching']],
-            'horse'    => ['kw'=>['internship','industrial training','attachment','reliable','consistent','support','maintain','assist','loyal','steady','follow','attendance','duty'], 'sk'=>[]],
-            'ant'      => ['kw'=>['built','build','system','process','backend','organis','structure','method','engineer','cad','maintenance','assembl',' lab '], 'sk'=>['software','cloud','api']],
-            'cheetah'  => ['kw'=>['hackathon','competition','award','won','champion','winner','sprint','rapid','deadline','agile','fast','quick'], 'sk'=>[]],
-            'fox'      => ['kw'=>['business','product','adapt','resourceful','growth','pivot','commercial','deal'], 'sk'=>['marketing','sales']],
-            'octopus'  => ['kw'=>['design','prototype',' ui','ux','figma','multimedia','maker','versatile','wireframe','photoshop','illustrator'], 'sk'=>['ui_ux','figma','graphic_design','design_thinking','javascript']],
+            'lion'     => ['kw'=>['president','captain',' led','head ','manage','director','chair','treasurer','sales','negotiat','win '], 'sk'=>['leadership','stakeholder_mgmt','sales','budgeting']],
+            'eagle'    => ['kw'=>['found','startup','vision','strategy','innovat','launch','entrepreneur','pitch'], 'sk'=>['entrepreneurship','innovation']],
+            'wolf'     => ['kw'=>['coordinat','operations','cross-functional','logistics','supply','pack','team lead','rotation'], 'sk'=>['project_mgmt']],
+            'owl'      => ['kw'=>['analy','data','research','statistic',' sql','python','dashboard','audit','detail','report'], 'sk'=>['data_analysis','sql','statistics','machine_learning','research','accounting','finance','dashboarding']],
+            'dolphin'  => ['kw'=>['volunteer','community','help','customer','communicat','collaborat','service','charity'], 'sk'=>['communication','customer_service','community','teamwork']],
+            'peacock'  => ['kw'=>['market','brand','content','social media','campaign','public speaking','present','creative','host','perform'], 'sk'=>['marketing','social_media','content','seo']],
+            'elephant' => ['kw'=>['mentor','teach','tutor','coach','guide','train','facilitat'], 'sk'=>['teaching']],
+            'horse'    => ['kw'=>['reliable','consistent','support','maintain','assist','loyal','steady','follow','routine'], 'sk'=>[]],
+            'ant'      => ['kw'=>['built','build','system','process','backend','organis','structure','method','engineer','cad','maintenance','assembl'], 'sk'=>['software','cloud','api']],
+            'cheetah'  => ['kw'=>['fast','quick','hackathon','sprint','rapid','deadline','agile','competition','won '], 'sk'=>[]],
+            'fox'      => ['kw'=>['strategy','adapt','business','product','resourceful','growth','pivot'], 'sk'=>['marketing','sales','data_analysis']],
+            'octopus'  => ['kw'=>['design','prototype',' ui','ux','figma','multimedia','maker','versatile','wireframe'], 'sk'=>['ui_ux','figma','graphic_design','design_thinking','javascript']],
         ];
     }
 
