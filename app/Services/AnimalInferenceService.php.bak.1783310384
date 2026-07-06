@@ -46,7 +46,7 @@ class AnimalInferenceService
             'dolphin'  => ['kw'=>['volunteer','community','help','customer','communicat','collaborat','service','charity','outreach'], 'sk'=>['communication','customer_service','community','teamwork']],
             'peacock'  => ['kw'=>['market','brand','content','social media','campaign','public speaking','present','creative','host','perform','emcee'], 'sk'=>['marketing','social_media','content','seo']],
             'elephant' => ['kw'=>['mentor','teach','tutor','coach','guide','train','facilitat','advis'], 'sk'=>['teaching']],
-            'horse'    => ['kw'=>['internship','industrial training','attachment','committee','participat',' member','reliable','consistent','support','maintain','assist','loyal','steady','follow','attendance','duty'], 'sk'=>[]],
+            'horse'    => ['kw'=>['internship','industrial training','attachment','reliable','consistent','support','maintain','assist','loyal','steady','follow','attendance','duty'], 'sk'=>[]],
             'ant'      => ['kw'=>['built','build','system','process','backend','organis','structure','method','engineer','cad','maintenance','assembl',' lab '], 'sk'=>['software','cloud','api']],
             'cheetah'  => ['kw'=>['hackathon','competition','award','won','champion','winner','sprint','rapid','deadline','agile','fast','quick'], 'sk'=>[]],
             'fox'      => ['kw'=>['business','product','adapt','resourceful','growth','pivot','commercial','deal'], 'sk'=>['marketing','sales']],
