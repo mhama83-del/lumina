@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Services\ScoreService;
 use App\Services\LearningVelocityService;
 use App\Services\ResumeParserService;
-use App\Services\TaxonomyService;
 
 /**
  * TalentMatchService (Fasa 4B.5)
@@ -13,12 +12,6 @@ use App\Services\TaxonomyService;
  *   Skill 40% + Evidence 20% + Learning Velocity 20% + Animal 10% + Domain 5% + Academic 5%
  * Reads employer_roles (with skill requirements + animal fit) from the DB.
  * Fully explainable; falls back to evidence_text/programme when candidate skills are thin.
- *
- * Fasa 3b: skill matching now gives PARTIAL credit for graph-adjacent skills —
- * if a candidate doesn't have a required skill exactly, but has another skill
- * the Lumina Graph has learned co-occurs with it (taxonomy_skills.related_skills_json),
- * that counts as half credit instead of zero. This rewards candidates whose
- * skillset is genuinely close to the role even when the exact keyword isn't there.
  */
 class TalentMatchService
 {
@@ -63,39 +56,13 @@ class TalentMatchService
             return false;
         };
 
-        // graph-adjacency: skills the Lumina Graph has learned co-occur with
-        // what this candidate already has. Not an exact match, but not
-        // nothing either — a candidate strong in "aerodynamics" who is
-        // missing "structural_engineering" but has related graph neighbours
-        // for it deserves partial credit, not a zero.
-        $expanded = [];
-        if ($have) {
-            try {
-                $expanded = array_flip((new TaxonomyService())->expandSkills(array_keys($have)));
-            } catch (\Throwable $e) {
-                $expanded = [];
-            }
-        }
-        $isGraphAdjacent = function (array $s) use ($expanded, $have): bool {
-            $code = $s['skill_code'] ?? '';
-            return $code !== '' && ! isset($have[$code]) && isset($expanded[$code]);
-        };
+        $matched = []; $missing = [];
+        foreach ($req as $s) { if ($has($s)) $matched[] = $s['skill_name']; else $missing[] = $s['skill_name']; }
+        $prefMatched = 0;
+        foreach ($pref as $s) { if ($has($s)) $prefMatched++; }
 
-        $matched = []; $partial = []; $missing = [];
-        $credit  = 0.0;
-        foreach ($req as $s) {
-            if ($has($s))                    { $matched[] = $s['skill_name']; $credit += 1.0; }
-            elseif ($isGraphAdjacent($s))     { $partial[] = $s['skill_name']; $credit += 0.5; }
-            else                              { $missing[] = $s['skill_name']; }
-        }
-        $prefMatched = 0; $prefPartial = 0;
-        foreach ($pref as $s) {
-            if ($has($s)) $prefMatched++;
-            elseif ($isGraphAdjacent($s)) $prefPartial++;
-        }
-
-        $skillScore = $req ? (int) round(100 * $credit / count($req)) : 60;
-        $skillScore = (int) min(100, $skillScore + 4 * $prefMatched + 2 * $prefPartial);
+        $skillScore = $req ? (int) round(100 * count($matched) / count($req)) : 60;
+        $skillScore = (int) min(100, $skillScore + 4 * $prefMatched);
 
         // keyword + domain-transfer signal (Lumina: trajectory over exact history)
         $kw = json_decode($role['keywords_for_matching_json'] ?? '[]', true) ?: [];
@@ -119,7 +86,6 @@ class TalentMatchService
 
         $topMatched = array_slice($matched, 0, 2);
         $explain = ($topMatched ? 'Strong on ' . implode(' & ', $topMatched) . '. ' : '')
-                 . ($partial ? 'Related skills toward ' . implode(', ', array_slice($partial, 0, 2)) . ' (via Lumina Graph). ' : '')
                  . "{$skillScore}% skill match, evidence {$evidence}, velocity {$velocity}, "
                  . 'animal ' . ($cand['animal'] ?? '—') . ' vs ' . ($role['animal']['preferred_primary_animal'] ?? '—')
                  . ($missing ? '. Gaps: ' . implode(', ', array_slice($missing, 0, 3)) . '.' : '.');
@@ -134,7 +100,6 @@ class TalentMatchService
             'domain_fit_score'        => $domain,
             'academic_fit_score'      => $cgpa,
             'skill_overlap'           => $matched,
-            'skill_partial_overlap'   => $partial,
             'missing_skills'          => $missing,
             'explanation'             => $explain,
         ];
