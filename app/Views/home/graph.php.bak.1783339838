@@ -75,16 +75,16 @@
     </div>
   </div>
 </section>
-<?php if (!empty($rolePatterns)): $domColor = ['Data'=>'indigo','Engineering'=>'teal','Design'=>'violet','Business'=>'gold']; ?>
+<?php if (!empty($rolePatterns)): ?>
 <section class="section">
   <div class="section-label">Role-market patterns · from 1,000 real job descriptions</div>
-  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above. Colour = domain (Data · Engineering · Design · Business), same as the rest of Lumina.</p>
+  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above.</p>
   <div class="grid grid-3">
-    <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; $dc = $domColor[$p['domain']] ?? 'muted'; ?>
-      <div class="card card-tight" style="border-left:3px solid var(--<?= $dc ?>)">
+    <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; ?>
+      <div class="card card-tight">
         <div class="row" style="justify-content:space-between;align-items:center">
           <strong style="font-size:13px"><?= esc(str_replace('JD: ', '', $p['programme'])) ?></strong>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--<?= $dc ?>)"><?= esc(strtoupper($p['domain'])) ?></span>
+          <span class="pill ok" style="font-size:10px"><?= esc($p['domain']) ?></span>
         </div>
         <div class="muted" style="font-size:12px;margin-top:6px"><?= esc(implode(', ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($ts,0,5)))) ?></div>
       </div>
