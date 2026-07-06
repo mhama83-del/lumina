@@ -29,6 +29,7 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
 
 <section class="section">
   <div class="grid grid-2">
+    <!-- JD detail -->
     <div class="card">
       <div class="section-label">The role</div>
       <ul class="muted" style="font-size:14px;padding-left:18px;margin:0 0 12px">
@@ -43,6 +44,8 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
       <div class="section-label" style="margin-top:8px">Evidence Lumina looks for</div>
       <ul class="muted" style="font-size:13px;padding-left:18px;margin:0"><?php foreach ($ev as $x): ?><li><?= esc($x) ?></li><?php endforeach; ?></ul>
     </div>
+
+    <!-- Animal fit + JD text -->
     <div class="card">
       <div class="section-label">Work Animal fit</div>
       <div style="margin-bottom:8px">
@@ -51,7 +54,7 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
         <?php foreach ($accept as $a): ?><span class="skill inferred"><?= esc($a) ?></span> <?php endforeach; ?>
       </div>
       <p class="muted" style="font-size:13px"><strong>Team fit:</strong> <?= esc($af['team_fit_note'] ?? '') ?></p>
-      <p class="muted" style="font-size:13px"><strong>Potential support needed:</strong> <?= esc($af['poor_fit_risk'] ?? '') ?></p>
+      <p class="muted" style="font-size:13px"><strong>Poor-fit risk:</strong> <?= esc($af['poor_fit_risk'] ?? '') ?></p>
       <div class="section-label" style="margin-top:10px">Synthetic JD</div>
       <p class="muted" style="font-size:13px"><?= esc($role['synthetic_jd_text']) ?></p>
       <p class="purpose" style="font-size:12px;margin-top:8px">Source: <?= esc($role['source_reference']) ?> · synthetic listing.</p>
@@ -71,45 +74,22 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
       <span class="skill" style="font-size:11px">CGPA 5%</span>
     </div>
     <p class="muted" style="font-size:12px;margin:0 0 12px">Each candidate's <strong>"Why?"</strong> shows this exact breakdown. Bands: 85+ Strong · 70-84 Good · 55-69 Potential · 40-54 Needs Development · below 40 Weak.</p>
+
     <form method="get" action="<?= base_url('employer/compare') ?>" id="cmpForm">
       <input type="hidden" name="role_id" value="<?= (int)$role['id'] ?>">
       <div class="row" style="justify-content:space-between;align-items:center;margin:8px 0;flex-wrap:wrap;gap:8px">
-        <span class="muted" style="font-size:13px">Tick 2-4 candidates, then compare.</span>
+        <span class="muted" style="font-size:13px">Tick 2–4 candidates, then compare.</span>
         <button class="btn btn-gold" type="submit" id="cmpBtn" disabled>Compare selected (<span id="cmpN">0</span>) →</button>
       </div>
       <div class="stack">
         <?php foreach ($ranked as $i => $c):
           $lab = strtolower($c['fit_label']); $cls = str_contains($lab,'strong')?'ok':(str_contains($lab,'good')||str_contains($lab,'potential')?'nudge':'risk');
-          $wrows = [
-            ['Skill', (int)$c['skill_match_score'], 40],
-            ['Evidence', (int)$c['evidence_strength_score'], 20],
-            ['Learning velocity', (int)$c['learning_velocity_score'], 20],
-            ['Work-Animal fit', (int)$c['animal_fit_score'], 10],
-            ['Domain', (int)$c['domain_fit_score'], 5],
-            ['CGPA', (int)$c['academic_fit_score'], 5],
-          ];
-          $rowsHtml = '';
-          foreach ($wrows as $wr) {
-            $pts = (int) round($wr[1] * $wr[2] / 100);
-            $rowsHtml .= '<tr><td style="padding:3px 10px 3px 0;color:var(--muted)">'.$wr[0].'</td>'
-                       . '<td style="padding:3px 8px;text-align:right">'.$wr[1].'</td>'
-                       . '<td style="padding:3px 8px;color:var(--muted)">&times;'.$wr[2].'%</td>'
-                       . '<td style="padding:3px 0;text-align:right"><strong>'.$pts.'</strong></td></tr>';
-          }
-          $tm = $c['skill_overlap'][0] ?? $role['target_domain'];
-          $mm = $c['missing_skills'][0] ?? null;
-          $iq1 = 'Tell me about a time you used ' . $tm . ' to solve a real problem - what was the outcome?';
-          $iq2 = $mm ? ('How would you get up to speed on ' . $mm . ' in your first 30 days?') : 'What would you improve first in this role?';
-          $body = '<div style="font-size:16px;margin-bottom:8px"><strong>Talent Match '.(int)$c['match_score'].'%</strong> · '.esc($c['fit_label']).'</div>'
-                . '<div class="section-label">How this score is built</div>'
-                . '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 4px"><tbody>'.$rowsHtml
-                . '<tr><td style="padding:6px 10px 0 0;border-top:1px solid var(--line)"><strong>Talent Match</strong></td><td style="border-top:1px solid var(--line)"></td><td style="border-top:1px solid var(--line)"></td><td style="padding:6px 0 0;text-align:right;border-top:1px solid var(--line)"><strong>'.(int)$c['match_score'].'</strong></td></tr>'
-                . '</tbody></table>'
-                . '<p class="muted" style="font-size:12px">Points = score &times; weight; they add up to the Talent Match. Every score is 0-100.</p>'
-                . '<div class="section-label" style="margin-top:10px">Skill overlap</div><p style="font-size:13px">'.(esc(implode(', ', $c['skill_overlap'])) ?: '-').'</p>'
-                . '<div class="section-label" style="margin-top:8px">Missing / to develop</div><p style="font-size:13px">'.(esc(implode(', ', $c['missing_skills'])) ?: 'none').'</p>'
-                . '<div class="section-label" style="margin-top:8px">Suggested interview questions</div><ol style="font-size:13px;margin:4px 0 0 18px"><li>'.esc($iq1).'</li><li>'.esc($iq2).'</li></ol>'
-                . '<p class="purpose" style="margin-top:10px">Decision support only - the recruiter decides.</p>';
+          $body = '<p class="muted">'.esc($c['explanation']).'</p>'
+                . '<div class="section-label" style="margin-top:10px">Sub-scores</div>'
+                . '<p style="font-size:13px">Skill '.$c['skill_match_score'].'% · Evidence '.$c['evidence_strength_score'].' · Velocity '.$c['learning_velocity_score'].' · Animal '.$c['animal_fit_score'].' · Domain '.$c['domain_fit_score'].' · CGPA '.$c['academic_fit_score'].'</p>'
+                . ($c['skill_overlap'] ? '<div class="section-label" style="margin-top:8px">Skill overlap</div><p style="font-size:13px">'.esc(implode(', ',$c['skill_overlap'])).'</p>' : '')
+                . ($c['missing_skills'] ? '<div class="section-label" style="margin-top:8px">Missing</div><p style="font-size:13px">'.esc(implode(', ',$c['missing_skills'])).'</p>' : '')
+                . '<p class="purpose" style="margin-top:10px">Decision support only — the recruiter decides.</p>';
           $isShort = in_array($c['id'], $shortlist, true);
         ?>
           <div class="card card-tight" style="display:flex;align-items:center;gap:12px">
