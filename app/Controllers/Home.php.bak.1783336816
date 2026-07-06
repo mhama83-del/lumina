@@ -31,13 +31,6 @@ class Home extends BaseController
                    ->like('typical_skills_json', '"' . $ns['code'] . '"')->limit(4)->get()->getResultArray(),
                 'pattern_key'
             );
-            // employer connection: roles needing this skill OR one of its related skills
-            $codes = array_values(array_unique(array_merge([$ns['code']], $ns['related'])));
-            $fams = array_column($db->table('employer_skill_requirements s')->join('employer_roles r', 'r.id = s.role_id')
-                ->select('r.role_family')->distinct()->whereIn('s.skill_code', $codes)->limit(300)->get()->getResultArray(), 'role_family');
-            $fams = array_values(array_unique(array_filter($fams)));
-            $ns['role_count'] = count($fams);
-            $ns['role_examples'] = array_slice($fams, 0, 3);
         }
         unset($ns);
         return view('home/graph', [

@@ -310,13 +310,13 @@ class TaxonomyService
 
         // pattern membership: add new codes to the candidate's pattern
         if ($addedCodes) {
-            // attach to the nearest existing pattern (never orphan a new skill)
-            $pat = $this->bestPattern($programme, $resumeDomain);
+            $key = $resumeDomain . '|' . ($programme ?: 'General');
+            $pat = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
             if ($pat) {
                 $typ = json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [];
                 $typ = array_values(array_unique(array_merge($typ, $addedCodes)));
-                $this->db->table('taxonomy_patterns')->where('id', $pat['id'])
-                    ->update(['typical_skills_json' => json_encode(array_slice($typ, 0, 16)), 'updated_at' => $now]);
+                $this->db->table('taxonomy_patterns')->where('pattern_key', $key)
+                    ->update(['typical_skills_json' => json_encode(array_slice($typ, 0, 14)), 'updated_at' => $now]);
             }
         }
         return $added;

@@ -30,7 +30,10 @@
           <?= !empty($s['related']) ? esc(implode(', ', array_map($hz, array_slice($s['related'],0,5)))) : 'building connections…' ?>
         </div>
         <div class="muted" style="font-size:12px;margin-top:2px"><strong>In pattern(s):</strong>
-          <?= !empty($s['patterns']) ? esc(implode(' · ', $s['patterns'])) : 'not yet in a pattern' ?>
+          <?= !empty($s['patterns']) ? esc(implode(' · ', $s['patterns'])) : 'joining nearest pattern' ?>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:2px"><strong>Connects to employers:</strong>
+          <?php if (!empty($s['role_count'])): ?><span class="gold"><?= (int)$s['role_count'] ?> role-families</span><?= !empty($s['role_examples']) ? ' (e.g. ' . esc(implode(', ', $s['role_examples'])) . ')' : '' ?> via its related skills<?php else: ?>building employer links…<?php endif; ?>
         </div>
         <div class="muted" style="font-size:11px;margin-top:2px">seen <?= (int)$s['frequency'] ?>&times; · learned <?= esc($s['created_at'] ?? '') ?></div>
       </div>
