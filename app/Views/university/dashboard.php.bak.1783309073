@@ -3,28 +3,13 @@
 <?php
 helper('ui');
 function heatColor($v){ return $v >= 75 ? 'var(--ok)' : ($v >= 50 ? 'var(--nudge)' : 'var(--risk)'); }
-$uni = $uni ?? '';
-$uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 ?>
 <section class="hero">
-  <div class="section-label">For Universities · <?= $uni !== '' ? esc($uni) : 'All universities' ?></div>
+  <div class="section-label">For Universities · Graduate Outcomes</div>
   <h1>Which talent is almost ready — and what unlocks them.</h1>
   <p class="purpose">Live cohort readiness across your faculties. <?= (int)$total ?> students · <strong class="gold"><?= (int)($noResumePct ?? 0) ?>% have no resume yet</strong> (<?= (int)($noResumeCount ?? 0) ?> students).</p>
   <div class="row" style="margin-top:12px">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('university/interventions') . $uq ?>">Generate Intervention Plan →</a>
-  </div>
-</section>
-
-<!-- University filter -->
-<section class="section">
-  <div class="card">
-    <div class="section-label">Filter by university</div>
-    <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">
-      <a class="btn <?= $uni===''?'btn-gold':'btn-ghost' ?>" href="<?= base_url('university') ?>">All <span class="muted">(<?= (int)array_sum(array_column($universities ?? [], 'c')) ?>)</span></a>
-      <?php foreach (($universities ?? []) as $u): ?>
-        <a class="btn <?= $uni===$u['university']?'btn-gold':'btn-ghost' ?>" href="<?= base_url('university').'?uni='.urlencode($u['university']) ?>"><?= esc($u['university']) ?> <span class="muted">(<?= (int)$u['c'] ?>)</span></a>
-      <?php endforeach; ?>
-    </div>
+    <a class="btn btn-gold btn-lg" href="<?= base_url('university/interventions') ?>">Generate Intervention Plan →</a>
   </div>
 </section>
 
@@ -110,7 +95,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
       <div class="section-label">Recommended intervention</div>
       <h3 style="margin:6px 0"><?= esc($intervention) ?></h3>
       <p class="purpose">Based on the most common skill gap across the cohort.</p>
-      <a class="btn btn-ghost" href="<?= base_url('university/interventions') . $uq ?>" style="margin-top:6px">See full intervention plan →</a>
+      <a class="btn btn-ghost" href="<?= base_url('university/interventions') ?>" style="margin-top:6px">See full intervention plan →</a>
       <?php if (!empty($employers)): ?>
         <div class="section-label" style="margin-top:16px">Top employers hiring your graduates</div>
         <?php foreach ($employers as $e): ?>

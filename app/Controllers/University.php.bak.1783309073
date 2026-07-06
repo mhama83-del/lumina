@@ -15,7 +15,6 @@ class University extends BaseController
         if (session('role') !== 'university') session()->set(['role' => 'university']);
         $db  = \Config\Database::connect();
         $svc = new ScoreService();
-        $uni = trim((string) $this->request->getGet('uni'));
 
         // stated skills per student
         $statedMap = [];
@@ -26,16 +25,9 @@ class University extends BaseController
             }
         } catch (\Throwable $e) {}
 
-        $sq = $db->table('students')
-            ->select('id, name, university, faculty, programme, target_domain, evidence_text, has_resume');
-        if ($uni !== '') $sq->where('university', $uni);
-        $students = $sq->get()->getResultArray();
-
-        $universities = [];
-        try {
-            $universities = $db->table('students')->select('university, COUNT(*) c')
-                ->groupBy('university')->orderBy('c', 'DESC')->get()->getResultArray();
-        } catch (\Throwable $e) {}
+        $students = $db->table('students')
+            ->select('id, name, university, faculty, programme, target_domain, evidence_text, has_resume')
+            ->get()->getResultArray();
 
         $total = count($students);
         $bands = ['On track' => 0, 'Needs a nudge' => 0, 'At risk' => 0];
@@ -116,7 +108,7 @@ class University extends BaseController
         ];
 
         // ---- Fasa 5: cohort extras (No-Resume %, animal distribution, gaps, support) ----
-        $snap = (new UniversityInsightService())->snapshot($uni !== '' ? $uni : null);
+        $snap = (new UniversityInsightService())->snapshot();
 
         return view('university/dashboard', array_merge([
             'title'   => 'Lumina · University',
@@ -127,8 +119,6 @@ class University extends BaseController
             'intervention' => $intervention,
             'employers'    => $emps,
             'total'   => $total,
-            'uni'      => $uni,
-            'universities' => $universities,
         ], $snap));
     }
 
@@ -136,12 +126,10 @@ class University extends BaseController
     public function interventions()
     {
         if (session('role') !== 'university') session()->set(['role' => 'university']);
-        $uni  = trim((string) $this->request->getGet('uni'));
-        $plan = (new UniversityInsightService())->interventionPlan($uni !== '' ? $uni : null);
+        $plan = (new UniversityInsightService())->interventionPlan();
         return view('university/interventions', [
             'title' => 'Lumina · Intervention Plan',
             'plan'  => $plan,
-            'uni'   => $uni,
         ]);
     }
 

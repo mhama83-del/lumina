@@ -16,7 +16,7 @@ class UniversityInsightService
     private static array $animalMap = ['owl'=>'Owl','fox'=>'Fox','eagle'=>'Eagle','dolphin'=>'Dolphin','beaver'=>'Ant','lion'=>'Lion'];
 
     /** One pass over the cohort → all aggregates used by dashboard + interventions. */
-    public function cohort(): array
+    public function cohort(?string $university = null): array
     {
         $db  = \Config\Database::connect();
         $svc = new ScoreService();
@@ -30,9 +30,10 @@ class UniversityInsightService
             }
         } catch (\Throwable $e) {}
 
-        $students = $db->table('students')
-            ->select('id, name, faculty, programme, target_domain, evidence_text, has_resume')
-            ->get()->getResultArray();
+        $sq = $db->table('students')
+            ->select('id, name, faculty, programme, target_domain, evidence_text, has_resume');
+        if ($university !== null && $university !== '') $sq->where('university', $university);
+        $students = $sq->get()->getResultArray();
 
         $total = count($students);
         $noResume = 0;
@@ -75,9 +76,9 @@ class UniversityInsightService
     }
 
     /** Extras for the dashboard. */
-    public function snapshot(): array
+    public function snapshot(?string $university = null): array
     {
-        $c = $this->cohort();
+        $c = $this->cohort($university);
         $topGaps = [];
         foreach (array_slice($c['gapFreq'], 0, 6, true) as $code => $n) {
             $topGaps[] = ['label'=>Catalog::label($code),'count'=>$n];
@@ -103,9 +104,9 @@ class UniversityInsightService
     }
 
     /** Intervention plan: per programme, the highest-impact action. */
-    public function interventionPlan(): array
+    public function interventionPlan(?string $university = null): array
     {
-        $c = $this->cohort();
+        $c = $this->cohort($university);
         $plan = [];
         foreach ($c['byProg'] as $prog => $d) {
             $target = $d['atrisk'] + $d['nudge'];
