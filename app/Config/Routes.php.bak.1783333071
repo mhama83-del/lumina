@@ -10,7 +10,6 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Home::index');
 $routes->get('styleguide', 'Home::styleguide');
 $routes->get('selftest', 'Home::selftest');
-$routes->get('how-it-works', 'Home::architecture');
 
 $routes->get('demo/(:segment)', 'Demo::enter/$1');
 

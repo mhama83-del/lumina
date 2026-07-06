@@ -11,6 +11,7 @@
   <script>const BASE = "<?= rtrim(base_url(), '/') . '/' ?>";</script>
 </head>
 <body>
+
   <header class="topbar">
     <div class="inner">
       <a href="<?= base_url('/') ?>" class="brand">Lumina<span class="dot">.</span></a>
@@ -24,18 +25,21 @@
           <option value="<?= $s ?>" <?= $stage===$s?'selected':'' ?>><?= $s ?></option>
         <?php endforeach; ?>
       </select>
-      <a href="<?= base_url('how-it-works') ?>" style="color:var(--muted);text-decoration:none;font-size:14px;margin-left:10px" title="System design">How it works</a>
       <div class="spacer"></div>
       <a href="#" class="btn btn-gold" data-tour="1">▶ Guided tour</a>
     </div>
   </header>
+
   <main class="wrap">
     <?= $this->renderSection('content') ?>
   </main>
+
   <div class="disclaimer">Simulated AI for demonstration. Lumina is decision support; people make the final decision.</div>
   <footer class="footer">
     Talentbank Tech Hackathon 2026 · Lumina v2.0 · AI Talent Intelligence Layer for Career OS
   </footer>
+
+  <!-- Reusable global drawer (Fasa 5) -->
   <div class="drawer-backdrop" id="gBackdrop"></div>
   <aside class="drawer" id="gDrawer" aria-label="Details">
     <div class="row" style="justify-content:space-between">
@@ -44,6 +48,7 @@
     </div>
     <div id="gBody"></div>
   </aside>
+
   <script src="<?= base_url('js/app.js') ?>"></script>
   <script src="<?= base_url('js/tour.js') ?>"></script>
 </body>
