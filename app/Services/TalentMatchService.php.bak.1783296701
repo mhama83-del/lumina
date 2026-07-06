@@ -67,17 +67,6 @@ class TalentMatchService
         $skillScore = $req ? (int) round(100 * count($matched) / count($req)) : 60;
         $skillScore = (int) min(100, $skillScore + 4 * $prefMatched);
 
-        // keyword + domain-transfer signal (Lumina: trajectory over exact history)
-        $kw = json_decode($role['keywords_for_matching_json'] ?? '[]', true) ?: [];
-        $kwHits = 0;
-        foreach ($kw as $k) {
-            $k = strtolower(trim($k));
-            if ($k !== '' && (str_contains($text, $k) || isset($have[str_replace(' ', '_', $k)]))) $kwHits++;
-        }
-        $skillScore = (int) min(100, $skillScore + 3 * $kwHits);
-        $domainAligned = strcasecmp((string) ($cand['top_domain'] ?? $cand['target_domain'] ?? ''), (string) ($role['target_domain'] ?? '')) === 0;
-        if ($domainAligned) $skillScore = max($skillScore, 48);
-
         $evidence = $this->evidenceStrength($cand, $text);
         $velocity = (new LearningVelocityService())->velocity($cand)['score'];
         $animal   = $this->animalFit($cand, $role);
@@ -141,20 +130,7 @@ class TalentMatchService
         if ($secondary && strcasecmp($a, $secondary) === 0) return 85;
         foreach ($accept as $x) { if (strcasecmp($a, $x) === 0) return 50; }
         if ($poor && str_contains($poor, strtolower($a))) return 0;
-        if ($primary && self::sameCategory($a, $primary)) return 60;
-        return 40;
-    }
-
-    private static function sameCategory(string $a, string $b): bool
-    {
-        $cat = [
-            'Lion' => 'L', 'Eagle' => 'L', 'Wolf' => 'L', 'Owl' => 'L',
-            'Dolphin' => 'R', 'Peacock' => 'R', 'Elephant' => 'R', 'Horse' => 'R',
-            'Ant' => 'E', 'Cheetah' => 'E', 'Fox' => 'E', 'Octopus' => 'E',
-        ];
-        $ca = $cat[ucfirst(strtolower($a))] ?? '?';
-        $cb = $cat[ucfirst(strtolower($b))] ?? '!';
-        return $ca === $cb;
+        return 30;
     }
 
     private function domainFit(array $cand, array $role): int
