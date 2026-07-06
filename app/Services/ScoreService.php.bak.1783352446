@@ -72,31 +72,6 @@ class ScoreService
         'copywrit'=>['content'=>0.75], 'blog'=>['content'=>0.6], 'sales'=>['sales'=>0.75], 'selling'=>['sales'=>0.7],
         'customer'=>['customer_service'=>0.7], 'account'=>['accounting'=>0.75], 'bookkeep'=>['accounting'=>0.8],
         'finance'=>['finance'=>0.75], 'financial'=>['finance'=>0.7], 'audit'=>['audit'=>0.8],
-        'legal research'=>['legal_research'=>0.75], 'paralegal'=>['legal_research'=>0.65],
-        // education
-        'lesson plan'=>['lesson_planning'=>0.75], 'classroom management'=>['classroom_mgmt'=>0.75],
-        'curriculum'=>['curriculum_design'=>0.7], 'tesl'=>['lesson_planning'=>0.7], 'tutoring'=>['lesson_planning'=>0.5],
-        'training programme'=>['training_design'=>0.6], 'presentation skills'=>['presentation'=>0.6],
-        // arts & humanities
-        'translat'=>['translation'=>0.75], 'archival'=>['archival_work'=>0.7], 'stage perform'=>['stage_presence'=>0.7],
-        'theatre'=>['performance'=>0.6], 'choreograph'=>['performance'=>0.6],
-        // social sciences
-        'interview'=>['interviewing'=>0.6], 'policy brief'=>['policy_analysis'=>0.7],
-        'case management'=>['case_mgmt'=>0.7], 'counsel'=>['counselling'=>0.6],
-        // natural sciences
-        'laboratory'=>['lab_techniques'=>0.7], 'lab experiment'=>['lab_techniques'=>0.65],
-        'quality control'=>['quality_control'=>0.7], 'risk model'=>['risk_modeling'=>0.7],
-        'scientific paper'=>['scientific_writing'=>0.6],
-        // agriculture
-        'crop'=>['crop_science'=>0.7], 'fieldwork'=>['field_research'=>0.6], 'sustainab'=>['sustainability'=>0.6],
-        'animal care'=>['animal_care'=>0.7], 'aquaculture'=>['aquaculture'=>0.75],
-        // health
-        'clinical rotation'=>['clinical_skills'=>0.75], 'patient care'=>['patient_care'=>0.75],
-        'pharmacology'=>['pharmacology'=>0.7], 'rehabilitation'=>['rehabilitation'=>0.7],
-        'public health'=>['public_health'=>0.7], 'community outreach'=>['community_outreach'=>0.6],
-        // services
-        'hospitality'=>['hospitality_ops'=>0.7], 'event planning'=>['event_planning'=>0.65],
-        'logistics'=>['logistics'=>0.7], 'supply chain'=>['logistics'=>0.7],
         // general / transferable
         'teach'=>['teaching'=>0.7], 'tutor'=>['teaching'=>0.7], 'writing'=>['writing'=>0.7], 'author'=>['writing'=>0.6],
         'communicat'=>['communication'=>0.7], 'presentation'=>['communication'=>0.65], 'public speaking'=>['communication'=>0.75],

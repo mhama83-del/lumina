@@ -12,13 +12,6 @@ class Candidate extends BaseController
         'Treasurer of the Robotics Club for 2 years; volunteered in a community coding programme; '
       . 'built an attendance app; led a small data analysis project for the faculty.';
 
-    /** The 11 Lumina domains (ISCED-F 2013 grounded). */
-    private const VALID_DOMAINS = [
-        'Data', 'Engineering', 'Design', 'Business',
-        'Education', 'Arts & Humanities', 'Social Sciences', 'Natural Sciences',
-        'Agriculture & Veterinary', 'Health & Welfare', 'Services',
-    ];
-
     // ---------- Fasa 2 landing ----------
     public function home()
     {
@@ -503,17 +496,10 @@ class Candidate extends BaseController
     private function fieldName(string $domain): string
     {
         return [
-            'Data'                     => 'Data, Analytics & Computing',
-            'Engineering'              => 'Engineering & Technology',
-            'Design'                   => 'Design & Creative',
-            'Business'                 => 'Business, Finance & Communication',
-            'Education'                => 'Education & Training',
-            'Arts & Humanities'        => 'Arts, Culture & Humanities',
-            'Social Sciences'         => 'Social Sciences & Public Affairs',
-            'Natural Sciences'        => 'Natural Sciences & Research',
-            'Agriculture & Veterinary' => 'Agriculture & Veterinary Sciences',
-            'Health & Welfare'        => 'Health & Welfare',
-            'Services'                 => 'Hospitality, Tourism & Services',
+            'Data'        => 'Data, Analytics & Computing',
+            'Engineering' => 'Engineering & Technology',
+            'Design'      => 'Design & Creative',
+            'Business'    => 'Business, Finance & Communication',
         ][$domain] ?? $domain;
     }
 
@@ -522,27 +508,20 @@ class Candidate extends BaseController
      * what the candidate studied is a stronger signal than skill-keyword
      * counting. Falls back to majority-vote across skill buckets otherwise
      * (not first-match-wins: a single stray "analysis" mention should not
-     * override a resume full of engineering signals). Covers all 11 domains.
+     * override a resume full of engineering signals).
      */
     private function guessDomain(array $codes, ?string $override = null): string
     {
         if ($override) return $override;
 
         $buckets = [
-            'Design'      => ['ui_ux', 'figma', 'graphic_design'],
-            'Data'        => ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'],
+            'Design' => ['ui_ux', 'figma', 'graphic_design'],
+            'Data'   => ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'],
             'Engineering' => ['software', 'cloud', 'java', 'javascript', 'api',
                 'mechanical_design', 'cad', 'fea', 'manufacturing', 'six_sigma',
                 'aerodynamics', 'aircraft_systems', 'avionics', 'structural_engineering',
                 'circuit_design', 'plc', 'electrical_schematics', 'embedded', 'robotics', 'control_systems',
                 'process_safety', 'chemical_processing', 'project_planning'],
-            'Education'   => ['lesson_planning', 'classroom_mgmt', 'curriculum_design', 'training_design'],
-            'Arts & Humanities' => ['translation', 'performance', 'stage_presence', 'archival_work', 'creativity'],
-            'Social Sciences'  => ['interviewing', 'policy_analysis', 'case_mgmt', 'counselling'],
-            'Natural Sciences' => ['lab_techniques', 'quality_control', 'risk_modeling', 'scientific_writing'],
-            'Agriculture & Veterinary' => ['crop_science', 'field_research', 'sustainability', 'animal_care', 'aquaculture'],
-            'Health & Welfare' => ['clinical_skills', 'patient_care', 'pharmacology', 'rehabilitation', 'public_health'],
-            'Services'    => ['hospitality_ops', 'event_planning', 'logistics'],
         ];
         $best = 'Business'; $bestCount = 0;
         foreach ($buckets as $dom => $set) {
@@ -630,22 +609,12 @@ class Candidate extends BaseController
         return ['title' => $best['title'], 'domain' => $best['domain'], 'required' => $best['required'], 'color' => $best['color']];
     }
 
-    /**
-     * Pass any of the 11 valid Lumina domains through unchanged (case-insensitive).
-     * Keeps a few legacy aliases for backward compatibility with older callers
-     * (fiveq/guided flows that still say "Research", "Software", "Creative").
-     * Anything unrecognised falls back to Business (broadest catch-all domain).
-     */
     private function normaliseDomain(string $d): string
     {
-        $d = trim($d);
-        foreach (self::VALID_DOMAINS as $v) {
-            if (strcasecmp($d, $v) === 0) return $v;
-        }
-        $d2 = ucfirst(strtolower($d));
-        if (in_array($d2, ['Research'], true)) return 'Data';
-        if (in_array($d2, ['Software', 'Tech'], true)) return 'Engineering';
-        if (in_array($d2, ['Creative'], true)) return 'Design';
+        $d = ucfirst(strtolower(trim($d)));
+        if (in_array($d, ['Data', 'Research'], true))                return 'Data';
+        if (in_array($d, ['Engineering', 'Software', 'Tech'], true)) return 'Engineering';
+        if (in_array($d, ['Design', 'Creative'], true))              return 'Design';
         return 'Business';
     }
 
