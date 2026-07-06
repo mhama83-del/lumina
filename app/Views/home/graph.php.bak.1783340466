@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 <?php
 helper('ui');
-$domColor = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'#f472b6','Business'=>'#3b82f6'];
+$domColor = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'#f472b6','Business'=>'var(--gold)'];
 $freshSet = array_flip($freshCodes ?? []);
 $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
     $out = [];
