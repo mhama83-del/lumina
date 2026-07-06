@@ -4,7 +4,6 @@ namespace App\Controllers;
 
 use App\Libraries\Catalog;
 use App\Services\ScoreService;
-use App\Services\UniversityInsightService;
 
 class University extends BaseController
 {
@@ -13,6 +12,7 @@ class University extends BaseController
     public function dashboard()
     {
         if (session('role') !== 'university') session()->set(['role' => 'university']);
+
         $db  = \Config\Database::connect();
         $svc = new ScoreService();
 
@@ -32,7 +32,7 @@ class University extends BaseController
         $total = count($students);
         $bands = ['On track' => 0, 'Needs a nudge' => 0, 'At risk' => 0];
         $facSum = []; $facCnt = [];
-        $prog   = [];
+        $prog   = [];          // programme => running outcome sums
         $gapFreq = [];
         $cnt = ['ready' => 0, 'industry' => 0, 'highinc' => 0, 'jobcreator' => 0, 'transfer' => 0, 'matched' => 0];
 
@@ -40,8 +40,8 @@ class University extends BaseController
             $stated = $statedMap[$s['id']] ?? [];
             $cand   = $svc->signal($s['evidence_text'] ?? '', $stated, (int) $s['has_resume'], $s['target_domain'] ?? 'Data');
             $role   = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));
-            $r      = $svc->employability($cand);
-            $m      = $svc->match($cand, $role);
+            $r      = $svc->employability($cand);      // holistic, field-agnostic
+            $m      = $svc->match($cand, $role);        // for gap frequency
             $band   = $svc->risk($r);
             $bands[$band]++;
 
@@ -60,32 +60,35 @@ class University extends BaseController
 
             $fac = $s['faculty'] ?: 'General';
             $facSum[$fac] = ($facSum[$fac] ?? 0) + $r; $facCnt[$fac] = ($facCnt[$fac] ?? 0) + 1;
+
             $pr = $s['programme'] ?: 'General';
             $prog[$pr]['ready'][] = $r; $prog[$pr]['ind'][] = $ind; $prog[$pr]['hi'][] = $hi;
+
             foreach ($m['gap'] as $g) { $gapFreq[$g] = ($gapFreq[$g] ?? 0) + 1; }
         }
 
         $pct = fn ($n) => $total ? (int) round(100 * $n / $total) : 0;
 
+        // faculty averages
         $faculty = [];
         foreach ($facSum as $f => $sum) { $faculty[$f] = (int) round($sum / $facCnt[$f]); }
         arsort($faculty);
 
+        // programme heatmap
         $heat = [];
         foreach ($prog as $p => $d) {
             $avg = fn ($a) => $a ? (int) round(array_sum($a) / count($a)) : 0;
             $heat[] = ['programme' => $p, 'ready' => $avg($d['ready']), 'industry' => $avg($d['ind']), 'highincome' => $avg($d['hi'])];
         }
-        // keep the heatmap readable — top 12 programmes by readiness
-        usort($heat, fn ($a, $b) => $b['ready'] <=> $a['ready']);
-        $heat = array_slice($heat, 0, 12);
 
+        // recommended intervention = most common gap
         arsort($gapFreq);
         $topGap = array_key_first($gapFreq);
         $intervention = $topGap
             ? 'Run a ' . Catalog::label($topGap) . ' bootcamp — unlocks ' . $gapFreq[$topGap] . ' student(s) toward career-ready.'
             : 'Cohort is on track — maintain current support.';
 
+        // employer satisfaction + top employers
         $sat = 0; $emps = [];
         try {
             $ef = $db->table('employer_feedback')->get()->getResultArray();
@@ -107,10 +110,7 @@ class University extends BaseController
             ['n' => (string) $total,              'l' => 'Students active',       't' => 'this cohort'],
         ];
 
-        // ---- Fasa 5: cohort extras (No-Resume %, animal distribution, gaps, support) ----
-        $snap = (new UniversityInsightService())->snapshot();
-
-        return view('university/dashboard', array_merge([
+        return view('university/dashboard', [
             'title'   => 'Lumina · University',
             'kpis'    => $kpis,
             'bands'   => $bands,
@@ -119,17 +119,6 @@ class University extends BaseController
             'intervention' => $intervention,
             'employers'    => $emps,
             'total'   => $total,
-        ], $snap));
-    }
-
-    /** Fasa 5: Intervention Plan generator. */
-    public function interventions()
-    {
-        if (session('role') !== 'university') session()->set(['role' => 'university']);
-        $plan = (new UniversityInsightService())->interventionPlan();
-        return view('university/interventions', [
-            'title' => 'Lumina · Intervention Plan',
-            'plan'  => $plan,
         ]);
     }
 

@@ -4,7 +4,7 @@ use CodeIgniter\Router\RouteCollection;
 
 /**
  * @var RouteCollection $routes
- * Lumina routes — Fasa 0-5 live.
+ * Lumina routes — Fasa 0-4B live.
  */
 
 $routes->get('/', 'Home::index');
@@ -16,9 +16,6 @@ $routes->get('demo/(:segment)', 'Demo::enter/$1');
 $routes->get('candidate', 'Candidate::home');
 $routes->get('employer', 'Employer::index');
 $routes->get('university', 'University::dashboard');
-
-// ---- Fasa 5: university intervention plan ----
-$routes->get('university/interventions', 'University::interventions');
 
 // ---- Fasa 4B: employer DB browser + role detail + compare + shortlist ----
 $routes->get('employer/role/(:num)', 'Employer::role/$1');
@@ -38,6 +35,6 @@ $routes->post('resume/analyze', 'Candidate::resumeAnalyze');
 $routes->get('compass', 'Candidate::compass');
 $routes->post('whatif', 'Candidate::whatif');
 
-// ---- Later ----
+// ---- Later phases ----
 $routes->get('match',   'Candidate::smatch');
 $routes->get('placed',  'Candidate::placed');
