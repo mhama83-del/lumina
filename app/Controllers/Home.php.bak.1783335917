@@ -16,20 +16,6 @@ class Home extends BaseController
         return view('home/architecture', ['title' => 'Lumina · How it works']);
     }
 
-    public function graph()
-    {
-        $db  = \Config\Database::connect();
-        $tax = new \App\Services\TaxonomyService();
-        $stats       = $tax->stats();
-        $topSkills   = $db->table('taxonomy_skills')->orderBy('frequency', 'DESC')->limit(16)->get()->getResultArray();
-        $topPatterns = $db->table('taxonomy_patterns')->orderBy('sample_count', 'DESC')->limit(10)->get()->getResultArray();
-        $newest      = $db->table('taxonomy_skills')->orderBy('id', 'DESC')->limit(8)->get()->getResultArray();
-        return view('home/graph', [
-            'title' => 'Lumina Graph', 'stats' => $stats,
-            'topSkills' => $topSkills, 'topPatterns' => $topPatterns, 'newest' => $newest,
-        ]);
-    }
-
     public function styleguide()
     {
         return view('home/styleguide', ['title' => 'Lumina · Style Guide']);
