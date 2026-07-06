@@ -114,18 +114,14 @@ class UniversityInsightService
             if ($target === 0 || ! $d['gaps']) continue;
             arsort($d['gaps']);
             $gapCode = array_key_first($d['gaps']);
-            $gapCount = $d['gaps'][$gapCode];
             $plan[] = [
                 'programme'   => $prog,
                 'faculty'     => $d['faculty'],
                 'target'      => $target,
                 'atrisk'      => $d['atrisk'],
                 'skill_gap'   => Catalog::label($gapCode),
-                'gap_count'   => $gapCount,
                 'workshop'    => $this->workshopFor($gapCode),
-                'expected'    => 'Could move up to ' . min($target, $gapCount) . ' students toward career-ready in ' . $prog . '.',
-                'why'         => $gapCount . ' of ' . $d['total'] . ' students in ' . $prog . ' are missing ' . Catalog::label($gapCode)
-                               . ' — the most common gap here. A targeted ' . $this->workshopFor($gapCode) . ' is the single highest-leverage action for this programme.',
+                'expected'    => 'Could move up to ' . min($target, $d['gaps'][$gapCode]) . ' students toward career-ready in ' . $prog . '.',
             ];
         }
         usort($plan, fn ($a,$b) => $b['target'] <=> $a['target']);

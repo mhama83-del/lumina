@@ -28,14 +28,6 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
   </div>
 </section>
 
-<!-- Headline insight -->
-<section class="section" style="padding-top:0">
-  <div class="card" style="border-left:3px solid var(--gold)">
-    <h3 style="margin:0 0 4px"><?= (int)($noResumeCount ?? 0) ?> students have no resume — Lumina still sees them.</h3>
-    <p class="muted" style="margin:0">Lumina detects their skills from evidence, segments them by readiness, and recommends the single highest-impact action: <strong class="gold"><?= esc($intervention) ?></strong></p>
-  </div>
-</section>
-
 <!-- KPI cards -->
 <section class="section">
   <div class="grid grid-4">
@@ -182,9 +174,4 @@ new Chart(document.getElementById('animalChart'), {
     scales:{ x:{grid:{display:false},ticks:{color:'#9AA4B8',maxRotation:60,minRotation:45}}, y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9AA4B8'}} } }
 });
 </script>
-<section class="section" style="padding-top:0">
-  <div class="card card-tight" style="border-left:3px solid var(--violet)">
-    <span class="muted" style="font-size:12px"><strong>Demo cohort data</strong> — no real student record is used. In production, student data is permission-based, anonymised for dashboard views, and only authorised officers can access identifiable records (PDPA).</span>
-  </div>
-</section>
 <?= $this->endSection() ?>

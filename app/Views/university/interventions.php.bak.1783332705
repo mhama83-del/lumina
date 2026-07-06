@@ -39,10 +39,6 @@
               <p class="muted" style="font-size:13px"><?= esc($p['expected']) ?></p>
             </div>
           </div>
-          <?php if (!empty($p['why'])): ?>
-            <div class="section-label" style="margin-top:12px">Why this intervention</div>
-            <p class="muted" style="font-size:13px;margin:0"><?= esc($p['why']) ?></p>
-          <?php endif; ?>
         </div>
       <?php endforeach; ?>
     </div>
