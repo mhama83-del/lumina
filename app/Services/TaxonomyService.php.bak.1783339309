@@ -13,9 +13,6 @@ use App\Services\ResumeParserService;
  * - enrich(): given a new profile, suggests RELATED skills/traits from the graph
  *   (labelled "from graph", never claimed as detected).
  * - learn(): folds a new profile back in — new skills/patterns grow the graph.
- * - seedFromRoles() / seedMarketSkills() (Fasa 5): market-grounded growth —
- *   role-family patterns from the real 1,000-JD dataset + curated Malaysia/ASEAN
- *   market skills. Both are additive/idempotent — never truncate.
  * Deterministic (Jaccard + domain/programme). No external AI.
  */
 class TaxonomyService
@@ -336,137 +333,6 @@ class TaxonomyService
         return $added;
     }
 
-    // ============ MARKET ENRICHMENT (Fasa 5: real JD role-families + curated Malaysia/ASEAN skills) ============
-
-    /**
-     * Build/refresh patterns from the real 1,000-JD role-family dataset.
-     * Additive: upserts by pattern_key (never truncates). Safe to re-run anytime
-     * (e.g. after re-seeding EmployerDatabaseSeeder) to keep these in sync.
-     * Pattern key uses a "JD: " prefix on programme so these never collide with
-     * cohort (student-derived) patterns.
-     */
-    public function seedFromRoles(): array
-    {
-        $now = date('Y-m-d H:i:s');
-        $rows = $this->db->table('employer_skill_requirements s')
-            ->select('r.target_domain, r.role_family, s.role_id, s.skill_code, s.importance, s.weight')
-            ->join('employer_roles r', 'r.id = s.role_id')
-            ->where('r.is_synthetic', 1)
-            ->get()->getResultArray();
-
-        $groups = [];
-        foreach ($rows as $r) {
-            if (! $r['role_family'] || ! $r['skill_code'] || ! $r['target_domain']) continue;
-            $key = $r['target_domain'] . '|' . $r['role_family'];
-            $groups[$key]['domain']      = $r['target_domain'];
-            $groups[$key]['role_family'] = $r['role_family'];
-            $groups[$key]['skills'][$r['skill_code']] = ($groups[$key]['skills'][$r['skill_code']] ?? 0) + (float) $r['weight'];
-            $groups[$key]['roles'][(int) $r['role_id']] = true;
-        }
-
-        $inserted = 0; $updated = 0;
-        foreach ($groups as $g) {
-            arsort($g['skills']);
-            $typical  = array_slice(array_keys($g['skills']), 0, 8);
-            $roleIds  = array_keys($g['roles']);
-            $sampleId = $roleIds[0] ?? null;
-
-            $keywords = []; $animals = [];
-            if ($sampleId) {
-                $roleRow = $this->db->table('employer_roles')->select('keywords_for_matching_json')
-                    ->where('id', $sampleId)->get()->getRowArray();
-                if ($roleRow) $keywords = json_decode($roleRow['keywords_for_matching_json'] ?? '[]', true) ?: [];
-                $aRow = $this->db->table('role_work_animal_fit')->where('role_id', $sampleId)->get()->getRowArray();
-                if ($aRow) $animals = array_values(array_filter([$aRow['preferred_primary_animal'] ?? null, $aRow['preferred_secondary_animal'] ?? null]));
-            }
-
-            $patKey = $g['domain'] . '|JD: ' . $g['role_family'];
-            $data = [
-                'domain' => $g['domain'], 'programme' => 'JD: ' . $g['role_family'],
-                'typical_skills_json'    => json_encode($typical),
-                'typical_animals_json'   => json_encode(array_slice($animals, 0, 2)),
-                'evidence_keywords_json' => json_encode(array_slice($keywords, 0, 10)),
-                'sample_count' => count($roleIds), 'updated_at' => $now,
-            ];
-            $existing = $this->db->table('taxonomy_patterns')->where('pattern_key', $patKey)->get()->getRowArray();
-            if ($existing) {
-                $this->db->table('taxonomy_patterns')->where('id', $existing['id'])->update($data);
-                $updated++;
-            } else {
-                $data['pattern_key'] = $patKey;
-                $this->db->table('taxonomy_patterns')->insert($data);
-                $inserted++;
-            }
-        }
-        return ['role_families' => count($groups), 'role_patterns_inserted' => $inserted, 'role_patterns_updated' => $updated];
-    }
-
-    /** Curated Malaysia/ASEAN market skills not derivable from resumes/JD text alone. code => [label, domain, related codes]. */
-    private function marketSkillCatalog(): array
-    {
-        return [
-            'halal_certification_jakim'         => ['Halal Certification (JAKIM)', 'Business', ['compliance', 'regulatory_analysis', 'quality_control', 'supply_chain']],
-            'halal_supply_chain_mgmt'           => ['Halal Supply Chain Management', 'Business', ['supply_chain', 'compliance', 'quality_control']],
-            'pdpa_compliance'                   => ['PDPA Compliance', 'Business', ['compliance', 'regulatory_analysis', 'data_analysis', 'integrity']],
-            'bnm_regulatory_compliance'          => ['Bank Negara Malaysia (BNM) Regulatory Compliance', 'Business', ['compliance', 'regulatory_analysis', 'risk_analysis', 'financial_analysis']],
-            'mfrs_reporting_standards'           => ['MFRS Reporting Standards', 'Business', ['ifrs', 'accounting', 'audit', 'financial_analysis']],
-            'sukuk_islamic_finance_structuring'  => ['Islamic Finance Structuring (Sukuk)', 'Business', ['syariah_compliance', 'financial_analysis', 'compliance']],
-            'bahasa_malaysia_business_writing'   => ['Bahasa Malaysia Business Writing', 'Business', ['communication', 'content', 'writing']],
-            'mandarin_business_communication'    => ['Mandarin Business Communication', 'Business', ['communication', 'sales', 'business_development']],
-            'bahasa_indonesia_communication'     => ['Bahasa Indonesia Communication', 'Business', ['communication', 'business_development']],
-            'asean_trade_logistics_compliance'   => ['ASEAN Trade & Logistics Compliance', 'Business', ['supply_chain', 'procurement', 'vendor_management']],
-            'e_kyc_digital_onboarding'           => ['E-KYC / Digital Onboarding', 'Data', ['kyc_aml', 'compliance', 'data_analysis']],
-            'welding_certification_noss'        => ['Welding Certification (NOSS)', 'Engineering', ['maintenance', 'troubleshooting', 'safety_management']],
-            'industrial_electrical_wiring_noss'  => ['Industrial Electrical Wiring (NOSS)', 'Engineering', ['circuit_design', 'electrical_schematics', 'plc']],
-            'automotive_systems_technology'      => ['Automotive Systems Technology', 'Engineering', ['mechanical_design', 'troubleshooting', 'maintenance']],
-            'hvac_systems_maintenance'           => ['HVAC Systems Maintenance', 'Engineering', ['maintenance', 'troubleshooting', 'reliability']],
-            'semiconductor_cleanroom_protocols'  => ['Semiconductor Cleanroom Protocols', 'Engineering', ['failure_analysis', 'preventive_maintenance', 'six_sigma']],
-            'aircraft_mro_compliance'            => ['Aircraft MRO Compliance (CAAM/EASA)', 'Engineering', ['aircraft_systems', 'maintenance', 'safety']],
-        ];
-    }
-
-    /** Insert curated market skills the graph doesn't know yet + wire edges both ways. Idempotent. */
-    public function seedMarketSkills(): array
-    {
-        $now = date('Y-m-d H:i:s');
-        $added = []; $skipped = [];
-
-        foreach ($this->marketSkillCatalog() as $code => $meta) {
-            [$label, $domain, $related] = $meta;
-            if ($this->db->table('taxonomy_skills')->where('code', $code)->countAllResults()) { $skipped[] = $code; continue; }
-
-            $this->db->table('taxonomy_skills')->insert([
-                'code' => $code, 'label' => $label, 'domain' => $domain,
-                'aliases_json' => json_encode([]), 'related_skills_json' => json_encode($related),
-                'common_evidence_json' => json_encode([]), 'frequency' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ]);
-            $added[] = $code;
-
-            // wire edges: new skill <-> each related existing skill (safe re-run via ON DUPLICATE KEY)
-            $vals = [];
-            foreach ($related as $rc) {
-                $a = $this->db->escape($code); $b = $this->db->escape($rc); $t = $this->db->escape($now);
-                $vals[] = "($a,$b,1,$t)"; $vals[] = "($b,$a,1,$t)";
-            }
-            if ($vals) {
-                try {
-                    $this->db->query('INSERT INTO taxonomy_edges (a_code,b_code,weight,updated_at) VALUES '
-                        . implode(',', $vals) . ' ON DUPLICATE KEY UPDATE weight = weight + 1, updated_at = VALUES(updated_at)');
-                } catch (\Throwable $e) {}
-            }
-
-            // reciprocal: existing related skills list the new one back too
-            foreach ($this->db->table('taxonomy_skills')->whereIn('code', $related)->get()->getResultArray() as $row) {
-                $rel = json_decode($row['related_skills_json'] ?? '[]', true) ?: [];
-                $rel = array_values(array_unique(array_merge($rel, [$code])));
-                $this->db->table('taxonomy_skills')->where('id', $row['id'])
-                    ->update(['related_skills_json' => json_encode(array_slice($rel, 0, 10)), 'updated_at' => $now]);
-            }
-        }
-        return ['added' => $added, 'skipped' => $skipped];
-    }
-
     private function slug(string $s): string
     {
         return trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($s))), '_');
@@ -529,15 +395,6 @@ class TaxonomyService
               'Engineering' => ['software','cloud','java','javascript','api'],
               'Design' => ['ui_ux','figma','graphic_design','design_thinking']];
         foreach ($d as $dom => $set) { if (in_array($code, $set, true)) return $dom; }
-        // data-driven fallback: majority target_domain among real employer roles requiring this skill
-        try {
-            $row = $this->db->table('employer_skill_requirements s')
-                ->select('r.target_domain, COUNT(*) c')
-                ->join('employer_roles r', 'r.id = s.role_id')
-                ->where('s.skill_code', $code)
-                ->groupBy('r.target_domain')->orderBy('c', 'DESC')->get(1)->getRowArray();
-            if ($row && ! empty($row['target_domain'])) return $row['target_domain'];
-        } catch (\Throwable $e) {}
         return 'Business';
     }
 

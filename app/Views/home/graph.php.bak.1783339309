@@ -6,14 +6,16 @@
   <h1>A knowledge graph that learns.</h1>
   <p class="lead">Every resume and job description Lumina reads grows this graph — canonical skills, how they relate, and the profile patterns behind them. New skills it has never seen are added automatically.</p>
 </section>
+
 <section class="section">
   <div class="grid grid-4">
     <?= lumina_kpi(number_format($stats['skills']), 'Skills in the graph', 'canonical + learned') ?>
     <?= lumina_kpi(number_format($stats['connections'] ?? 0), 'Connections', 'skill relationships') ?>
-    <?= lumina_kpi(number_format($stats['patterns']), 'Profile patterns', 'cohort + real job market') ?>
+    <?= lumina_kpi(number_format($stats['patterns']), 'Profile patterns', 'domain × programme') ?>
     <?= lumina_kpi(number_format($stats['profiles_learned']), 'Profiles learned', 'and counting') ?>
   </div>
 </section>
+
 <?php if (!empty($newest)): $hz = fn($c)=>ucwords(str_replace('_',' ',$c)); ?>
 <section class="section">
   <div class="section-label">Most recently learned · where each new skill landed</div>
@@ -40,6 +42,7 @@
   </div>
 </section>
 <?php endif; ?>
+
 <section class="section">
   <div class="grid grid-2">
     <div class="card">
@@ -75,23 +78,7 @@
     </div>
   </div>
 </section>
-<?php if (!empty($rolePatterns)): ?>
-<section class="section">
-  <div class="section-label">Role-market patterns · from 1,000 real job descriptions</div>
-  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above.</p>
-  <div class="grid grid-3">
-    <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; ?>
-      <div class="card card-tight">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <strong style="font-size:13px"><?= esc(str_replace('JD: ', '', $p['programme'])) ?></strong>
-          <span class="pill ok" style="font-size:10px"><?= esc($p['domain']) ?></span>
-        </div>
-        <div class="muted" style="font-size:12px;margin-top:6px"><?= esc(implode(', ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($ts,0,5)))) ?></div>
-      </div>
-    <?php endforeach; ?>
-  </div>
-</section>
-<?php endif; ?>
+
 <section class="section">
   <div class="card">
     <p class="muted" style="font-size:13px">How it works: each new profile is matched to the nearest pattern (Jaccard skill overlap + domain/programme). Known skills strengthen the graph; unknown ones are added. Deterministic today — designed to swap in embeddings/NER later.</p>
