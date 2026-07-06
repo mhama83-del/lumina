@@ -1,97 +1,95 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
-<?php helper('ui'); $shortlist = $shortlist ?? []; ?>
+<?php helper('ui'); $shortlist = $shortlist ?? []; $pages = (int) ceil($total / $perPage);
+  $qs = function ($over = []) use ($filters, $page) {
+      $p = array_merge(['domain'=>$filters['domain'],'level'=>$filters['level'],'country'=>$filters['country'],'sector'=>$filters['sector'],'q'=>$filters['q'],'page'=>$page], $over);
+      return http_build_query(array_filter($p, fn($v)=>$v!=='' && $v!==null));
+  };
+?>
 <section class="hero">
   <div class="section-label">For Employers</div>
-  <h1>Hire on fit, not on guesswork.</h1>
-  <p class="purpose">Pick a role — Lumina ranks candidates with the reasons why. Select 2–4 to compare side by side. <em>Decision support only — the recruiter decides.</em></p>
+  <h1>Browse 1,000 roles. Hire on fit, not guesswork.</h1>
+  <p class="purpose">Filter the live JD database, open a role to rank candidates with explainable scores. <em>Decision support only — the recruiter decides.</em></p>
 </section>
 
-<!-- KPI row -->
 <section class="section">
   <div class="grid grid-4">
-    <?= lumina_kpi(count($ranked), 'Candidates in pipeline') ?>
+    <?= lumina_kpi(number_format($total), 'Roles matching filters') ?>
+    <?= lumina_kpi('1,000', 'Total JD in database') ?>
     <?= lumina_kpi((string) count($shortlist), 'Shortlisted') ?>
-    <?= lumina_kpi('21d', 'Avg time-to-hire') ?>
-    <?= lumina_kpi('86%', 'Offer acceptance') ?>
+    <?= lumina_kpi('40/20/20/10/5/5', 'Talent Match Signal') ?>
   </div>
 </section>
 
-<!-- Role selector + ranked list -->
 <section class="section">
   <div class="card">
-    <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-      <div>
-        <div class="section-label">Ranked candidates</div>
-        <h3 style="margin:0"><?= esc($selected['title']) ?> · <?= esc($selected['company']) ?></h3>
+    <form method="get" action="<?= base_url('employer') ?>">
+      <div class="grid grid-4" style="gap:10px">
+        <div>
+          <label class="fl">Domain</label>
+          <select class="field" name="domain" onchange="this.form.submit()">
+            <option value="">All domains</option>
+            <?php foreach ($options['domains'] as $d): ?><option value="<?= $d ?>" <?= $filters['domain']===$d?'selected':'' ?>><?= $d ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Role level</label>
+          <select class="field" name="level" onchange="this.form.submit()">
+            <option value="">All levels</option>
+            <?php foreach ($options['levels'] as $d): ?><option value="<?= $d ?>" <?= $filters['level']===$d?'selected':'' ?>><?= $d ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Country</label>
+          <select class="field" name="country" onchange="this.form.submit()">
+            <option value="">All countries</option>
+            <?php foreach ($options['countries'] as $d): ?><option value="<?= esc($d,'attr') ?>" <?= $filters['country']===$d?'selected':'' ?>><?= esc($d) ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Sector</label>
+          <select class="field" name="sector" onchange="this.form.submit()">
+            <option value="">All sectors</option>
+            <?php foreach ($options['sectors'] as $d): ?><option value="<?= esc($d,'attr') ?>" <?= $filters['sector']===$d?'selected':'' ?>><?= esc($d) ?></option><?php endforeach; ?>
+          </select>
+        </div>
       </div>
-      <form method="get" action="<?= base_url('employer') ?>">
-        <select class="stage-select" name="role" onchange="this.form.submit()">
-          <?php foreach ($roles as $r): ?>
-            <option value="<?= esc($r['key']) ?>" <?= $r['key'] === $selected['key'] ? 'selected' : '' ?>>
-              <?= esc($r['title']) ?> — <?= esc($r['company']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </form>
-    </div>
-
-    <!-- Compare form wraps the list -->
-    <form method="get" action="<?= base_url('employer/compare') ?>" id="cmpForm">
-      <input type="hidden" name="role" value="<?= esc($selected['key']) ?>">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
-        <span class="muted" style="font-size:13px">Tick 2–4 candidates, then compare.</span>
-        <button class="btn btn-gold" type="submit" id="cmpBtn" disabled>Compare selected (<span id="cmpN">0</span>) →</button>
-      </div>
-
-      <div class="stack" style="margin-top:12px">
-        <?php foreach ($ranked as $i => $c):
-          $qs = '<ol style="margin:6px 0 0 18px;padding:0">';
-          foreach ($c['questions'] as $q) { $qs .= '<li style="margin:4px 0">' . esc($q) . '</li>'; }
-          $qs .= '</ol>';
-          $body = '<p class="muted">' . esc($c['reason']) . '</p>'
-                . '<div class="section-label" style="margin-top:12px">Evidence</div><p>' . esc($c['evidence']) . '</p>'
-                . '<div class="section-label" style="margin-top:10px">Suggested interview questions</div>' . $qs
-                . '<p class="purpose" style="margin-top:12px">Decision support only — the recruiter decides.</p>';
-          $isShort = in_array($c['id'], $shortlist, true);
-        ?>
-          <div class="card card-tight" style="display:flex;align-items:center;gap:12px">
-            <input type="checkbox" class="cmpChk" name="ids[]" value="<?= (int)$c['id'] ?>" title="Select to compare" style="width:18px;height:18px;flex:0 0 auto">
-            <div class="ring <?= $i === 0 ? 'gold' : '' ?>"><?= (int)$c['match'] ?></div>
-            <div style="flex:1;min-width:0">
-              <strong><?= esc($c['name']) ?></strong>
-              <span class="pill <?= $c['label']==='best'?'ok':($c['label']==='growth'?'nudge':'risk') ?>" style="margin-left:6px"><?= esc(ucfirst($c['label'])) ?></span>
-              <div class="muted" style="font-size:13px"><?= esc($c['university']) ?> · <?= esc($c['programme']) ?>
-                <?php if ($c['gap']): ?> · gap: <?= esc(implode(', ', $c['gap'])) ?><?php endif; ?>
-              </div>
-            </div>
-            <button class="btn btn-ghost" type="button" data-drawer="1"
-              data-title="<?= esc($c['name'] . ' — why this candidate', 'attr') ?>"
-              data-body="<?= esc($body, 'attr') ?>">Why?</button>
-            <a class="btn <?= $isShort ? 'btn-gold' : 'btn-ghost' ?>" href="<?= base_url('employer/shortlist?id=' . (int)$c['id'] . '&role=' . esc($selected['key'], 'url')) ?>"><?= $isShort ? '★ Shortlisted' : '☆ Shortlist' ?></a>
-          </div>
-        <?php endforeach; ?>
-        <?php if (empty($ranked)): ?>
-          <p class="muted">No candidates found. Import seed data (database/seed_sample.sql).</p>
-        <?php endif; ?>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <input class="field" type="text" name="q" value="<?= esc($filters['q'],'attr') ?>" placeholder="Search role or company…" style="flex:1">
+        <button class="btn btn-gold" type="submit">Search</button>
+        <a class="btn btn-ghost" href="<?= base_url('employer') ?>">Reset</a>
       </div>
     </form>
   </div>
 </section>
 
-<script>
-(function(){
-  var chks = document.querySelectorAll('.cmpChk');
-  var btn = document.getElementById('cmpBtn'), n = document.getElementById('cmpN');
-  function upd(){
-    var sel = [].filter.call(chks, function(c){ return c.checked; });
-    n.textContent = sel.length;
-    btn.disabled = (sel.length < 2 || sel.length > 4);
-    // cap at 4
-    if (sel.length >= 4) { [].forEach.call(chks, function(c){ if(!c.checked) c.disabled = true; }); }
-    else { [].forEach.call(chks, function(c){ c.disabled = false; }); }
-  }
-  [].forEach.call(chks, function(c){ c.addEventListener('change', upd); });
-})();
-</script>
+<section class="section">
+  <div class="section-label"><?= number_format($total) ?> roles · page <?= $page ?> of <?= max(1,$pages) ?></div>
+  <div class="grid grid-3">
+    <?php foreach ($roles as $r):
+      $col = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'var(--violet)','Business'=>'var(--gold)'][$r['target_domain']] ?? 'var(--indigo)'; ?>
+      <a class="card" href="<?= base_url('employer/role/' . $r['id']) ?>" style="text-decoration:none;border-left:3px solid <?= $col ?>">
+        <div class="section-label"><?= esc($r['company_name']) ?> · <?= esc($r['country']) ?></div>
+        <h3 style="margin:2px 0"><?= esc($r['role_title']) ?></h3>
+        <div class="muted" style="font-size:13px"><?= esc($r['sector']) ?> · <?= esc($r['role_level']) ?></div>
+        <div style="margin-top:8px">
+          <span class="pill <?= $r['target_domain']==='Data'?'ok':($r['target_domain']==='Business'?'nudge':'') ?>"><?= esc($r['target_domain']) ?></span>
+          <span class="skill" style="font-size:11px"><?= esc($r['work_arrangement']) ?></span>
+          <span class="skill" style="font-size:11px"><?= esc($r['salary_band']) ?></span>
+        </div>
+      </a>
+    <?php endforeach; ?>
+    <?php if (empty($roles)): ?>
+      <p class="muted">No roles match these filters. <a href="<?= base_url('employer') ?>" class="gold">Reset</a>.</p>
+    <?php endif; ?>
+  </div>
+
+  <?php if ($pages > 1): ?>
+  <div class="row" style="justify-content:center;gap:10px;margin-top:16px">
+    <?php if ($page > 1): ?><a class="btn btn-ghost" href="?<?= $qs(['page'=>$page-1]) ?>">← Prev</a><?php endif; ?>
+    <span class="muted" style="align-self:center">Page <?= $page ?> / <?= $pages ?></span>
+    <?php if ($page < $pages): ?><a class="btn btn-ghost" href="?<?= $qs(['page'=>$page+1]) ?>">Next →</a><?php endif; ?>
+  </div>
+  <?php endif; ?>
+</section>
 <?= $this->endSection() ?>

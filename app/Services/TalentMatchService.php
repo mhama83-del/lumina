@@ -1,0 +1,160 @@
+<?php
+
+namespace App\Services;
+
+use App\Services\ScoreService;
+use App\Services\LearningVelocityService;
+use App\Services\ResumeParserService;
+
+/**
+ * TalentMatchService (Fasa 4B.5)
+ * Implements the Gemini "Talent Match Signal":
+ *   Skill 40% + Evidence 20% + Learning Velocity 20% + Animal 10% + Domain 5% + Academic 5%
+ * Reads employer_roles (with skill requirements + animal fit) from the DB.
+ * Fully explainable; falls back to evidence_text/programme when candidate skills are thin.
+ */
+class TalentMatchService
+{
+    /** interim 6-animal (candidate side) -> full 12-name set */
+    private static array $animalMap = [
+        'owl' => 'Owl', 'fox' => 'Fox', 'eagle' => 'Eagle',
+        'dolphin' => 'Dolphin', 'beaver' => 'Ant', 'lion' => 'Lion',
+    ];
+
+    /** Build a candidate signal from a students-table row. */
+    public static function buildStudentSignal(array $s, array $stated = []): array
+    {
+        $svc  = new ScoreService();
+        $cand = $svc->signal($s['evidence_text'] ?? '', $stated, (int) ($s['has_resume'] ?? 0), $s['target_domain'] ?? 'Data');
+
+        $par = new ResumeParserService();
+        $an  = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');
+        $pid = $an['primary']['id'] ?? 'owl';
+
+        $cand['animal']        = self::$animalMap[$pid] ?? ucfirst($pid);
+        $cand['evidence_text'] = $s['evidence_text'] ?? '';
+        $cand['programme']     = $s['programme'] ?? '';
+        $cand['cgpa']          = (isset($s['cgpa']) && is_numeric($s['cgpa'])) ? (float) $s['cgpa'] : null;
+        $cand['target_domain'] = $s['target_domain'] ?? 'Data';
+        return $cand;
+    }
+
+    /** Match a candidate signal to a full DB role (from EmployerRoleModel::fullRole). */
+    public function match(array $cand, array $role): array
+    {
+        $req = []; $pref = [];
+        foreach (($role['skills'] ?? []) as $s) {
+            if (($s['importance'] ?? '') === 'required')  $req[]  = $s;
+            elseif (($s['importance'] ?? '') === 'preferred') $pref[] = $s;
+        }
+        $have = $cand['skills'] ?? [];
+        $text = strtolower($cand['evidence_text'] ?? '');
+
+        $has = function (array $s) use ($have, $text): bool {
+            $code = $s['skill_code'] ?? '';
+            $name = strtolower($s['skill_name'] ?? '');
+            if ($code && isset($have[$code])) return true;
+            if ($name && str_contains($text, $name)) return true;
+            if ($code && str_contains($text, str_replace('_', ' ', $code))) return true;
+            return false;
+        };
+
+        $matched = []; $missing = [];
+        foreach ($req as $s) { if ($has($s)) $matched[] = $s['skill_name']; else $missing[] = $s['skill_name']; }
+        $prefMatched = 0;
+        foreach ($pref as $s) { if ($has($s)) $prefMatched++; }
+
+        $skillScore = $req ? (int) round(100 * count($matched) / count($req)) : 60;
+        $skillScore = (int) min(100, $skillScore + 4 * $prefMatched);
+
+        $evidence = $this->evidenceStrength($cand, $text);
+        $velocity = (new LearningVelocityService())->velocity($cand)['score'];
+        $animal   = $this->animalFit($cand, $role);
+        $domain   = $this->domainFit($cand, $role);
+        $cgpa     = $this->cgpaFit($cand, $role);
+
+        $total = (int) round(0.40 * $skillScore + 0.20 * $evidence + 0.20 * $velocity + 0.10 * $animal + 0.05 * $domain + 0.05 * $cgpa);
+        $label = self::label($total);
+
+        $topMatched = array_slice($matched, 0, 2);
+        $explain = ($topMatched ? 'Strong on ' . implode(' & ', $topMatched) . '. ' : '')
+                 . "{$skillScore}% skill match, evidence {$evidence}, velocity {$velocity}, "
+                 . 'animal ' . ($cand['animal'] ?? '—') . ' vs ' . ($role['animal']['preferred_primary_animal'] ?? '—')
+                 . ($missing ? '. Gaps: ' . implode(', ', array_slice($missing, 0, 3)) . '.' : '.');
+
+        return [
+            'match_score'             => $total,
+            'fit_label'               => $label,
+            'skill_match_score'       => $skillScore,
+            'evidence_strength_score' => $evidence,
+            'learning_velocity_score' => $velocity,
+            'animal_fit_score'        => $animal,
+            'domain_fit_score'        => $domain,
+            'academic_fit_score'      => $cgpa,
+            'skill_overlap'           => $matched,
+            'missing_skills'          => $missing,
+            'explanation'             => $explain,
+        ];
+    }
+
+    public static function label(int $total): string
+    {
+        if ($total >= 85) return 'Strong Match';
+        if ($total >= 70) return 'Good Match';
+        if ($total >= 55) return 'Potential Match';
+        if ($total >= 40) return 'Needs Development';
+        return 'Weak Match';
+    }
+
+    private function evidenceStrength(array $cand, string $text): int
+    {
+        $base = (new ScoreService())->employability($cand);
+        if (preg_match('/\d/', $text)) $base += 8;
+        foreach (['led', 'managed', 'built', 'launched', 'won ', 'increased', 'reduced', 'internship'] as $w) {
+            if (str_contains($text, $w)) $base += 3;
+        }
+        return (int) min(100, $base);
+    }
+
+    private function animalFit(array $cand, array $role): int
+    {
+        $a = $cand['animal'] ?? null;
+        if (! $a) return 30;
+        $af = $role['animal'] ?? [];
+        $primary   = $af['preferred_primary_animal'] ?? '';
+        $secondary = $af['preferred_secondary_animal'] ?? '';
+        $accept    = json_decode($af['acceptable_animals_json'] ?? '[]', true) ?: [];
+        $poor      = strtolower($af['poor_fit_risk'] ?? '');
+
+        if ($primary && strcasecmp($a, $primary) === 0) return 100;
+        if ($secondary && strcasecmp($a, $secondary) === 0) return 85;
+        foreach ($accept as $x) { if (strcasecmp($a, $x) === 0) return 50; }
+        if ($poor && str_contains($poor, strtolower($a))) return 0;
+        return 30;
+    }
+
+    private function domainFit(array $cand, array $role): int
+    {
+        $rd = $role['target_domain'] ?? '';
+        $cd = $cand['top_domain'] ?? ($cand['target_domain'] ?? '');
+        if ($rd && strcasecmp($cd, $rd) === 0) return 100;
+        $progs = json_decode($role['suitable_programmes_json'] ?? '[]', true) ?: [];
+        $p = strtolower($cand['programme'] ?? '');
+        if ($p) {
+            foreach ($progs as $pr) {
+                $pr = strtolower($pr);
+                if (str_contains($p, $pr) || str_contains($pr, $p)) return 100;
+            }
+        }
+        return 40;
+    }
+
+    private function cgpaFit(array $cand, array $role): int
+    {
+        $min = $role['minimum_cgpa_category'] ?? 'N/A';
+        if ($min === 'N/A' || ! is_numeric($min)) return 100;
+        $c = $cand['cgpa'] ?? null;
+        if ($c === null) return 70;
+        return $c >= (float) $min ? 100 : (int) max(0, round(100 * ($c / (float) $min)));
+    }
+}
