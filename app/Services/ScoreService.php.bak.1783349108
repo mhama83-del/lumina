@@ -30,31 +30,20 @@ class ScoreService
         // engineering — mechanical / manufacturing
         'solidworks'=>['mechanical_design'=>0.85,'cad'=>0.75], 'catia'=>['mechanical_design'=>0.85,'cad'=>0.8],
         'autocad'=>['cad'=>0.8], 'fea'=>['mechanical_design'=>0.7], 'mechanical design'=>['mechanical_design'=>0.8],
-        'mechanical engineering'=>['mechanical_design'=>0.8],
         'manufactur'=>['manufacturing'=>0.7], 'six sigma'=>['six_sigma'=>0.75],
         // engineering — aerospace
-        'aerospace'=>['aerodynamics'=>0.75], 'aeronautical'=>['aerodynamics'=>0.8], 'aircraft'=>['aircraft_systems'=>0.7],
-        'aerodynamic'=>['aerodynamics'=>0.85], 'avionics'=>['avionics'=>0.85], 'propulsion'=>['aerodynamics'=>0.7],
+        'aerospace'=>['aerodynamics'=>0.75], 'aircraft'=>['aircraft_systems'=>0.7],
+        'aerodynamic'=>['aerodynamics'=>0.85], 'avionics'=>['avionics'=>0.85],
         'structural stress'=>['structural_engineering'=>0.8], 'structural'=>['structural_engineering'=>0.65],
         'flight performance'=>['aerodynamics'=>0.7], 'glider'=>['aerodynamics'=>0.6],
         // engineering — electrical / electronics / embedded / robotics
-        'circuit'=>['circuit_design'=>0.8], 'plc'=>['plc'=>0.85], 'electrical engineering'=>['circuit_design'=>0.75],
+        'circuit'=>['circuit_design'=>0.8], 'plc'=>['plc'=>0.85],
         'electrical schematic'=>['electrical_schematics'=>0.8], 'electrical'=>['circuit_design'=>0.5],
-        'power system'=>['electrical_schematics'=>0.7], 'electronic'=>['circuit_design'=>0.6],
         'embedded'=>['embedded'=>0.75], 'raspberry pi'=>['embedded'=>0.8], 'arduino'=>['embedded'=>0.8],
         'robotics'=>['robotics'=>0.85], 'control system'=>['control_systems'=>0.8],
-        // engineering — civil
-        'civil engineering'=>['structural_engineering'=>0.8], 'reinforced concrete'=>['structural_engineering'=>0.7],
-        'surveying'=>['structural_engineering'=>0.6], 'site supervision'=>['project_planning'=>0.6],
-        'construction'=>['project_planning'=>0.6],
-        // engineering — chemical / process
-        'chemical engineering'=>['chemical_processing'=>0.85], 'chemical process'=>['chemical_processing'=>0.8],
-        'process safety'=>['process_safety'=>0.8], 'process design'=>['chemical_processing'=>0.75],
-        'aspen'=>['chemical_processing'=>0.8], 'distillation'=>['chemical_processing'=>0.75],
-        'separation process'=>['chemical_processing'=>0.8], 'reactor'=>['chemical_processing'=>0.7],
-        'azeotropic'=>['chemical_processing'=>0.75], 'packed bed'=>['chemical_processing'=>0.7],
-        'unit operation'=>['chemical_processing'=>0.7], 'plant design'=>['chemical_processing'=>0.7],
-        'p&id'=>['chemical_processing'=>0.75], 'mass transfer'=>['chemical_processing'=>0.6],
+        // engineering — civil / process
+        'construction'=>['project_planning'=>0.6], 'process safety'=>['process_safety'=>0.8],
+        'chemical process'=>['chemical_processing'=>0.8], 'aspen hysys'=>['chemical_processing'=>0.85],
         // data
         'sql'=>['sql'=>0.85], 'database'=>['sql'=>0.7], 'excel'=>['excel'=>0.7], 'spreadsheet'=>['excel'=>0.65],
         'dashboard'=>['dashboarding'=>0.8], 'tableau'=>['dashboarding'=>0.8], 'power bi'=>['dashboarding'=>0.8],
