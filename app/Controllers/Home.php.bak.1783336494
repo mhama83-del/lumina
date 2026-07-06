@@ -24,15 +24,6 @@ class Home extends BaseController
         $topSkills   = $db->table('taxonomy_skills')->orderBy('frequency', 'DESC')->limit(16)->get()->getResultArray();
         $topPatterns = $db->table('taxonomy_patterns')->orderBy('sample_count', 'DESC')->limit(10)->get()->getResultArray();
         $newest      = $db->table('taxonomy_skills')->orderBy('id', 'DESC')->limit(8)->get()->getResultArray();
-        foreach ($newest as &$ns) {
-            $ns['related']  = json_decode($ns['related_skills_json'] ?? '[]', true) ?: [];
-            $ns['patterns'] = array_column(
-                $db->table('taxonomy_patterns')->select('pattern_key')
-                   ->like('typical_skills_json', '"' . $ns['code'] . '"')->limit(4)->get()->getResultArray(),
-                'pattern_key'
-            );
-        }
-        unset($ns);
         return view('home/graph', [
             'title' => 'Lumina Graph', 'stats' => $stats,
             'topSkills' => $topSkills, 'topPatterns' => $topPatterns, 'newest' => $newest,

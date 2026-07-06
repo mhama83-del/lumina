@@ -15,14 +15,26 @@
   </div>
 </section>
 
-<?php if (!empty($newest)): ?>
+<?php if (!empty($newest)): $hz = fn($c)=>ucwords(str_replace('_',' ',$c)); ?>
 <section class="section">
-  <div class="card" style="border-left:3px solid var(--gold)">
-    <div class="section-label">Most recently learned</div>
-    <div style="margin-top:6px">
-      <?php foreach ($newest as $s): ?><span class="skill inferred"><?= esc($s['label']) ?> <span class="conf">new</span></span> <?php endforeach; ?>
-    </div>
-    <p class="muted" style="font-size:12px;margin-top:8px">These were added as candidates were analysed. Paste a resume with a new tool at <a href="<?= base_url('resume') ?>" class="gold">/resume</a> and watch the graph grow.</p>
+  <div class="section-label">Most recently learned · where each new skill landed</div>
+  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each new skill is placed into a domain, connected to the skills it appeared with, and folded into a profile pattern. Paste a resume with a new tool at <a href="<?= base_url('resume') ?>" class="gold">/resume</a>, then refresh this page.</p>
+  <div class="grid grid-2">
+    <?php foreach ($newest as $s): ?>
+      <div class="card card-tight" style="border-left:3px solid var(--gold)">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <strong><?= esc($s['label']) ?> <span class="skill inferred" style="font-size:10px">new</span></strong>
+          <span class="pill nudge"><?= esc($s['domain'] ?: '—') ?> domain</span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px"><strong>Connects to:</strong>
+          <?= !empty($s['related']) ? esc(implode(', ', array_map($hz, array_slice($s['related'],0,5)))) : 'building connections…' ?>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:2px"><strong>In pattern(s):</strong>
+          <?= !empty($s['patterns']) ? esc(implode(' · ', $s['patterns'])) : 'not yet in a pattern' ?>
+        </div>
+        <div class="muted" style="font-size:11px;margin-top:2px">seen <?= (int)$s['frequency'] ?>&times; · learned <?= esc($s['created_at'] ?? '') ?></div>
+      </div>
+    <?php endforeach; ?>
   </div>
 </section>
 <?php endif; ?>
