@@ -18,7 +18,7 @@ class ScoreService
         'manage'=>['project_mgmt'=>0.7,'leadership'=>0.6], 'mentor'=>['leadership'=>0.7],
         'coordinat'=>['project_mgmt'=>0.65], 'organis'=>['project_mgmt'=>0.6],
         'volunteer'=>['community'=>0.7], 'charity'=>['community'=>0.7], 'community'=>['community'=>0.7],
-        // software / engineering (software-flavoured)
+        // software / engineering
         'built'=>['software'=>0.65], 'build'=>['software'=>0.6], 'develop'=>['software'=>0.65],
         'app'=>['software'=>0.7], 'website'=>['software'=>0.65], 'system'=>['software'=>0.6],
         'backend'=>['software'=>0.75], 'frontend'=>['javascript'=>0.7,'ui_ux'=>0.5],
@@ -26,24 +26,6 @@ class ScoreService
         'cloud'=>['cloud'=>0.8], 'aws'=>['cloud'=>0.8], 'azure'=>['cloud'=>0.8], 'api'=>['api'=>0.7],
         'python'=>['python'=>0.9], 'java'=>['java'=>0.8], 'javascript'=>['javascript'=>0.85],
         'react'=>['javascript'=>0.75], 'node'=>['javascript'=>0.7],
-        'c++'=>['software'=>0.75], 'programming'=>['software'=>0.6],
-        // engineering — mechanical / manufacturing
-        'solidworks'=>['mechanical_design'=>0.85,'cad'=>0.75], 'catia'=>['mechanical_design'=>0.85,'cad'=>0.8],
-        'autocad'=>['cad'=>0.8], 'fea'=>['mechanical_design'=>0.7], 'mechanical design'=>['mechanical_design'=>0.8],
-        'manufactur'=>['manufacturing'=>0.7], 'six sigma'=>['six_sigma'=>0.75],
-        // engineering — aerospace
-        'aerospace'=>['aerodynamics'=>0.75], 'aircraft'=>['aircraft_systems'=>0.7],
-        'aerodynamic'=>['aerodynamics'=>0.85], 'avionics'=>['avionics'=>0.85],
-        'structural stress'=>['structural_engineering'=>0.8], 'structural'=>['structural_engineering'=>0.65],
-        'flight performance'=>['aerodynamics'=>0.7], 'glider'=>['aerodynamics'=>0.6],
-        // engineering — electrical / electronics / embedded / robotics
-        'circuit'=>['circuit_design'=>0.8], 'plc'=>['plc'=>0.85],
-        'electrical schematic'=>['electrical_schematics'=>0.8], 'electrical'=>['circuit_design'=>0.5],
-        'embedded'=>['embedded'=>0.75], 'raspberry pi'=>['embedded'=>0.8], 'arduino'=>['embedded'=>0.8],
-        'robotics'=>['robotics'=>0.85], 'control system'=>['control_systems'=>0.8],
-        // engineering — civil / process
-        'construction'=>['project_planning'=>0.6], 'process safety'=>['process_safety'=>0.8],
-        'chemical process'=>['chemical_processing'=>0.8], 'aspen hysys'=>['chemical_processing'=>0.85],
         // data
         'sql'=>['sql'=>0.85], 'database'=>['sql'=>0.7], 'excel'=>['excel'=>0.7], 'spreadsheet'=>['excel'=>0.65],
         'dashboard'=>['dashboarding'=>0.8], 'tableau'=>['dashboarding'=>0.8], 'power bi'=>['dashboarding'=>0.8],
@@ -69,24 +51,13 @@ class ScoreService
         'innovat'=>['innovation'=>0.7], 'prototype'=>['innovation'=>0.65], 'project'=>['project_mgmt'=>0.6],
     ];
 
-    /**
-     * Whole-word/phrase match — avoids false positives like "excel" inside
-     * "excellent". Works for punctuation-ending keywords too (e.g. "c++").
-     */
-    private function keywordHit(string $text, string $kw): bool
-    {
-        $kw = trim($kw);
-        if ($kw === '') return false;
-        return (bool) preg_match('/(?<![a-z0-9])' . preg_quote($kw, '/') . '(?![a-z0-9])/iu', $text);
-    }
-
     /** 6.1 Infer skills from free-text evidence + stated skills. */
     public function inferSkills(string $text, array $stated = []): array
     {
         $out = [];
         $t = strtolower($text);
         foreach ($this->map as $kw => $skills) {
-            if ($this->keywordHit($t, $kw)) {
+            if (str_contains($t, $kw)) {
                 foreach ($skills as $code => $c) {
                     $out[$code] = [
                         'confidence' => max($out[$code]['confidence'] ?? 0, $c),
@@ -106,7 +77,7 @@ class ScoreService
     {
         $out = []; $t = strtolower($text);
         foreach ($this->map as $kw => $skills) {
-            if ($this->keywordHit($t, $kw)) {
+            if (str_contains($t, $kw)) {
                 foreach ($skills as $code => $c) {
                     if (! isset($out[$code]) || $c > $out[$code]['confidence']) {
                         $out[$code] = ['confidence' => $c, 'source' => 'inferred', 'from' => trim($kw)];

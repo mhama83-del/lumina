@@ -15,8 +15,6 @@ class Catalog
             'ml_engineer'       => ['key'=>'ml_engineer','title'=>'ML Engineer','company'=>'Petronas','location'=>'KL','salary'=>'RM9–12k','domain'=>'Data','color'=>'var(--indigo)','hex'=>'#6C5CE7','required'=>['python','machine_learning','statistics','sql']],
             'software_engineer' => ['key'=>'software_engineer','title'=>'Software Engineer','company'=>'Grab','location'=>'KL','salary'=>'RM8–11k','domain'=>'Engineering','color'=>'var(--teal)','hex'=>'#14B8A6','required'=>['software','javascript','api','communication']],
             'backend_engineer'  => ['key'=>'backend_engineer','title'=>'Backend Engineer','company'=>'CIMB','location'=>'KL','salary'=>'RM8–10k','domain'=>'Engineering','color'=>'var(--teal)','hex'=>'#14B8A6','required'=>['software','cloud','java','api']],
-            'mechanical_engineer' => ['key'=>'mechanical_engineer','title'=>'Mechanical Engineer','company'=>'PETRONAS','location'=>'KL','salary'=>'RM4–6k','domain'=>'Engineering','color'=>'var(--teal)','hex'=>'#14B8A6','required'=>['mechanical_design','cad','fea','teamwork']],
-            'aerospace_engineer' => ['key'=>'aerospace_engineer','title'=>'Aerospace Engineer','company'=>'AirAsia','location'=>'KL','salary'=>'RM5–8k','domain'=>'Engineering','color'=>'var(--teal)','hex'=>'#14B8A6','required'=>['aerodynamics','cad','structural_engineering','teamwork']],
             'ux_designer'       => ['key'=>'ux_designer','title'=>'UX Designer','company'=>'AirAsia','location'=>'KL','salary'=>'RM5–8k','domain'=>'Design','color'=>'var(--violet)','hex'=>'#a78bfa','required'=>['ui_ux','figma','design_thinking','communication']],
             'marketing_exec'    => ['key'=>'marketing_exec','title'=>'Marketing Executive','company'=>'Nestlé','location'=>'Selangor','salary'=>'RM4–6k','domain'=>'Business','color'=>'var(--gold)','hex'=>'#FDE047','required'=>['marketing','social_media','content','communication']],
             'product_exec'      => ['key'=>'product_exec','title'=>'Product Executive','company'=>'Shopee','location'=>'KL','salary'=>'RM6–9k','domain'=>'Business','color'=>'var(--gold)','hex'=>'#FDE047','required'=>['stakeholder_mgmt','communication','leadership','project_mgmt']],
@@ -44,12 +42,6 @@ class Catalog
             'communication'=>'Communication','stakeholder_mgmt'=>'Stakeholder Mgmt','leadership'=>'Leadership',
             'project_mgmt'=>'Project Mgmt','budgeting'=>'Budgeting','teamwork'=>'Teamwork','community'=>'Community',
             'entrepreneurship'=>'Entrepreneurship','innovation'=>'Innovation','teaching'=>'Teaching','excel'=>'Excel',
-            'mechanical_design'=>'Mechanical Design','cad'=>'CAD','fea'=>'FEA','structural_engineering'=>'Structural Engineering',
-            'manufacturing'=>'Manufacturing','six_sigma'=>'Six Sigma',
-            'aerodynamics'=>'Aerodynamics','aircraft_systems'=>'Aircraft Systems','avionics'=>'Avionics',
-            'circuit_design'=>'Circuit Design','plc'=>'PLC','electrical_schematics'=>'Electrical Schematics',
-            'embedded'=>'Embedded Systems','robotics'=>'Robotics','control_systems'=>'Control Systems',
-            'process_safety'=>'Process Safety','chemical_processing'=>'Chemical Processing','project_planning'=>'Project Planning',
         ];
         return $m[$c] ?? ucwords(str_replace('_', ' ', $c));
     }
