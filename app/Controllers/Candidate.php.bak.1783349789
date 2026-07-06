@@ -270,16 +270,8 @@ class Candidate extends BaseController
         $confirmedName = trim((string) $this->request->getPost('name'));
 
         $svc       = new ScoreService();
-        $parser    = new \App\Services\ResumeParserService();
         $explained = $svc->inferSkillsExplained($text, []);
-
-        // ---- Field of study: read what the candidate actually STUDIED first.
-        // This is a stronger, more trustworthy signal than generic soft-skill
-        // keywords (communication, teamwork, ...) that appear in almost every
-        // resume regardless of field. Falls back to skill-keyword majority
-        // vote only when no degree/programme line is detected.
-        $degree = $parser->extractFieldOfStudy($text);
-        $domain = $this->guessDomain(array_keys($explained), $degree['domain'] ?? null);
+        $domain    = $this->guessDomain(array_keys($explained));
 
         // persist profile (session) so the user can continue into Compass/Match
         $this->buildProfile(
@@ -290,36 +282,17 @@ class Candidate extends BaseController
 
         // top role matches
         $matches = [];
-        foreach (\App\Libraries\Catalog::roles() as $key => $role) {
+        foreach (\App\Libraries\Catalog::roles() as $role) {
             $m = $svc->match($cand, $role);
-            $matches[] = ['key' => $key, 'title' => $role['title'], 'company' => $role['company'],
-                          'domain' => $role['domain'], 'color' => $role['hex'],
+            $matches[] = ['title' => $role['title'], 'company' => $role['company'], 'color' => $role['hex'],
                           'match' => $m['matchScore'], 'label' => $m['label'],
                           'gap' => \App\Libraries\Catalog::labels($m['gap'])];
         }
         usort($matches, fn ($a, $b) => $b['match'] <=> $a['match']);
-
-        // If we detected a clear field of study, pin the best-fitting role in
-        // that field to the #1 spot — a Chemical Engineering degree should
-        // outrank a generic Business role even when the Business role scores
-        // marginally higher purely on generic soft-skill overlap.
-        if (! empty($degree['domain'])) {
-            $sameField = array_values(array_filter($matches, fn ($x) => $x['domain'] === $degree['domain']));
-            if ($sameField) {
-                $pinned = $sameField[0];
-                $rest   = array_values(array_filter($matches, fn ($x) => $x['key'] !== $pinned['key']));
-                $matches = array_merge([$pinned], $rest);
-            }
-        }
         $top = array_slice($matches, 0, 3);
 
-        // readiness vs the best-fit role — prefer the exact role hinted by the
-        // detected degree, else the best role within the detected domain,
-        // else the global best match.
-        $bestRoleKey = (! empty($degree['role']) && isset(\App\Libraries\Catalog::roles()[$degree['role']]))
-            ? $degree['role']
-            : $this->bestRoleKey($cand, $svc, $degree['domain'] ?? null);
-        $bestRole  = \App\Libraries\Catalog::role($bestRoleKey);
+        // readiness vs the best-fit role
+        $bestRole  = \App\Libraries\Catalog::role($this->bestRoleKey($cand, $svc));
         $bestM     = $svc->match($cand, $bestRole);
         $readiness = $svc->readiness($cand, $bestRole);
         $band      = $svc->risk($readiness['score']);
@@ -340,6 +313,7 @@ class Candidate extends BaseController
         $cohort = $this->benchmark($svc, $domain, $readiness['score']);
 
         // ---- Fasa 2: richer extracted profile + recommendations ----
+        $parser = new \App\Services\ResumeParserService();
         $rec    = new \App\Services\RecommendationService();
         $projects    = $parser->detectProjects($text);
         $leadership  = $parser->detectLeadership($text);
@@ -405,7 +379,7 @@ class Candidate extends BaseController
             'readiness'  => $readiness['score'],
             'matches'    => $top,
             'domain'     => $domain,
-            'field'      => $this->fieldName($domain) . (! empty($degree['raw']) ? ' · Field of study detected: ' . $degree['raw'] : ''),
+            'field'      => $this->fieldName($domain),
             'university' => $foundUni,
             'cohort'     => $cohort,
             'name'       => session('profile')['name'] ?? 'You',
@@ -440,7 +414,7 @@ class Candidate extends BaseController
         $n = count($peers); $below = 0; $sum = 0;
         foreach ($peers as $p) {
             $pc = $svc->signal($p['evidence_text'] ?? '', [], (int) ($p['has_resume'] ?? 0), $domain);
-            $pr = $svc->readiness($pc, \App\Libraries\Catalog::role($this->bestRoleKey($pc, $svc, $domain)))['score'];
+            $pr = $svc->readiness($pc, \App\Libraries\Catalog::role($this->bestRoleKey($pc, $svc)))['score'];
             $sum += $pr;
             if ($pr < $myReadiness) $below++;
         }
@@ -453,30 +427,10 @@ class Candidate extends BaseController
         ];
     }
 
-    /**
-     * Best matching role key. If $domainHint is given, restricts the search
-     * to roles in that domain first (falls back to a global search only if
-     * that domain has no roles at all) — so a detected field of study keeps
-     * the readiness/gap calculation anchored to the right domain.
-     */
-    private function bestRoleKey(array $cand, ScoreService $svc, ?string $domainHint = null): string
+    private function bestRoleKey(array $cand, ScoreService $svc): string
     {
-        $roles = \App\Libraries\Catalog::roles();
-
-        if ($domainHint) {
-            $inDomain = array_filter($roles, fn ($r) => $r['domain'] === $domainHint);
-            if ($inDomain) {
-                $bestKey = array_key_first($inDomain); $bestScore = -1;
-                foreach ($inDomain as $key => $role) {
-                    $m = $svc->match($cand, $role);
-                    if ($m['matchScore'] > $bestScore) { $bestScore = $m['matchScore']; $bestKey = $key; }
-                }
-                return $bestKey;
-            }
-        }
-
         $bestKey = 'data_analyst'; $bestScore = -1;
-        foreach ($roles as $key => $role) {
+        foreach (\App\Libraries\Catalog::roles() as $key => $role) {
             $m = $svc->match($cand, $role);
             if ($m['matchScore'] > $bestScore) { $bestScore = $m['matchScore']; $bestKey = $key; }
         }
@@ -493,32 +447,17 @@ class Candidate extends BaseController
         ][$domain] ?? $domain;
     }
 
-    /**
-     * $override (from a detected field of study) always wins when present —
-     * what the candidate studied is a stronger signal than skill-keyword
-     * counting. Falls back to majority-vote across skill buckets otherwise
-     * (not first-match-wins: a single stray "analysis" mention should not
-     * override a resume full of engineering signals).
-     */
-    private function guessDomain(array $codes, ?string $override = null): string
+    private function guessDomain(array $codes): string
     {
-        if ($override) return $override;
-
-        $buckets = [
-            'Design' => ['ui_ux', 'figma', 'graphic_design'],
-            'Data'   => ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'],
-            'Engineering' => ['software', 'cloud', 'java', 'javascript', 'api',
-                'mechanical_design', 'cad', 'fea', 'manufacturing', 'six_sigma',
-                'aerodynamics', 'aircraft_systems', 'avionics', 'structural_engineering',
-                'circuit_design', 'plc', 'electrical_schematics', 'embedded', 'robotics', 'control_systems',
-                'process_safety', 'chemical_processing', 'project_planning'],
-        ];
-        $best = 'Business'; $bestCount = 0;
-        foreach ($buckets as $dom => $set) {
-            $count = count(array_intersect($codes, $set));
-            if ($count > $bestCount) { $bestCount = $count; $best = $dom; }
-        }
-        return $best;
+        if (array_intersect($codes, ['ui_ux', 'figma', 'graphic_design'])) return 'Design';
+        if (array_intersect($codes, ['sql', 'python', 'data_analysis', 'dashboarding', 'statistics', 'machine_learning'])) return 'Data';
+        $engineering = ['software', 'cloud', 'java', 'javascript', 'api',
+            'mechanical_design', 'cad', 'fea', 'manufacturing', 'six_sigma',
+            'aerodynamics', 'aircraft_systems', 'avionics', 'structural_engineering',
+            'circuit_design', 'plc', 'electrical_schematics', 'embedded', 'robotics', 'control_systems',
+            'process_safety', 'chemical_processing', 'project_planning'];
+        if (array_intersect($codes, $engineering)) return 'Engineering';
+        return 'Business';
     }
 
     private function roleKeyForDomain(string $d): string
@@ -586,7 +525,6 @@ class Candidate extends BaseController
         $d = ucfirst(strtolower(trim($d)));
         if (in_array($d, ['Data', 'Research'], true))                return 'Data';
         if (in_array($d, ['Engineering', 'Software', 'Tech'], true)) return 'Engineering';
-        if (in_array($d, ['Design', 'Creative'], true))              return 'Design';
         return 'Business';
     }
 
@@ -636,23 +574,15 @@ class Candidate extends BaseController
             $this->toolsToSkills($tools),
             $this->subjectToSkills($programme . ' ' . $interest)
         )));
-
-        // field of study from the stated programme name wins over the loose "interest" pick
-        $parserFos = new \App\Services\ResumeParserService();
-        $fos       = $parserFos->extractFieldOfStudy('Bachelor of ' . $programme);
-        $domain    = $fos['domain'] ?? $this->normaliseDomain($interest);
-
+        $domain = $this->normaliseDomain($interest);
         session()->set('stage', $stage);
         $verified = $intern === 'completed' ? 1 : 0;
 
         $this->buildProfile($text, $stated, $domain, session('profile')['animal'] ?? null, $verified, 'You');
         $cand = $this->buildSignal(session('profile'));
 
-        $svc         = new ScoreService();
-        $bestRoleKey = (! empty($fos['role']) && isset(\App\Libraries\Catalog::roles()[$fos['role']]))
-            ? $fos['role']
-            : $this->bestRoleKey($cand, $svc, $domain);
-        $bestRole  = \App\Libraries\Catalog::role($bestRoleKey);
+        $svc       = new ScoreService();
+        $bestRole  = \App\Libraries\Catalog::role($this->bestRoleKey($cand, $svc));
         $bestM     = $svc->match($cand, $bestRole);
         $readiness = $svc->readiness($cand, $bestRole);
         $band      = $svc->risk($readiness['score']);
