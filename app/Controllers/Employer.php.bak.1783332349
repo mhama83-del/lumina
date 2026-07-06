@@ -107,44 +107,6 @@ class Employer extends BaseController
         return redirect()->to($roleId ? base_url('employer/role/' . $roleId) : base_url('employer'));
     }
 
-    /** Full candidate brief (evidence, skills, animal, readiness) + match to a role. */
-    public function candidate($id = null)
-    {
-        $id = (int) $id;
-        $roleId = (int) $this->request->getGet('role_id');
-        $db = \Config\Database::connect();
-        $s  = $db->table('students')->where('id', $id)->get()->getRowArray();
-        if (! $s) return redirect()->to(base_url('employer'));
-
-        $stated = [];
-        foreach ($db->table('student_skills ss')->select('sk.code')->join('skills sk', 'sk.id = ss.skill_id')
-                 ->where('ss.student_id', $id)->get()->getResultArray() as $r) { $stated[] = $r['code']; }
-
-        $svc       = new \App\Services\ScoreService();
-        $explained = $svc->inferSkillsExplained($s['evidence_text'] ?? '', $stated);
-        $cand      = \App\Services\TalentMatchService::buildStudentSignal($s, $stated);
-        $parser    = new \App\Services\ResumeParserService();
-        $animal    = $parser->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');
-        $projects  = $parser->detectProjects($s['evidence_text'] ?? '');
-        $leadership= $parser->detectLeadership($s['evidence_text'] ?? '');
-        $readiness = $svc->employability($cand);
-        $band      = $svc->risk($readiness);
-
-        $role = null; $match = null;
-        if ($roleId) {
-            $role = (new EmployerRoleModel())->fullRole($roleId);
-            if ($role) $match = (new TalentMatchService())->match($cand, $role);
-        }
-
-        return view('employer/candidate', [
-            'title' => 'Lumina · ' . $s['name'],
-            's' => $s, 'explained' => $explained, 'animal' => $animal,
-            'projects' => $projects, 'leadership' => $leadership,
-            'readiness' => $readiness, 'band' => $band, 'role' => $role, 'match' => $match,
-            'shortlist' => session('shortlist') ?? [],
-        ]);
-    }
-
     // ---------------- helpers ----------------
 
     private function rankStudents(array $role, int $limit): array

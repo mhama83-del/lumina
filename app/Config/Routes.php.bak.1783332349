@@ -20,7 +20,6 @@ $routes->get('university/interventions', 'University::interventions');
 
 // ---- Fasa 4B: employer DB browser + role detail + compare + shortlist ----
 $routes->get('employer/role/(:num)', 'Employer::role/$1');
-$routes->get('employer/candidate/(:num)', 'Employer::candidate/$1');
 $routes->get('employer/compare',     'Employer::compare');
 $routes->get('employer/shortlist',   'Employer::shortlist');
 
