@@ -41,17 +41,9 @@ class Home extends BaseController
             $ns['role_examples'] = array_slice($fams, 0, 3);
         }
         unset($ns);
-        // skills added/updated to the graph in the last 24h — used to highlight "new" skills wherever they appear (e.g. inside role-market pattern skill lists)
-        $freshCodes = array_column(
-            $db->table('taxonomy_skills')->select('code')
-               ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-1 day')))
-               ->get()->getResultArray(),
-            'code'
-        );
         return view('home/graph', [
             'title' => 'Lumina Graph', 'stats' => $stats,
-            'topSkills' => $topSkills, 'topPatterns' => $topPatterns, 'rolePatterns' => $rolePatterns,
-            'newest' => $newest, 'freshCodes' => $freshCodes,
+            'topSkills' => $topSkills, 'topPatterns' => $topPatterns, 'rolePatterns' => $rolePatterns, 'newest' => $newest,
         ]);
     }
 

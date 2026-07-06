@@ -1,18 +1,6 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
-<?php
-helper('ui');
-$domColor = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'#f472b6','Business'=>'var(--gold)'];
-$freshSet = array_flip($freshCodes ?? []);
-$renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
-    $out = [];
-    foreach (array_slice($codes, 0, $limit) as $c) {
-        $label = esc(ucwords(str_replace('_', ' ', $c)));
-        $out[] = isset($freshSet[$c]) ? '<span style="color:var(--gold);font-weight:700">' . $label . '</span>' : $label;
-    }
-    return implode(', ', $out);
-};
-?>
+<?php helper('ui'); $domColor = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'#f472b6','Business'=>'var(--gold)']; ?>
 <section class="hero">
   <div class="section-label">Lumina Graph · self-growing taxonomy</div>
   <h1>A knowledge graph that learns.</h1>
@@ -90,8 +78,7 @@ $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
 <?php if (!empty($rolePatterns)): ?>
 <section class="section">
   <div class="section-label">Role-market patterns · from 1,000 real job descriptions</div>
-  <p class="muted" style="font-size:12px;margin:2px 0 6px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above. Colour = domain (Data · Engineering · Design · Business). A "new" tag on the title means this pattern was inserted/refreshed in the last 24 hours.</p>
-  <p class="muted" style="font-size:11px;margin:0 0 8px"><span style="color:var(--gold);font-weight:700">Gold skill name</span> = that skill itself was added to the graph in the last 24 hours.</p>
+  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above. Colour = domain (Data · Engineering · Design · Business), same as the rest of Lumina. A "new" tag means this pattern was inserted or refreshed in the last 24 hours.</p>
   <div class="grid grid-3">
     <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; $dc = $domColor[$p['domain']] ?? 'var(--muted)'; $isFresh = !empty($p['updated_at']) && strtotime($p['updated_at']) >= strtotime('-1 day'); ?>
       <div class="card card-tight" style="border-left:3px solid <?= $dc ?>">
@@ -99,7 +86,7 @@ $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
           <strong style="font-size:13px"><?= esc(str_replace('JD: ', '', $p['programme'])) ?><?php if ($isFresh): ?> <span class="skill inferred" style="font-size:9px">new</span><?php endif; ?></strong>
           <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:<?= $dc ?>"><?= esc(strtoupper($p['domain'])) ?></span>
         </div>
-        <div class="muted" style="font-size:12px;margin-top:6px"><?= $renderSkills($ts, 5) ?></div>
+        <div class="muted" style="font-size:12px;margin-top:6px"><?= esc(implode(', ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($ts,0,5)))) ?></div>
         <div class="muted" style="font-size:10px;margin-top:4px">updated <?= esc($p['updated_at'] ?? '') ?></div>
       </div>
     <?php endforeach; ?>
