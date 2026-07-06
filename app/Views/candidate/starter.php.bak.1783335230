@@ -81,17 +81,6 @@
 
 <section class="section">
   <div class="card">
-    <div class="section-label">Related skills · from the Lumina Graph</div>
-    <div style="margin-bottom:6px">
-      <?php foreach (($graphRelated ?? []) as $g): ?><span class="skill inferred"><?= esc($g['label']) ?> <span class="conf">from graph</span></span> <?php endforeach; ?>
-      <?php if (empty($graphRelated)): ?><span class="muted">No adjacent skills surfaced yet.</span><?php endif; ?>
-    </div>
-    <p class="muted" style="font-size:12px;margin:0">Based on similar profiles, people like you often also develop these — worth adding to your plan.<?php if (!empty($graphStats)): ?> Lumina Graph now knows <strong><?= (int)$graphStats['skills'] ?></strong> skills · <strong><?= (int)$graphStats['patterns'] ?></strong> patterns · <strong><?= (int)$graphStats['profiles_learned'] ?></strong> profiles — and it grew from your entry.<?php endif; ?></p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="card">
     <?= lumina_note('Next best action: ' . esc($nextAction)) ?>
     <div class="row">
       <a class="btn btn-gold" href="<?= base_url('passport') ?>">Open my Living Portfolio →</a>

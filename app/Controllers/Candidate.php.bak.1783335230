@@ -271,13 +271,6 @@ class Candidate extends BaseController
         $nextAction  = $rec->nextAction($band, $bestM['gap'], $bestM['matched']);
         $courses     = $rec->microCourses($bestM['gap']);
 
-        // ---- Lumina Graph: enrich + learn ----
-        $tax        = new \App\Services\TaxonomyService();
-        $detCodes   = array_keys($cand['skills']);
-        $graph      = $tax->enrich($detCodes, '', $domain);
-        $graphLearn = $tax->learn($detCodes, $text, '', $domain);
-        $graphStats = $tax->stats();
-
         // ---- Fasa 2: persist to DB (demo-safe: never breaks the demo) ----
         $savedId = null;
         try {
@@ -337,9 +330,6 @@ class Candidate extends BaseController
             'courses'        => $courses,
             'saved'          => (bool) $savedId,
             'saved_id'       => $savedId,
-            'graph_related'  => $graph['related'],
-            'graph_added'    => count($graphLearn['added_skills']),
-            'graph_stats'    => $graphStats,
         ]);
     }
 
@@ -539,13 +529,6 @@ class Candidate extends BaseController
         $nextAction    = $rec->nextAction($band, $bestM['gap'], $bestM['matched']);
         $cluster       = $parser->careerCluster($domain);
 
-        // ---- Lumina Graph: enrich + learn ----
-        $tax        = new \App\Services\TaxonomyService();
-        $detCodes   = array_keys($cand['skills']);
-        $graph      = $tax->enrich($detCodes, $programme, $domain);
-        $tax->learn($detCodes, $text, $programme, $domain);
-        $graphStats = $tax->stats();
-
         // persist (demo-safe)
         $savedId = null;
         try {
@@ -587,8 +570,6 @@ class Candidate extends BaseController
             'activitiesRec' => $activitiesRec,
             'courses'       => $courses,
             'nextAction'    => $nextAction,
-            'graphRelated'  => $graph['related'],
-            'graphStats'    => $graphStats,
         ]);
     }
 

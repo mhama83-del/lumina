@@ -77,11 +77,6 @@
         <div class="section-label">Micro-courses to close gaps</div>
         <div id="rCourses" class="muted" style="font-size:13px;margin-bottom:12px"></div>
 
-        <!-- Lumina Graph related -->
-        <div class="section-label">Related skills · from the Lumina Graph</div>
-        <div id="rGraph" style="margin-bottom:6px"></div>
-        <p class="muted" id="rGraphNote" style="font-size:12px;margin-bottom:12px"></p>
-
         <div id="rSaved" class="muted" style="font-size:12px;margin-bottom:10px"></div>
 
         <div class="row" style="margin-top:6px">
@@ -214,15 +209,6 @@ function analyze(text){
 
       // micro-courses
       document.getElementById('rCourses').innerHTML = (data.courses||[]).map(function(c){return '<div>• <strong>'+c.skill+'</strong> — '+c.course+'</div>';}).join('');
-
-      // Lumina Graph related + growth counter
-      document.getElementById('rGraph').innerHTML = (data.graph_related && data.graph_related.length)
-        ? data.graph_related.map(function(g){return '<span class="skill inferred">'+g.label+' <span class="conf">from graph</span></span>';}).join(' ')
-        : '<span class="muted" style="font-size:13px">No adjacent skills surfaced yet.</span>';
-      if (data.graph_stats){ var gs=data.graph_stats;
-        document.getElementById('rGraphNote').innerHTML = 'People with similar profiles often also develop these. Lumina Graph now knows <strong>'+gs.skills+'</strong> skills · <strong>'+gs.patterns+'</strong> patterns · <strong>'+gs.profiles_learned+'</strong> profiles'
-          + (data.graph_added ? ' — <span class="gold">+'+data.graph_added+' new learned from your resume</span>' : ' — your resume matched existing patterns') + '.';
-      }
 
       // saved
       document.getElementById('rSaved').textContent = data.saved ? ('Saved to your Lumina record (#'+data.saved_id+').') : '';
