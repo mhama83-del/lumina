@@ -81,7 +81,6 @@
 
 <section class="section">
   <div class="card">
-    <?php if (!empty($graphNew)): ?><?= lumina_note('New skills learned into the graph: ' . esc(implode(', ', $graphNew))) ?><?php endif; ?>
     <div class="section-label">Related skills · from the Lumina Graph</div>
     <div style="margin-bottom:6px">
       <?php foreach (($graphRelated ?? []) as $g): ?><span class="skill inferred"><?= esc($g['label']) ?> <span class="conf">from graph</span></span> <?php endforeach; ?>
