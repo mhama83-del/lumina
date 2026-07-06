@@ -65,16 +65,6 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
 <section class="section">
   <div class="card">
     <div class="section-label">Ranked candidates · Talent Match Signal</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">
-      <span class="skill" style="font-size:11px">Skill 40%</span>
-      <span class="skill" style="font-size:11px">Evidence 20%</span>
-      <span class="skill" style="font-size:11px">Learning velocity 20%</span>
-      <span class="skill" style="font-size:11px">Work-Animal fit 10%</span>
-      <span class="skill" style="font-size:11px">Domain 5%</span>
-      <span class="skill" style="font-size:11px">CGPA 5%</span>
-    </div>
-    <p class="muted" style="font-size:12px;margin:0 0 12px">Each candidate's <strong>"Why?"</strong> shows this exact breakdown. Bands: 85+ Strong · 70-84 Good · 55-69 Potential · 40-54 Needs Development · below 40 Weak.</p>
-
     <form method="get" action="<?= base_url('employer/compare') ?>" id="cmpForm">
       <input type="hidden" name="role_id" value="<?= (int)$role['id'] ?>">
       <div class="row" style="justify-content:space-between;align-items:center;margin:8px 0;flex-wrap:wrap;gap:8px">
