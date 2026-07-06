@@ -18,7 +18,7 @@ class Candidate extends BaseController
         if (session('role') !== 'candidate') {
             session()->set(['role' => 'candidate', 'stage' => session('stage') ?? '19-22']);
         }
-        return view('candidate/home', ['title' => 'Lumina · Candidate', 'profile' => session('profile') ?? null]);
+        return view('candidate/home', ['title' => 'Lumina · Candidate', 'persona' => session('persona') ?? []]);
     }
 
     // ---------- Fasa 3: entry chooser ----------
@@ -213,71 +213,18 @@ class Candidate extends BaseController
         return view('candidate/resume', ['title' => 'Lumina · Resume Analysis']);
     }
 
-    /**
-     * AJAX (lightweight, no persist): read the pasted resume just enough to
-     * detect a name + a few highlight clauses, so the candidate can confirm
-     * or correct their profile BEFORE the full AI analysis runs.
-     */
-    public function resumePreview()
-    {
-        $text = trim((string) $this->request->getPost('resume_text'));
-        if ($text === '') return $this->response->setJSON(['error' => 'empty']);
-
-        $name   = $this->extractName($text);
-        $parser = new \App\Services\ResumeParserService();
-        $highlights = array_slice(array_values(array_unique(array_merge(
-            $parser->detectLeadership($text),
-            $parser->detectProjects($text)
-        ))), 0, 4);
-
-        return $this->response->setJSON(['name' => $name, 'highlights' => $highlights]);
-    }
-
-    /**
-     * Deterministic name detector (no external AI): looks at the first few
-     * lines for something that reads like "Firstname Lastname", else a
-     * "Name: ..." label. Returns '' if nothing confident is found — the
-     * candidate can just type it in on the confirm step.
-     */
-    private function extractName(string $text): string
-    {
-        $lines = preg_split('/\r\n|\r|\n/', trim($text));
-        $stop = ['resume', 'curriculum vitae', 'cv', 'objective', 'summary', 'profile', 'contact',
-                 'email', 'phone', 'address', 'experience', 'education', 'skills', 'final-year', 'university'];
-
-        foreach (array_slice($lines, 0, 3) as $line) {
-            $line = trim($line, " \t\-–•·");
-            if ($line === '' || mb_strlen($line) > 40) continue;
-            $lc = strtolower($line);
-            $skip = false;
-            foreach ($stop as $sw) { if (str_contains($lc, $sw)) { $skip = true; break; } }
-            if ($skip) continue;
-            if (preg_match('/^([A-Z][a-zA-Z\'\-]+(?:\s+[A-Z][a-zA-Z\'\-]+){1,3})$/', $line, $m)) {
-                return $m[1];
-            }
-        }
-        if (preg_match('/name\s*[:\-]\s*([A-Za-z\'\-]+(?:\s+[A-Za-z\'\-]+){1,3})/i', $text, $m)) {
-            return trim($m[1]);
-        }
-        return '';
-    }
-
     /** AJAX: analyse pasted resume text, build profile, persist, return JSON. */
     public function resumeAnalyze()
     {
         $text = trim((string) $this->request->getPost('resume_text'));
         if ($text === '') return $this->response->setJSON(['error' => 'empty']);
-        $confirmedName = trim((string) $this->request->getPost('name'));
 
         $svc       = new ScoreService();
         $explained = $svc->inferSkillsExplained($text, []);
         $domain    = $this->guessDomain(array_keys($explained));
 
         // persist profile (session) so the user can continue into Compass/Match
-        $this->buildProfile(
-            $text, [], $domain, session('profile')['animal'] ?? null, 0,
-            $confirmedName ?: (session('profile')['name'] ?? 'You')
-        );
+        $this->buildProfile($text, [], $domain, session('profile')['animal'] ?? null, 0, session('profile')['name'] ?? 'You');
         $cand = $this->buildSignal(session('profile'));
 
         // top role matches
@@ -382,7 +329,6 @@ class Candidate extends BaseController
             'field'      => $this->fieldName($domain),
             'university' => $foundUni,
             'cohort'     => $cohort,
-            'name'       => session('profile')['name'] ?? 'You',
             // ---- Fasa 2 additions ----
             'career_cluster' => $cluster,
             'band'           => $band,
