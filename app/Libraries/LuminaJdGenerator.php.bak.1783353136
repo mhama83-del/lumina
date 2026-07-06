@@ -3,17 +3,11 @@
 namespace App\Libraries;
 
 /**
- * LuminaJdGenerator (Fasa 4B.2, expanded to 11 domains)
- * Deterministic synthetic generator for employer job descriptions.
+ * LuminaJdGenerator (Fasa 4B.2)
+ * Deterministic synthetic generator for ~1,000 employer job descriptions.
  * Composes JD from curated building blocks (employers x role taxonomy x level
  * x country) while locking the target distribution from the Gemini research.
  * All output is synthetic/paraphrased — no real JD text is copied.
- *
- * Domains (ISCED-F 2013 grounded): Data, Engineering, Design, Business
- * (original 4) + Education, Arts & Humanities, Social Sciences,
- * Natural Sciences, Agriculture & Veterinary, Health & Welfare, Services
- * (added so every field of study a graduate might study has a real JD to
- * match against, not just tech/business).
  *
  * Usage: $records = LuminaJdGenerator::generate();  // array of JD records
  */
@@ -21,30 +15,22 @@ class LuminaJdGenerator
 {
     public const SEED = 20260704;
 
-    /** Domain quotas (total 1,450). */
-    private const DOMAIN_QUOTA = [
-        'Business' => 320, 'Engineering' => 300, 'Data' => 250, 'Design' => 130,
-        'Health & Welfare' => 90, 'Services' => 90, 'Education' => 60,
-        'Social Sciences' => 60, 'Natural Sciences' => 60, 'Arts & Humanities' => 50,
-        'Agriculture & Veterinary' => 40,
-    ];
+    /** Domain quotas (total 1,000). */
+    private const DOMAIN_QUOTA = ['Business' => 320, 'Engineering' => 300, 'Data' => 250, 'Design' => 130];
 
-    /** Level quotas (total 1,450). */
-    private const LEVEL_QUOTA = ['Internship' => 500, 'Fresh Graduate' => 500, 'Graduate Trainee' => 220, 'Junior' => 230];
+    /** Level quotas (total 1,000). */
+    private const LEVEL_QUOTA = ['Internship' => 350, 'Fresh Graduate' => 350, 'Graduate Trainee' => 150, 'Junior' => 150];
 
-    /** Country quotas (total 1,450). */
+    /** Country quotas (total 1,000). */
     private const COUNTRY_QUOTA = [
-        'Malaysia' => 750, 'Singapore' => 160, 'Indonesia' => 100, 'Thailand' => 90,
-        'Vietnam' => 90, 'Philippines' => 90, 'Japan' => 45, 'South Korea' => 35,
-        'Taiwan' => 25, 'China' => 35, 'India' => 30,
+        'Malaysia' => 500, 'Singapore' => 120, 'Indonesia' => 70, 'Thailand' => 70,
+        'Vietnam' => 70, 'Philippines' => 70, 'Japan' => 30, 'South Korea' => 25,
+        'Taiwan' => 15, 'China' => 15, 'India' => 15,
     ];
 
     /**
      * Employers: [name, country, city, industry, sector, type, size, domainsCSV]
-     * domains: B=Business, E=Engineering, D=Data, G=Design,
-     *          ED=Education, AH=Arts & Humanities, SS=Social Sciences,
-     *          NS=Natural Sciences, AG=Agriculture & Veterinary,
-     *          HW=Health & Welfare, SV=Services
+     * domains: B=Business, E=Engineering, D=Data, G=Design
      */
     private static function employers(): array
     {
@@ -77,25 +63,25 @@ class LuminaJdGenerator
             ['Carsome','Malaysia','Petaling Jaya','Technology','E-commerce','Startup','Scaleup','D,B'],
             ['Shopee Malaysia','Malaysia','Kuala Lumpur','Technology','E-commerce','MNC','Large Enterprise','D,B,G'],
             ["Touch 'n Go Digital",'Malaysia','Kuala Lumpur','Fintech','E-wallet','Startup','Scaleup','D,B,G'],
-            ['AirAsia','Malaysia','Sepang','Aviation','Airline','Public Listed','Large Enterprise','E,B,D,G,SV'],
-            ['Malaysia Airlines','Malaysia','Sepang','Aviation','Airline','GLC','Large Enterprise','E,B,SV'],
+            ['AirAsia','Malaysia','Sepang','Aviation','Airline','Public Listed','Large Enterprise','E,B,D,G'],
+            ['Malaysia Airlines','Malaysia','Sepang','Aviation','Airline','GLC','Large Enterprise','E,B'],
             ['Asia Digital Engineering','Malaysia','Sepang','Aviation','MRO','Mid-size','Mid-size','E'],
             ['Gamuda','Malaysia','Petaling Jaya','Construction','Infrastructure','Public Listed','Large Enterprise','E,B'],
             ['IJM','Malaysia','Petaling Jaya','Construction','Infrastructure','Public Listed','Large Enterprise','E,B'],
             ['WCT Holdings','Malaysia','Kuala Lumpur','Construction','Infrastructure','Public Listed','Mid-size','E,B'],
             ['MRT Corp','Malaysia','Kuala Lumpur','Infrastructure','Rail','GLC','Large Enterprise','E,B'],
-            ['DHL Malaysia','Malaysia','Shah Alam','Logistics','Supply Chain','MNC','Large Enterprise','B,SV'],
-            ['J&T Express','Malaysia','Shah Alam','Logistics','Courier','Mid-size','Mid-size','B,SV'],
-            ['Pos Malaysia','Malaysia','Kuala Lumpur','Logistics','Courier','Public Listed','Large Enterprise','B,SV'],
+            ['DHL Malaysia','Malaysia','Shah Alam','Logistics','Supply Chain','MNC','Large Enterprise','B'],
+            ['J&T Express','Malaysia','Shah Alam','Logistics','Courier','Mid-size','Mid-size','B'],
+            ['Pos Malaysia','Malaysia','Kuala Lumpur','Logistics','Courier','Public Listed','Large Enterprise','B'],
             ['Westports','Malaysia','Port Klang','Maritime','Ports','Public Listed','Large Enterprise','E,B'],
             ['Nestle Malaysia','Malaysia','Petaling Jaya','FMCG','Manufacturing','MNC','Large Enterprise','B,E'],
             ['F&N','Malaysia','Petaling Jaya','FMCG','Manufacturing','Public Listed','Large Enterprise','B,E'],
             ['Top Glove','Malaysia','Klang','Manufacturing','Medical Products','Public Listed','Large Enterprise','E,B'],
             ['Hartalega','Malaysia','Sepang','Manufacturing','Medical Products','Public Listed','Large Enterprise','E,B'],
-            ['IHH Healthcare','Malaysia','Kuala Lumpur','Healthcare','Hospital','Public Listed','Large Enterprise','D,B,HW'],
-            ['KPJ Healthcare','Malaysia','Kuala Lumpur','Healthcare','Hospital','Public Listed','Large Enterprise','D,B,HW'],
-            ['Pharmaniaga','Malaysia','Shah Alam','Pharmaceutical','Manufacturing','Public Listed','Mid-size','E,B,D,HW'],
-            ['Duopharma','Malaysia','Klang','Pharmaceutical','Manufacturing','Public Listed','Mid-size','E,B,HW'],
+            ['IHH Healthcare','Malaysia','Kuala Lumpur','Healthcare','Hospital','Public Listed','Large Enterprise','D,B'],
+            ['KPJ Healthcare','Malaysia','Kuala Lumpur','Healthcare','Hospital','Public Listed','Large Enterprise','D,B'],
+            ['Pharmaniaga','Malaysia','Shah Alam','Pharmaceutical','Manufacturing','Public Listed','Mid-size','E,B,D'],
+            ['Duopharma','Malaysia','Klang','Pharmaceutical','Manufacturing','Public Listed','Mid-size','E,B'],
             ['PwC Malaysia','Malaysia','Kuala Lumpur','Consulting','Audit','MNC','Large Enterprise','B,D'],
             ['EY Malaysia','Malaysia','Kuala Lumpur','Consulting','Audit','MNC','Large Enterprise','B,D'],
             ['Deloitte Malaysia','Malaysia','Kuala Lumpur','Consulting','Audit','MNC','Large Enterprise','B,D'],
@@ -105,36 +91,7 @@ class LuminaJdGenerator
             ['Astro','Malaysia','Kuala Lumpur','Media','Broadcasting','Public Listed','Large Enterprise','G,D,B'],
             ['MDEC','Malaysia','Cyberjaya','Technology','Government Agency','GLC','Mid-size','B,D'],
             ['Khazanah Nasional','Malaysia','Kuala Lumpur','Investment','Sovereign Fund','GLC','Mid-size','B'],
-            ['Kolej Kemahiran Tinggi','Malaysia','Temerloh','Education','TVET','SME','Small Enterprise','E,B,ED'],
-            // ---- Malaysia: Education ----
-            ['Ministry of Education Malaysia','Malaysia','Putrajaya','Education','Public Education','Government Agency','Large Enterprise','ED'],
-            ['Sunway University','Malaysia','Selangor','Education','Higher Education','Private','Mid-size','ED'],
-            ["Taylor's University",'Malaysia','Subang Jaya','Education','Higher Education','Private','Mid-size','ED'],
-            ['SEGi College','Malaysia','Kota Damansara','Education','Higher Education','Private','Mid-size','ED'],
-            // ---- Malaysia: Arts & Humanities / Social Sciences ----
-            ['Bernama','Malaysia','Kuala Lumpur','Media','News Agency','GLC','Mid-size','AH,SS'],
-            ['Istana Budaya','Malaysia','Kuala Lumpur','Arts & Culture','Performing Arts','Government Agency','Small Enterprise','AH'],
-            ['Department of Museums Malaysia','Malaysia','Kuala Lumpur','Culture','Heritage','Government Agency','Small Enterprise','AH'],
-            ['Dewan Bahasa dan Pustaka','Malaysia','Kuala Lumpur','Publishing','Language & Literature','Government Agency','Mid-size','AH'],
-            ['ISIS Malaysia','Malaysia','Kuala Lumpur','Think Tank','Public Policy','NGO','Small Enterprise','SS'],
-            ['Ministry of Women, Family and Community Development','Malaysia','Putrajaya','Government','Social Welfare','Government Agency','Large Enterprise','SS'],
-            // ---- Malaysia: Natural Sciences ----
-            ['MOSTI','Malaysia','Putrajaya','Government','Science & Technology','Government Agency','Mid-size','NS'],
-            ['SIRIM Berhad','Malaysia','Shah Alam','Research','Standards & Testing','GLC','Mid-size','NS'],
-            ['MIMOS Berhad','Malaysia','Kuala Lumpur','Research','Technology R&D','GLC','Mid-size','NS,D'],
-            // ---- Malaysia: Agriculture & Veterinary ----
-            ['FELDA','Malaysia','Kuala Lumpur','Agriculture','Plantation','GLC','Large Enterprise','AG'],
-            ['MARDI','Malaysia','Serdang','Agriculture','Agricultural Research','Government Agency','Mid-size','AG,NS'],
-            ['Department of Veterinary Services Malaysia','Malaysia','Putrajaya','Government','Veterinary Services','Government Agency','Mid-size','AG'],
-            ['LKIM','Malaysia','Kuala Lumpur','Fisheries','Fisheries Development','Government Agency','Mid-size','AG'],
-            // ---- Malaysia: Health & Welfare ----
-            ['Gleneagles Hospital','Malaysia','Kuala Lumpur','Healthcare','Hospital','Private','Large Enterprise','HW'],
-            ['Guardian Malaysia','Malaysia','Petaling Jaya','Retail','Pharmacy','MNC','Large Enterprise','HW,B'],
-            ['Ministry of Health Malaysia','Malaysia','Putrajaya','Government','Public Health','Government Agency','Large Enterprise','HW'],
-            // ---- Malaysia: Services ----
-            ['Shangri-La Hotels Malaysia','Malaysia','Kuala Lumpur','Hospitality','Hotel','MNC','Large Enterprise','SV'],
-            ['Tourism Malaysia','Malaysia','Kuala Lumpur','Government','Tourism Promotion','Government Agency','Mid-size','SV'],
-            ['Sunway Resort Hotel','Malaysia','Selangor','Hospitality','Hotel & Resort','Private','Mid-size','SV'],
+            ['Kolej Kemahiran Tinggi','Malaysia','Temerloh','Education','TVET','SME','Small Enterprise','E,B'],
             // ---- Singapore ----
             ['DBS Bank','Singapore','Singapore','Finance','Banking','MNC','Large Enterprise','B,D'],
             ['OCBC','Singapore','Singapore','Finance','Banking','MNC','Large Enterprise','B,D'],
@@ -143,22 +100,18 @@ class LuminaJdGenerator
             ['Singtel','Singapore','Singapore','Telecommunications','Telco','MNC','Large Enterprise','E,D,B'],
             ['ST Engineering','Singapore','Singapore','Aerospace','Defence','Public Listed','Large Enterprise','E,D'],
             ['PSA International','Singapore','Singapore','Maritime','Ports','GLC','Large Enterprise','E,B'],
-            ['Changi Airport Group','Singapore','Singapore','Aviation','Airport','GLC','Large Enterprise','E,B,D,SV'],
-            ['Singapore General Hospital','Singapore','Singapore','Healthcare','Hospital','Government Agency','Large Enterprise','HW'],
-            ['National Institute of Education Singapore','Singapore','Singapore','Education','Teacher Training','Government Agency','Mid-size','ED'],
+            ['Changi Airport Group','Singapore','Singapore','Aviation','Airport','GLC','Large Enterprise','E,B,D'],
             // ---- Indonesia ----
             ['GoTo','Indonesia','Jakarta','Technology','E-commerce','MNC','Large Enterprise','D,B,G'],
             ['Tokopedia','Indonesia','Jakarta','Technology','E-commerce','MNC','Large Enterprise','D,B,G'],
             ['Bank Mandiri','Indonesia','Jakarta','Finance','Banking','GLC','Large Enterprise','B,D'],
             ['BCA','Indonesia','Jakarta','Finance','Banking','Public Listed','Large Enterprise','B,D'],
             ['Telkom Indonesia','Indonesia','Bandung','Telecommunications','Telco','GLC','Large Enterprise','E,D,B'],
-            ['Traveloka','Indonesia','Jakarta','Technology','Travel Tech','Startup','Scaleup','D,B,G,SV'],
-            ['Siloam Hospitals','Indonesia','Jakarta','Healthcare','Hospital','Public Listed','Large Enterprise','HW'],
+            ['Traveloka','Indonesia','Jakarta','Technology','Travel Tech','Startup','Scaleup','D,B,G'],
             // ---- Thailand ----
             ['SCG','Thailand','Bangkok','Manufacturing','Materials','Public Listed','Large Enterprise','E,B'],
             ['PTT','Thailand','Bangkok','Oil & Gas','Energy','GLC','Large Enterprise','E,B'],
-            ['Agoda','Thailand','Bangkok','Technology','Travel Tech','MNC','Large Enterprise','D,B,G,SV'],
-            ['Bangkok Dusit Medical Services','Thailand','Bangkok','Healthcare','Hospital','Public Listed','Large Enterprise','HW'],
+            ['Agoda','Thailand','Bangkok','Technology','Travel Tech','MNC','Large Enterprise','D,B,G'],
             // ---- Vietnam ----
             ['FPT Software','Vietnam','Hanoi','IT','Software Services','Public Listed','Large Enterprise','E,D'],
             ['Viettel','Vietnam','Hanoi','Telecommunications','Telco','GLC','Large Enterprise','E,D'],
@@ -168,7 +121,7 @@ class LuminaJdGenerator
             // ---- Philippines ----
             ['Globe Telecom','Philippines','Manila','Telecommunications','Telco','Public Listed','Large Enterprise','E,D,B'],
             ['PLDT','Philippines','Manila','Telecommunications','Telco','Public Listed','Large Enterprise','E,D,B'],
-            ['Jollibee Group','Philippines','Manila','F&B','Retail','Public Listed','Large Enterprise','B,SV'],
+            ['Jollibee Group','Philippines','Manila','F&B','Retail','Public Listed','Large Enterprise','B'],
             ['GCash','Philippines','Manila','Fintech','E-wallet','Startup','Scaleup','D,B,G'],
             // ---- Japan ----
             ['Toyota','Japan','Nagoya','Automotive','Manufacturing','MNC','Large Enterprise','E,G'],
@@ -225,12 +178,7 @@ class LuminaJdGenerator
 
     private static function letterToDomain(string $l): string
     {
-        return [
-            'B' => 'Business', 'E' => 'Engineering', 'D' => 'Data', 'G' => 'Design',
-            'ED' => 'Education', 'AH' => 'Arts & Humanities', 'SS' => 'Social Sciences',
-            'NS' => 'Natural Sciences', 'AG' => 'Agriculture & Veterinary',
-            'HW' => 'Health & Welfare', 'SV' => 'Services',
-        ][$l] ?? 'Business';
+        return ['B' => 'Business', 'E' => 'Engineering', 'D' => 'Data', 'G' => 'Design'][$l] ?? 'Business';
     }
 
     /**
@@ -329,35 +277,6 @@ class LuminaJdGenerator
         'Interior Design Assistant' => ['Design',['Interior Design','CAD'],['3D Rendering','Space Planning'],['Creativity','Attention to Detail'],['AutoCAD','SketchUp','Photoshop'],['interior','design','space','rendering'],['A portfolio of interior projects','Evidence of client or brief work'],['Interior Design','Architecture','Design'],'Octopus','Peacock',['Dolphin','Ant'],'Rigid profiles limit spatial creativity.','Creativity with client sensitivity.','Medium','2.5'],
         'Multimedia Designer' => ['Design',['Multimedia','Graphic Design'],['Video Editing','Animation'],['Creativity','Time Management'],['Photoshop','After Effects','Illustrator'],['multimedia','design','graphic','video'],['A multimedia portfolio','Evidence of varied creative outputs'],['Multimedia','Graphic Design','Creative Media'],'Octopus','Peacock',['Dolphin','Fox'],'Narrow profiles miss multimedia range.','Versatile, hands-on creativity.','Medium','2.5'],
         'Game Designer' => ['Design',['Game Design','Prototyping'],['UX','Storytelling'],['Creativity','Problem Solving'],['Unity','Figma','Photoshop'],['game','design','interactive','prototype'],['A portfolio of game or interactive projects','Evidence of playtesting or iteration'],['Game Design','Multimedia','Computer Science'],'Octopus','Fox',['Peacock','Owl'],'Rigid profiles resist playful iteration.','Iterative, player-focused design.','High','2.8'],
-        // ================= EDUCATION =================
-        'Teacher Trainee' => ['Education',['Lesson Planning','Classroom Management'],['Curriculum Design','ICT in Education'],['Patience','Communication'],['Google Classroom','Canva','MS Office'],['teacher','education','classroom','lesson'],['Evidence of teaching practicum or tutoring experience','Lesson plan portfolio'],['Education','TESL','Early Childhood Education'],'Elephant','Owl',['Dolphin','Ant'],'Impatient profiles struggle with learner pacing.','Patient, development-focused culture.','Low','2.8'],
-        'Corporate Trainer' => ['Education',['Training Design','Presentation'],['Facilitation','Stakeholder Management'],['Communication','Adaptability'],['PowerPoint','LMS','Canva'],['training','trainer','facilitation','learning'],['Evidence of leading a workshop or presentation','Public speaking experience'],['Education','Human Resources','Communication'],'Peacock','Elephant',['Dolphin','Eagle'],'Introverted profiles struggle facilitating groups.','Energetic, people-development culture.','Medium','2.8'],
-        'Student Counsellor' => ['Education',['Counselling','Case Management'],['Psychology','Communication'],['Empathy','Confidentiality'],['MS Office','Case Notes','Assessment Tools'],['counsellor','guidance','student','wellbeing'],['Evidence of peer counselling or mentoring','Psychology or counselling coursework'],['Counselling','Psychology','Educational Psychology'],'Elephant','Dolphin',['Owl','Peacock'],'Cold, transactional profiles struggle with pastoral care.','Warm, confidential support culture.','Low','2.8'],
-        // ================= ARTS & HUMANITIES =================
-        'Translator / Linguist' => ['Arts & Humanities',['Translation','Writing'],['Research','Proofreading'],['Attention to Detail','Cultural Sensitivity'],['MS Word','CAT Tools','Dictionaries'],['translation','linguist','language','writing'],['Portfolio of translated texts','Evidence of bilingual/multilingual fluency'],['Linguistics','English Literature','Malay Literature'],'Owl','Elephant',['Ant','Dolphin'],'Careless profiles produce inaccurate translations.','Precise, culturally-sensitive work.','Low','3.0'],
-        'Performing Arts Practitioner' => ['Arts & Humanities',['Performance','Stage Presence'],['Choreography','Creativity'],['Discipline','Teamwork'],['Rehearsal Space','Costumes','Sound Systems'],['performance','theatre','stage','arts'],['Portfolio or recording of a performance','Evidence of stage or ensemble experience'],['Performing Arts','Theatre Studies','Fine Arts'],'Peacock','Octopus',['Dolphin','Eagle'],'Rigid profiles struggle with creative improvisation.','Expressive, ensemble-driven culture.','Low','2.5'],
-        'Heritage & Archives Researcher' => ['Arts & Humanities',['Research','Archival Work'],['Writing','Documentation'],['Attention to Detail','Curiosity'],['MS Office','Archival Databases','Cataloguing Tools'],['heritage','archive','research','museum'],['Evidence of a research paper or archival project','Interest in history or cultural heritage'],['History','Anthropology','Archaeology'],'Owl','Elephant',['Ant','Dolphin'],'Impatient profiles rush archival accuracy.','Meticulous, heritage-focused work.','Low','3.0'],
-        // ================= SOCIAL SCIENCES =================
-        'Journalist / Reporter' => ['Social Sciences',['Writing','Research'],['Interviewing','Multimedia'],['Curiosity','Communication'],['MS Word','Recording Devices','Social Media'],['journalist','reporter','news','writing'],['Portfolio of published articles or blog posts','Evidence of interviewing or reporting'],['Journalism','Mass Communication','Communication'],'Fox','Peacock',['Owl','Eagle'],'Passive profiles miss breaking stories.','Fast-paced, deadline-driven culture.','Medium','2.8'],
-        'Policy Analyst' => ['Social Sciences',['Research','Policy Analysis'],['Writing','Stakeholder Management'],['Analytical Thinking','Communication'],['MS Office','Research Databases','Excel'],['policy','analyst','research','government'],['Evidence of a policy brief or research paper','Debate or Model UN experience'],['Political Science','International Relations','Public Administration'],'Owl','Eagle',['Fox','Elephant'],'Impulsive profiles skip evidence-based analysis.','Rigorous, evidence-first culture.','Medium','3.0'],
-        'Social Worker' => ['Social Sciences',['Counselling','Case Management'],['Community Outreach','Psychology'],['Empathy','Resilience'],['Case Notes','MS Office','Assessment Tools'],['social','worker','welfare','community'],['Evidence of volunteer or community work','Psychology or social work coursework'],['Social Work','Sociology','Psychology'],'Elephant','Dolphin',['Owl','Wolf'],'Detached profiles struggle with client care.','Compassionate, community-first culture.','Low','2.8'],
-        // ================= NATURAL SCIENCES =================
-        'Research Scientist Trainee' => ['Natural Sciences',['Research','Lab Techniques'],['Statistics','Scientific Writing'],['Curiosity','Precision'],['Lab Equipment','SPSS','MS Office'],['research','scientist','lab','experiment'],['Evidence of a lab-based final year project','Evidence of scientific writing or publication'],['Physics','Chemistry','Biology','Biotechnology'],'Owl','Ant',['Fox','Octopus'],'Careless profiles compromise experimental integrity.','Rigorous, evidence-based culture.','Medium','3.2'],
-        'Lab Quality Analyst' => ['Natural Sciences',['Lab Techniques','Quality Control'],['Data Analysis','Documentation'],['Attention to Detail','Consistency'],['Lab Equipment','Minitab','Excel'],['lab','quality','analyst','testing'],['Evidence of laboratory coursework or internship','Attention to measurement precision'],['Chemistry','Biochemistry','Microbiology'],'Ant','Owl',['Horse','Fox'],'Careless profiles risk product safety.','Methodical, quality-first culture.','Medium','3.0'],
-        'Actuarial Trainee' => ['Natural Sciences',['Statistics','Mathematics'],['Risk Modelling','Excel'],['Analytical Thinking','Patience'],['Excel','R','Actuarial Software'],['actuarial','statistics','risk','insurance'],['Evidence of strong quantitative coursework','Progress on actuarial exams (e.g. SOA/IFoA)'],['Actuarial Science','Statistics','Mathematics'],'Owl','Ant',['Fox','Elephant'],'Impatient profiles struggle with long exam pathways.','Analytical, exam-driven culture.','Medium','3.3'],
-        // ================= AGRICULTURE & VETERINARY =================
-        'Agronomist Trainee' => ['Agriculture & Veterinary',['Crop Science','Field Research'],['Sustainability','Data Analysis'],['Patience','Physical Stamina'],['Field Equipment','Excel','GPS Tools'],['agriculture','crop','farm','agronomy'],['Evidence of fieldwork or farm-based project','Interest in sustainable agriculture'],['Agricultural Science','Agribusiness','Agrotechnology'],'Wolf','Ant',['Horse','Owl'],'Office-only profiles struggle with field conditions.','Field-based, hands-on culture.','Medium','2.8'],
-        'Veterinary Assistant' => ['Agriculture & Veterinary',['Animal Care','Clinical Skills'],['Communication','Documentation'],['Empathy','Composure'],['Veterinary Tools','Case Notes','MS Office'],['veterinary','animal','clinic','care'],['Evidence of animal handling or clinic exposure','Veterinary or animal science coursework'],['Veterinary Medicine','Veterinary Science','Animal Science'],'Elephant','Ant',['Owl','Dolphin'],'Impatient profiles struggle with animal handling.','Calm, animal-welfare-first culture.','Medium','3.0'],
-        'Aquaculture Officer Trainee' => ['Agriculture & Veterinary',['Aquaculture','Field Research'],['Sustainability','Data Analysis'],['Patience','Physical Stamina'],['Field Equipment','Water Testing Kits','Excel'],['aquaculture','fisheries','farming','marine'],['Evidence of fieldwork near water/marine environments','Interest in sustainable fisheries'],['Aquaculture','Fisheries Science','Agricultural Science'],'Wolf','Ant',['Horse','Owl'],'Office-only profiles struggle with field conditions.','Field-based, hands-on culture.','Medium','2.8'],
-        // ================= HEALTH & WELFARE =================
-        'Clinical Officer Trainee' => ['Health & Welfare',['Clinical Skills','Patient Care'],['Documentation','Communication'],['Empathy','Composure'],['Clinical Equipment','Case Notes','MS Office'],['clinical','patient','healthcare','medical'],['Evidence of clinical placement or rotation','Medical/nursing coursework'],['Medicine','Nursing','Medical Science','Dentistry'],'Elephant','Owl',['Dolphin','Ant'],'Careless profiles risk patient safety.','Compassionate, precision-first culture.','Medium','3.2'],
-        'Pharmacy Assistant' => ['Health & Welfare',['Pharmacology','Patient Care'],['Attention to Detail','Documentation'],['Integrity','Communication'],['Dispensing Systems','MS Office','Case Notes'],['pharmacy','pharmacist','medication','dispensing'],['Evidence of pharmacy internship or coursework','Attention to dosage/accuracy'],['Pharmacy','Pharmaceutical Science'],'Owl','Elephant',['Ant','Dolphin'],'Careless profiles risk medication errors.','Precise, patient-safety-first culture.','Medium','3.2'],
-        'Physiotherapy Assistant' => ['Health & Welfare',['Clinical Skills','Rehabilitation'],['Patient Care','Communication'],['Empathy','Physical Stamina'],['Rehab Equipment','Case Notes','MS Office'],['physiotherapy','rehab','therapy','patient'],['Evidence of clinical placement in rehab settings','Physiotherapy or sports science coursework'],['Physiotherapy','Occupational Therapy','Sports Science'],'Elephant','Dolphin',['Owl','Wolf'],'Impatient profiles rush patient recovery.','Patient, recovery-focused culture.','Medium','3.0'],
-        'Public Health Officer Trainee' => ['Health & Welfare',['Public Health','Data Analysis'],['Community Outreach','Research'],['Empathy','Analytical Thinking'],['Excel','Survey Tools','MS Office'],['public','health','community','wellness'],['Evidence of community health project or outreach','Public health or biostatistics coursework'],['Public Health','Nutrition and Dietetics','Biomedical Science'],'Elephant','Owl',['Dolphin','Fox'],'Detached profiles struggle with community engagement.','Community-first, evidence-based culture.','Medium','3.0'],
-        // ================= SERVICES =================
-        'Hospitality Executive Trainee' => ['Services',['Hospitality Operations','Customer Service'],['Front Office','F&B'],['Empathy','Adaptability'],['PMS','POS','MS Office'],['hospitality','hotel','guest','service'],['Evidence of service or hospitality internship','Customer-facing experience'],['Hospitality Management','Culinary Arts','Tourism Management'],'Dolphin','Peacock',['Elephant','Wolf'],'Impersonal profiles struggle with guest care.','Warm, service-first culture.','Low','2.5'],
-        'Tourism Travel Officer' => ['Services',['Event Planning','Customer Service'],['Marketing','Coordination'],['Communication','Adaptability'],['Booking Systems','Canva','MS Office'],['tourism','travel','tour','guide'],['Evidence of organizing trips or events','Tourism/hospitality coursework'],['Tourism Management','Hospitality Management','Aviation Management'],'Peacock','Dolphin',['Wolf','Eagle'],'Rigid profiles struggle with travel unpredictability.','Adaptable, adventure-friendly culture.','Low','2.5'],
-        'Logistics Executive Trainee' => ['Services',['Logistics','Project Planning'],['Supply Chain','Data Analysis'],['Organization','Problem Solving'],['WMS','Excel','ERP'],['logistics','supply','delivery','warehouse'],['Evidence of coordinating logistics or deliveries','Supply chain or logistics coursework'],['Logistics Management','Supply Chain Management','Aviation Management'],'Wolf','Ant',['Horse','Fox'],'Disorganized profiles break the chain.','Fast, decisive coordination culture.','Medium','2.8'],
         ];
     }
 
@@ -398,7 +317,6 @@ class LuminaJdGenerator
     private static function arrangement(string $domain, string $bucket): string
     {
         if ($domain === 'Engineering') return mt_rand(0, 9) < 8 ? 'On-site' : 'Hybrid';
-        if (in_array($domain, ['Health & Welfare', 'Agriculture & Veterinary', 'Services'], true)) return mt_rand(0, 9) < 9 ? 'On-site' : 'Hybrid';
         if ($bucket === 'Internship')  return mt_rand(0, 9) < 6 ? 'On-site' : 'Hybrid';
         $r = mt_rand(0, 9);
         return $r < 5 ? 'Hybrid' : ($r < 8 ? 'On-site' : 'Remote');
@@ -419,14 +337,7 @@ class LuminaJdGenerator
     private static function summary(string $family, string $company, string $domain, string $bucket, array $f): string
     {
         $lvl = ['Internship' => 'hands-on internship', 'Fresh Graduate' => 'fresh-graduate role', 'Graduate Trainee' => 'structured graduate programme', 'Junior' => 'early-career role'][$bucket] ?? 'role';
-        $verb = [
-            'Data' => 'turn data into decisions', 'Engineering' => 'build and maintain real systems safely',
-            'Design' => 'craft user-centred experiences', 'Business' => 'drive operations and growth',
-            'Education' => 'help others learn and grow', 'Arts & Humanities' => 'preserve and communicate culture and ideas',
-            'Social Sciences' => 'understand and support people and communities', 'Natural Sciences' => 'investigate the world through rigorous science',
-            'Agriculture & Veterinary' => 'care for the land, animals and food systems', 'Health & Welfare' => 'care for patients and public wellbeing',
-            'Services' => 'deliver smooth, reliable experiences for customers',
-        ][$domain] ?? 'contribute to the team';
+        $verb = ['Data' => 'turn data into decisions', 'Engineering' => 'build and maintain real systems safely', 'Design' => 'craft user-centred experiences', 'Business' => 'drive operations and growth'][$domain];
         $t = [
             "A {$lvl} at {$company} to {$verb} as a {$family}.",
             "Join {$company} as a {$family} — a {$lvl} focused on helping the team {$verb}.",
@@ -460,17 +371,13 @@ class LuminaJdGenerator
              . "(Synthetic listing generated for Lumina matching; not a real advertisement.)";
     }
 
-    /** Main generator — returns ~1,450 JD records across 11 domains. */
+    /** Main generator — returns ~1,000 JD records. */
     public static function generate(): array
     {
         $employers = self::employers();
         $families  = self::families();
 
-        $famByDomain = [
-            'Data' => [], 'Engineering' => [], 'Design' => [], 'Business' => [],
-            'Education' => [], 'Arts & Humanities' => [], 'Social Sciences' => [],
-            'Natural Sciences' => [], 'Agriculture & Veterinary' => [], 'Health & Welfare' => [], 'Services' => [],
-        ];
+        $famByDomain = ['Data' => [], 'Engineering' => [], 'Design' => [], 'Business' => []];
         foreach ($families as $name => $f) { $famByDomain[$f[0]][] = $name; }
 
         $empByCountry = [];
@@ -493,7 +400,7 @@ class LuminaJdGenerator
         mt_srand(self::SEED + 7); // per-record variation
 
         $total = min(count($domainSlots), count($levelSlots), count($countrySlots));
-        $famCounter = array_fill_keys(array_keys(self::DOMAIN_QUOTA), 0);
+        $famCounter = ['Data' => 0, 'Engineering' => 0, 'Design' => 0, 'Business' => 0];
         $empCounter = [];
         $titleCount = [];
         $records = [];
@@ -503,17 +410,12 @@ class LuminaJdGenerator
             $bucket  = $levelSlots[$k];
             $country = $countrySlots[$k];
 
-            $fams = $famByDomain[$domain] ?? [];
-            if (! $fams) continue; // safety: skip if a domain somehow has no families defined
+            $fams    = $famByDomain[$domain];
             $famName = $fams[$famCounter[$domain] % count($fams)];
             $famCounter[$domain]++;
             $f = $families[$famName];
 
-            // fall back to ANY Malaysia employer (then any employer) if this
-            // country has no employer tagged for this specific new domain yet
-            $cands = $empByCountryDomain[$country][$domain]
-                ?? $empByCountryDomain['Malaysia'][$domain]
-                ?? ($empByCountry[$country] ?? [0]);
+            $cands = $empByCountryDomain[$country][$domain] ?? ($empByCountry[$country] ?? [0]);
             $ckey  = $country . '|' . $domain;
             $empCounter[$ckey] = $empCounter[$ckey] ?? 0;
             $e = $employers[$cands[$empCounter[$ckey] % count($cands)]];
