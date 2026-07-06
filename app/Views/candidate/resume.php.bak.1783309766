@@ -165,8 +165,6 @@ function analyze(text){
           '<div style="margin-bottom:8px">'+chip(a.primary,'primary')+' '+chip(a.secondary,'secondary')+' '+chip(a.growth,'growth')+'</div>'+
           '<div class="muted" style="font-size:13px">'+a.line+' <span class="gold">Confidence '+a.confidence+'%</span></div>'+
           '<div class="muted" style="font-size:12px;margin-top:6px">Traits: '+(a.primary.traits||[]).join(' · ')+'</div>'+
-          '<div class="muted" style="font-size:12px;margin-top:4px">'+(a.primary.role||'')+(a.careerFit? ' · Career fit: '+a.careerFit.join(', '):'')+'</div>'+
-          (a.growthAdvice? '<div class="muted" style="font-size:12px;margin-top:4px">Growth ('+(a.growth?a.growth.label:'')+'): '+a.growthAdvice+'</div>':'')+
           '</div>';
       }
 

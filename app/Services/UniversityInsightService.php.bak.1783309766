@@ -13,7 +13,7 @@ use App\Services\ResumeParserService;
  */
 class UniversityInsightService
 {
-    private static array $animalMap = ['beaver'=>'Ant']; // legacy alias; 12 new ids resolve via ucfirst()
+    private static array $animalMap = ['owl'=>'Owl','fox'=>'Fox','eagle'=>'Eagle','dolphin'=>'Dolphin','beaver'=>'Ant','lion'=>'Lion'];
 
     /** One pass over the cohort → all aggregates used by dashboard + interventions. */
     public function cohort(?string $university = null): array
@@ -51,8 +51,7 @@ class UniversityInsightService
             if (! (int) ($s['has_resume'] ?? 0)) $noResume++;
 
             $an = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');
-            $pid = $an['primary']['id'] ?? 'owl';
-            $aName = self::$animalMap[$pid] ?? ucfirst($pid);
+            $aName = self::$animalMap[$an['primary']['id'] ?? 'owl'] ?? 'Owl';
             $animalDist[$aName] = ($animalDist[$aName] ?? 0) + 1;
 
             $role = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));

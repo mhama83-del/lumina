@@ -16,7 +16,10 @@ use App\Services\ResumeParserService;
 class TalentMatchService
 {
     /** interim 6-animal (candidate side) -> full 12-name set */
-    private static array $animalMap = ['beaver' => 'Ant']; // legacy alias; 12 new ids resolve via ucfirst()
+    private static array $animalMap = [
+        'owl' => 'Owl', 'fox' => 'Fox', 'eagle' => 'Eagle',
+        'dolphin' => 'Dolphin', 'beaver' => 'Ant', 'lion' => 'Lion',
+    ];
 
     /** Build a candidate signal from a students-table row. */
     public static function buildStudentSignal(array $s, array $stated = []): array
@@ -28,7 +31,7 @@ class TalentMatchService
         $an  = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');
         $pid = $an['primary']['id'] ?? 'owl';
 
-        $cand['animal']        = self::$animalMap[$pid] ?? ucfirst($pid); // 12-id ids map via ucfirst
+        $cand['animal']        = self::$animalMap[$pid] ?? ucfirst($pid);
         $cand['evidence_text'] = $s['evidence_text'] ?? '';
         $cand['programme']     = $s['programme'] ?? '';
         $cand['cgpa']          = (isset($s['cgpa']) && is_numeric($s['cgpa'])) ? (float) $s['cgpa'] : null;

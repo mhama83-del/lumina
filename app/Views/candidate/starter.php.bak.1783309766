@@ -30,7 +30,6 @@
         </div>
         <p class="muted" style="font-size:13px"><?= esc($animal['line']) ?> <span class="gold">Confidence <?= (int)$animal['confidence'] ?>%</span></p>
         <p class="muted" style="font-size:12px;margin-top:6px">Traits: <?= esc(implode(' · ', $animal['primary']['traits'] ?? [])) ?></p>
-        <?php if (!empty($animal['growthAdvice'])): ?><p class="muted" style="font-size:12px;margin-top:4px">Growth (<?= esc($animal['growth']['label'] ?? '') ?>): <?= esc($animal['growthAdvice']) ?></p><?php endif; ?>
       </div>
     </div>
 
