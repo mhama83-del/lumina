@@ -286,12 +286,6 @@ class Candidate extends BaseController
             $text, [], $domain, session('profile')['animal'] ?? null, 0,
             $confirmedName ?: (session('profile')['name'] ?? 'You')
         );
-        // Ground initial matching in skills GAINED THROUGH THE PROGRAMME
-        // (e.g. Chemical Engineering -> chemical_processing, process_safety),
-        // not just whatever soft-skill keywords happen to appear in the
-        // activities/leadership text. Additive only — never overrides an
-        // already explicitly-detected skill.
-        $this->injectCoreSkills($degree['coreSkills'] ?? []);
         $cand = $this->buildSignal(session('profile'));
 
         // top role matches
@@ -331,13 +325,9 @@ class Candidate extends BaseController
         $band      = $svc->risk($readiness['score']);
 
         $skillOut = [];
-        foreach ($cand['skills'] as $code => $s) {
-            $skillOut[] = [
-                'label'  => \App\Libraries\Catalog::label($code),
-                'source' => $s['source'] ?? 'inferred',
-                'conf'   => round(($s['confidence'] ?? 0.6) * 100),
-                'from'   => $s['from'] ?? (($s['source'] ?? '') === 'programme' ? ('from your field of study: ' . ($degree['raw'] ?? '')) : null),
-            ];
+        foreach ($explained as $code => $s) {
+            $skillOut[] = ['label' => \App\Libraries\Catalog::label($code), 'source' => $s['source'],
+                           'conf' => round($s['confidence'] * 100), 'from' => $s['from']];
         }
 
         // detect a university named in the resume (optional display)
@@ -538,24 +528,6 @@ class Candidate extends BaseController
 
     // ================= helpers =================
 
-    /**
-     * Merge skills typically GAINED through the candidate's declared
-     * programme into their session profile (tagged source='programme').
-     * These ground the initial job-description matching; they are additive
-     * and never override an already-detected, explicitly-written skill.
-     */
-    private function injectCoreSkills(array $codes): void
-    {
-        if (! $codes) return;
-        $profile = session('profile') ?? [];
-        foreach ($codes as $code) {
-            if (! isset($profile['skills'][$code])) {
-                $profile['skills'][$code] = ['confidence' => 0.6, 'source' => 'programme'];
-            }
-        }
-        session()->set('profile', $profile);
-    }
-
     private function buildProfile(string $text, array $stated, string $domain, ?string $animal, int $verified, ?string $name): void
     {
         $svc = new ScoreService();
@@ -667,14 +639,13 @@ class Candidate extends BaseController
 
         // field of study from the stated programme name wins over the loose "interest" pick
         $parserFos = new \App\Services\ResumeParserService();
-        $fos       = $parserFos->extractFieldOfStudy($programme);
+        $fos       = $parserFos->extractFieldOfStudy('Bachelor of ' . $programme);
         $domain    = $fos['domain'] ?? $this->normaliseDomain($interest);
 
         session()->set('stage', $stage);
         $verified = $intern === 'completed' ? 1 : 0;
 
         $this->buildProfile($text, $stated, $domain, session('profile')['animal'] ?? null, $verified, 'You');
-        $this->injectCoreSkills($fos['coreSkills'] ?? []);
         $cand = $this->buildSignal(session('profile'));
 
         $svc         = new ScoreService();
