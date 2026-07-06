@@ -1,0 +1,260 @@
+<?php
+
+namespace App\Services;
+
+use App\Libraries\Catalog;
+use App\Services\ScoreService;
+use App\Services\ResumeParserService;
+
+/**
+ * TaxonomyService (Lumina Graph)
+ * A self-growing knowledge graph of skills and profile patterns.
+ * - seedFromExisting(): builds the graph from current students + employer JD.
+ * - enrich(): given a new profile, suggests RELATED skills/traits from the graph
+ *   (labelled "from graph", never claimed as detected).
+ * - learn(): folds a new profile back in — new skills/patterns grow the graph.
+ * Deterministic (Jaccard + domain/programme). No external AI.
+ */
+class TaxonomyService
+{
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = \Config\Database::connect();
+    }
+
+    // ============ BUILD (one-time / re-runnable) ============
+    public function seedFromExisting(): array
+    {
+        $svc = new ScoreService();
+        $par = new ResumeParserService();
+
+        $this->db->table('taxonomy_skills')->truncate();
+        $this->db->table('taxonomy_patterns')->truncate();
+
+        $skillFreq = []; $cooc = []; $patterns = [];
+
+        // ---- students ----
+        $students = $this->db->table('students')
+            ->select('programme, target_domain, evidence_text, has_resume')
+            ->get()->getResultArray();
+
+        foreach ($students as $s) {
+            $domain = $s['target_domain'] ?: 'Business';
+            $cand   = $svc->signal($s['evidence_text'] ?? '', [], (int) ($s['has_resume'] ?? 0), $domain);
+            $codes  = array_keys($cand['skills']);
+            foreach ($codes as $c) { $skillFreq[$c] = ($skillFreq[$c] ?? 0) + 1; }
+            // co-occurrence
+            $n = count($codes);
+            for ($i = 0; $i < $n; $i++) {
+                for ($j = $i + 1; $j < $n; $j++) {
+                    $a = $codes[$i]; $b = $codes[$j];
+                    $cooc[$a][$b] = ($cooc[$a][$b] ?? 0) + 1;
+                    $cooc[$b][$a] = ($cooc[$b][$a] ?? 0) + 1;
+                }
+            }
+            // pattern
+            $prog = $s['programme'] ?: 'General';
+            $key  = $domain . '|' . $prog;
+            $patterns[$key]['domain'] = $domain;
+            $patterns[$key]['programme'] = $prog;
+            foreach ($codes as $c) { $patterns[$key]['skills'][$c] = ($patterns[$key]['skills'][$c] ?? 0) + 1; }
+            $an = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '')['primary']['id'] ?? 'owl';
+            $patterns[$key]['animals'][$an] = ($patterns[$key]['animals'][$an] ?? 0) + 1;
+            foreach ($this->keywords($s['evidence_text'] ?? '') as $w) { $patterns[$key]['ev'][$w] = ($patterns[$key]['ev'][$w] ?? 0) + 1; }
+            $patterns[$key]['count'] = ($patterns[$key]['count'] ?? 0) + 1;
+        }
+
+        // ---- employer required skills add frequency + co-occurrence ----
+        try {
+            $rows = $this->db->table('employer_skill_requirements')
+                ->select('role_id, skill_code')->where('importance', 'required')->get()->getResultArray();
+            $byRole = [];
+            foreach ($rows as $r) { if ($r['skill_code']) $byRole[$r['role_id']][] = $r['skill_code']; }
+            foreach ($byRole as $codes) {
+                $codes = array_values(array_unique($codes));
+                foreach ($codes as $c) { $skillFreq[$c] = ($skillFreq[$c] ?? 0) + 1; }
+                $n = count($codes);
+                for ($i = 0; $i < $n; $i++) for ($j = $i + 1; $j < $n; $j++) {
+                    $a = $codes[$i]; $b = $codes[$j];
+                    $cooc[$a][$b] = ($cooc[$a][$b] ?? 0) + 1;
+                    $cooc[$b][$a] = ($cooc[$b][$a] ?? 0) + 1;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        $now = date('Y-m-d H:i:s');
+
+        // ---- insert skills ----
+        $skillRows = [];
+        foreach ($skillFreq as $code => $freq) {
+            $rel = $cooc[$code] ?? [];
+            arsort($rel);
+            $related = array_slice(array_keys($rel), 0, 6);
+            $skillRows[] = [
+                'code' => $code, 'label' => Catalog::label($code), 'domain' => $this->skillDomain($code),
+                'aliases_json' => json_encode([]), 'related_skills_json' => json_encode($related),
+                'common_evidence_json' => json_encode([]), 'frequency' => $freq,
+                'created_at' => $now, 'updated_at' => $now,
+            ];
+        }
+        foreach (array_chunk($skillRows, 100) as $chunk) { $this->db->table('taxonomy_skills')->insertBatch($chunk); }
+
+        // ---- insert patterns (keep meaningful ones) ----
+        $patRows = [];
+        foreach ($patterns as $key => $d) {
+            if (($d['count'] ?? 0) < 2) continue;
+            $sk = $d['skills'] ?? []; arsort($sk);
+            $an = $d['animals'] ?? []; arsort($an);
+            $ev = $d['ev'] ?? []; arsort($ev);
+            $patRows[] = [
+                'pattern_key' => $key, 'domain' => $d['domain'], 'programme' => $d['programme'],
+                'typical_skills_json'  => json_encode(array_slice(array_keys($sk), 0, 8)),
+                'typical_animals_json' => json_encode(array_slice(array_keys($an), 0, 2)),
+                'evidence_keywords_json'=> json_encode(array_slice(array_keys($ev), 0, 10)),
+                'sample_count' => $d['count'], 'updated_at' => $now,
+            ];
+        }
+        foreach (array_chunk($patRows, 100) as $chunk) { $this->db->table('taxonomy_patterns')->insertBatch($chunk); }
+
+        return $this->stats() + ['inserted_skills' => count($skillRows), 'inserted_patterns' => count($patRows)];
+    }
+
+    // ============ ENRICH (read-only) ============
+    /** Suggest related skills from the graph for a new profile. */
+    public function enrich(array $detectedCodes, string $programme = '', string $domain = 'Data'): array
+    {
+        $detected = array_flip($detectedCodes);
+        $suggest = [];
+
+        // 1) adjacency: related skills of what we already detected
+        if ($detectedCodes) {
+            $rows = $this->db->table('taxonomy_skills')->whereIn('code', $detectedCodes)->get()->getResultArray();
+            foreach ($rows as $r) {
+                foreach (json_decode($r['related_skills_json'] ?? '[]', true) ?: [] as $rc) {
+                    if (! isset($detected[$rc])) $suggest[$rc] = ($suggest[$rc] ?? 0) + 2;
+                }
+            }
+        }
+
+        // 2) pattern: typical skills for this domain|programme
+        $pat = $this->bestPattern($programme, $domain);
+        if ($pat) {
+            foreach (json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [] as $tc) {
+                if (! isset($detected[$tc])) $suggest[$tc] = ($suggest[$tc] ?? 0) + 1;
+            }
+        }
+
+        arsort($suggest);
+        $out = [];
+        foreach (array_slice(array_keys($suggest), 0, 6) as $code) {
+            $out[] = ['code' => $code, 'label' => Catalog::label($code)];
+        }
+        return ['related' => $out, 'pattern' => $pat ? $pat['pattern_key'] : null];
+    }
+
+    // ============ LEARN (write — grows the graph) ============
+    public function learn(array $detectedCodes, string $evidence, string $programme = '', string $domain = 'Data'): array
+    {
+        $now = date('Y-m-d H:i:s'); $added = [];
+        foreach ($detectedCodes as $code) {
+            $row = $this->db->table('taxonomy_skills')->where('code', $code)->get()->getRowArray();
+            if ($row) {
+                $this->db->table('taxonomy_skills')->where('code', $code)
+                    ->update(['frequency' => (int) $row['frequency'] + 1, 'updated_at' => $now]);
+            } else {
+                $this->db->table('taxonomy_skills')->insert([
+                    'code' => $code, 'label' => Catalog::label($code), 'domain' => $this->skillDomain($code),
+                    'aliases_json' => json_encode([]), 'related_skills_json' => json_encode([]),
+                    'common_evidence_json' => json_encode([]), 'frequency' => 1,
+                    'created_at' => $now, 'updated_at' => $now,
+                ]);
+                $added[] = $code;
+            }
+        }
+
+        // pattern upsert
+        $prog = $programme ?: 'General';
+        $key  = $domain . '|' . $prog;
+        $pat  = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
+        if ($pat) {
+            $typ = json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [];
+            $typ = array_values(array_unique(array_merge($typ, $detectedCodes)));
+            $ev  = json_decode($pat['evidence_keywords_json'] ?? '[]', true) ?: [];
+            $ev  = array_values(array_unique(array_merge($ev, $this->keywords($evidence))));
+            $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->update([
+                'typical_skills_json' => json_encode(array_slice($typ, 0, 12)),
+                'evidence_keywords_json' => json_encode(array_slice($ev, 0, 14)),
+                'sample_count' => (int) $pat['sample_count'] + 1, 'updated_at' => $now,
+            ]);
+            $newPattern = false;
+        } else {
+            $this->db->table('taxonomy_patterns')->insert([
+                'pattern_key' => $key, 'domain' => $domain, 'programme' => $prog,
+                'typical_skills_json' => json_encode($detectedCodes),
+                'typical_animals_json' => json_encode([]),
+                'evidence_keywords_json' => json_encode($this->keywords($evidence)),
+                'sample_count' => 1, 'updated_at' => $now,
+            ]);
+            $newPattern = true;
+        }
+
+        return ['added_skills' => $added, 'new_pattern' => $newPattern];
+    }
+
+    public function stats(): array
+    {
+        return [
+            'skills'   => (int) $this->db->table('taxonomy_skills')->countAllResults(),
+            'patterns' => (int) $this->db->table('taxonomy_patterns')->countAllResults(),
+            'profiles_learned' => (int) ($this->db->table('taxonomy_patterns')->selectSum('sample_count', 't')->get()->getRowArray()['t'] ?? 0),
+        ];
+    }
+
+    /** Expand a role's required skills with graph-adjacent skills (for matching). */
+    public function expandSkills(array $codes): array
+    {
+        if (! $codes) return [];
+        $out = [];
+        $rows = $this->db->table('taxonomy_skills')->whereIn('code', $codes)->get()->getResultArray();
+        foreach ($rows as $r) {
+            foreach (json_decode($r['related_skills_json'] ?? '[]', true) ?: [] as $rc) { $out[$rc] = true; }
+        }
+        return array_keys($out);
+    }
+
+    // ============ helpers ============
+    private function bestPattern(string $programme, string $domain): ?array
+    {
+        $prog = $programme ?: 'General';
+        foreach ([$domain . '|' . $prog, $domain . '|General'] as $key) {
+            $p = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
+            if ($p) return $p;
+        }
+        // fallback: any pattern in this domain with the largest sample_count
+        return $this->db->table('taxonomy_patterns')->where('domain', $domain)
+            ->orderBy('sample_count', 'DESC')->get(1)->getRowArray() ?: null;
+    }
+
+    private function skillDomain(string $code): string
+    {
+        $d = ['Data' => ['sql','python','data_analysis','dashboarding','statistics','machine_learning','research'],
+              'Engineering' => ['software','cloud','java','javascript','api'],
+              'Design' => ['ui_ux','figma','graphic_design','design_thinking']];
+        foreach ($d as $dom => $set) { if (in_array($code, $set, true)) return $dom; }
+        return 'Business';
+    }
+
+    private array $stop = ['the','and','for','with','was','were','have','has','had','that','this','from','are','you','your','our','their','and','also','into','over','under','a','an','of','in','on','to','at','as','by','is','it','or','be'];
+
+    private function keywords(string $text): array
+    {
+        $words = preg_split('/[^a-z0-9]+/', strtolower($text));
+        $out = [];
+        foreach ($words as $w) {
+            if (mb_strlen($w) >= 4 && ! in_array($w, $this->stop, true)) $out[$w] = true;
+        }
+        return array_slice(array_keys($out), 0, 20);
+    }
+}
