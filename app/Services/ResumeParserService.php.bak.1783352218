@@ -1,0 +1,166 @@
+<?php
+
+namespace App\Services;
+
+use App\Libraries\WorkAnimal;
+
+/**
+ * ResumeParserService (Fasa 2)
+ * Membina "extracted profile" yang lebih kaya di atas ScoreService:
+ * projects, leadership, career cluster, field of study, dan Work Animal
+ * (interim 6-animal; Fasa 6 naik taraf ke AnimalInferenceService 12-animal).
+ * Deterministik & explainable — tiada panggilan AI luar.
+ */
+class ResumeParserService
+{
+    /**
+     * role key => skills typically GAINED through that programme (core /
+     * taught competencies), independent of whatever the candidate happened
+     * to write in their activities/projects text. Used to ground the
+     * INITIAL job-description matching once a field of study is detected —
+     * softskills/activities (leadership, teamwork, communication, etc, from
+     * ScoreService's keyword map) only reinforce the resume afterwards, they
+     * do not drive which role family is selected.
+     */
+    private const CORE_SKILLS = [
+        'process_engineer'    => ['chemical_processing', 'process_safety', 'project_planning'],
+        'mechanical_engineer' => ['mechanical_design', 'cad', 'fea'],
+        'aerospace_engineer'  => ['aerodynamics', 'structural_engineering', 'cad'],
+        'electrical_engineer' => ['circuit_design', 'electrical_schematics', 'plc'],
+        'civil_engineer'      => ['structural_engineering', 'project_planning'],
+        'software_engineer'   => ['software', 'api', 'cloud'],
+        'data_analyst'        => ['sql', 'data_analysis', 'statistics'],
+        'ml_engineer'         => ['python', 'machine_learning', 'statistics'],
+        'ux_designer'         => ['ui_ux', 'design_thinking'],
+        'accountant'          => ['accounting', 'finance', 'excel'],
+        'marketing_exec'      => ['marketing', 'content'],
+        'product_exec'        => ['stakeholder_mgmt', 'project_mgmt'],
+        'content_creator'     => ['content', 'writing'],
+    ];
+
+    /** Klausa yang menandakan projek. */
+    public function detectProjects(string $text): array
+    {
+        return $this->pick($text, ['project','app','built','build','developed','system','website','dashboard','prototype','platform']);
+    }
+
+    /** Klausa yang menandakan kepimpinan / aktiviti pimpinan. */
+    public function detectLeadership(string $text): array
+    {
+        return $this->pick($text, ['treasurer','president','captain','head ','led ','lead ','chair','director','manage','mentor','coordinat','organis','founder']);
+    }
+
+    /** Pecah teks jadi klausa; pulang yang mengandungi mana-mana kata kunci. */
+    private function pick(string $text, array $kw): array
+    {
+        $clauses = array_filter(array_map('trim', preg_split('/[;.\n]+/', $text)));
+        $out = [];
+        foreach ($clauses as $c) {
+            $lc = strtolower($c);
+            foreach ($kw as $k) {
+                if (str_contains($lc, $k)) { $out[] = $this->tidy($c); break; }
+            }
+        }
+        return array_values(array_unique(array_slice($out, 0, 6)));
+    }
+
+    private function tidy(string $s): string
+    {
+        $s = trim($s);
+        return mb_strlen($s) > 120 ? mb_substr($s, 0, 117) . '…' : $s;
+    }
+
+    /** Career cluster daripada domain. */
+    public function careerCluster(string $domain): string
+    {
+        return [
+            'Data'        => 'Data, Analytics & AI',
+            'Engineering' => 'Engineering & Applied Sciences',
+            'Design'      => 'Product & Experience Design',
+            'Business'    => 'Business, Growth & Operations',
+        ][$domain] ?? 'Business, Growth & Operations';
+    }
+
+    /**
+     * Deterministic "field of study" detector.
+     *
+     * Scans the WHOLE resume text (not one exact sentence layout — layouts
+     * vary too much to rely on regex line-anchors) for a known degree /
+     * programme phrase, English or Malay. This is what the candidate
+     * actually STUDIED — a stronger, more trustworthy signal than generic
+     * soft-skill words (communication, teamwork, ...) that show up in
+     * almost every resume regardless of field.
+     *
+     * Returns:
+     *   raw        - human-readable field label (or null if nothing found)
+     *   domain     - Data / Engineering / Design / Business (or null)
+     *   role       - a specific Catalog role key this programme feeds into (or null)
+     *   coreSkills - skill codes typically GAINED through this programme —
+     *                used to ground initial job-description matching.
+     */
+    public function extractFieldOfStudy(string $text): array
+    {
+        $map = [
+            'computer science'         => ['Engineering', 'software_engineer'],
+            'sains komputer'           => ['Engineering', 'software_engineer'],
+            'computer engineering'     => ['Engineering', 'software_engineer'],
+            'software engineering'     => ['Engineering', 'software_engineer'],
+            'information technology'   => ['Data', 'data_analyst'],
+            'information system'      => ['Data', 'data_analyst'],
+            'data science'              => ['Data', 'ml_engineer'],
+            'business administration'  => ['Business', 'product_exec'],
+            'business management'      => ['Business', 'product_exec'],
+            'pentadbiran perniagaan'   => ['Business', 'product_exec'],
+            'mass communication'       => ['Business', 'content_creator'],
+            'chemical engineering'     => ['Engineering', 'process_engineer'],
+            'kejuruteraan kimia'       => ['Engineering', 'process_engineer'],
+            'petrochemical'            => ['Engineering', 'process_engineer'],
+            'process engineering'      => ['Engineering', 'process_engineer'],
+            'mechatronic'               => ['Engineering', 'mechanical_engineer'],
+            'mechanical engineering'   => ['Engineering', 'mechanical_engineer'],
+            'kejuruteraan mekanikal'   => ['Engineering', 'mechanical_engineer'],
+            'aerospace engineering'    => ['Engineering', 'aerospace_engineer'],
+            'aeronautical engineering' => ['Engineering', 'aerospace_engineer'],
+            'aeronautics'               => ['Engineering', 'aerospace_engineer'],
+            'electrical engineering'   => ['Engineering', 'electrical_engineer'],
+            'electronic engineering'   => ['Engineering', 'electrical_engineer'],
+            'kejuruteraan elektrik'    => ['Engineering', 'electrical_engineer'],
+            'civil engineering'         => ['Engineering', 'civil_engineer'],
+            'kejuruteraan awam'        => ['Engineering', 'civil_engineer'],
+            'structural engineering'   => ['Engineering', 'civil_engineer'],
+            'robotics engineering'     => ['Engineering', 'mechanical_engineer'],
+            'accounting'                => ['Business', 'accountant'],
+            'finance'                   => ['Business', 'accountant'],
+            'economics'                 => ['Business', 'accountant'],
+            'marketing'                 => ['Business', 'marketing_exec'],
+            'actuarial science'         => ['Data', 'data_analyst'],
+            'statistics'                => ['Data', 'data_analyst'],
+            'mathematics'               => ['Data', 'data_analyst'],
+            'graphic design'            => ['Design', 'ux_designer'],
+            'multimedia'                => ['Design', 'ux_designer'],
+            'industrial design'         => ['Design', 'ux_designer'],
+        ];
+
+        foreach ($map as $kw => $pair) {
+            if (stripos($text, $kw) !== false) {
+                [$domain, $role] = $pair;
+                return [
+                    'raw'        => ucwords($kw),
+                    'domain'     => $domain,
+                    'role'       => $role,
+                    'coreSkills' => self::CORE_SKILLS[$role] ?? [],
+                ];
+            }
+        }
+        return ['raw' => null, 'domain' => null, 'role' => null, 'coreSkills' => []];
+    }
+
+    /**
+     * Work Animal (Fasa 6) — delegates to the full 12-archetype engine.
+     * Kept here for backward compatibility with existing callers.
+     */
+    public function animalFromEvidence(array $skills, string $text): array
+    {
+        return (new \App\Services\AnimalInferenceService())->infer($skills, $text);
+    }
+}
