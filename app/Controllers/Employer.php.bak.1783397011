@@ -24,8 +24,7 @@ class Employer extends BaseController
 
         $rm    = new EmployerRoleModel();
         $roles = $rm->browse($filters, $perPage, ($page - 1) * $perPage);
-        $total   = $this->countRoles($filters);
-        $totalJd = \Config\Database::connect()->table('employer_roles')->countAllResults();
+        $total = $this->countRoles($filters);
 
         // fallback: if DB empty, show notice
         return view('employer/index', [
@@ -35,7 +34,6 @@ class Employer extends BaseController
             'page'      => $page,
             'perPage'   => $perPage,
             'total'     => $total,
-            'totalJd'   => $totalJd,
             'options'   => $this->filterOptions(),
             'shortlist' => session('shortlist') ?? [],
         ]);
@@ -222,7 +220,7 @@ class Employer extends BaseController
         $db = \Config\Database::connect();
         $col = function ($sql) use ($db) { return array_column($db->query($sql)->getResultArray(), 'k'); };
         return [
-            'domains'   => $col("SELECT target_domain k FROM employer_roles GROUP BY target_domain ORDER BY COUNT(*) DESC"),
+            'domains'   => ['Data', 'Engineering', 'Design', 'Business'],
             'levels'    => ['Internship', 'Fresh Graduate', 'Graduate Trainee', 'Junior Executive', 'Junior Engineer', 'Junior Analyst'],
             'countries' => $col("SELECT DISTINCT location_country k FROM employer_roles ORDER BY k"),
             'sectors'   => $col("SELECT DISTINCT sector k FROM employers WHERE sector IS NOT NULL ORDER BY k"),

@@ -1,35 +1,23 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
-<?php helper('ui'); $shortlist = $shortlist ?? []; $totalJd = $totalJd ?? $total; $pages = (int) ceil($total / $perPage);
+<?php helper('ui'); $shortlist = $shortlist ?? []; $pages = (int) ceil($total / $perPage);
   $qs = function ($over = []) use ($filters, $page) {
       $p = array_merge(['domain'=>$filters['domain'],'level'=>$filters['level'],'country'=>$filters['country'],'sector'=>$filters['sector'],'q'=>$filters['q'],'page'=>$page], $over);
       return http_build_query(array_filter($p, fn($v)=>$v!=='' && $v!==null));
   };
-  $domColor = function ($d) {
-      $m = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'var(--violet)','Business'=>'var(--gold)',
-            'Health & Welfare'=>'#E0526B','Services'=>'#F59E0B','Education'=>'#3B82F6','Social Sciences'=>'#8B5CF6',
-            'Natural Sciences'=>'#10B981','Arts & Humanities'=>'#EC4899','Agriculture & Veterinary'=>'#84CC16'];
-      return $m[$d] ?? 'var(--indigo)';
-  };
 ?>
 <section class="hero">
   <div class="section-label">For Employers</div>
-  <h1>Browse <?= number_format($totalJd) ?> roles. Hire on fit, not guesswork.</h1>
-  <p class="purpose">Filter the synthetic JD database, open a role to rank candidates with explainable scores. <em>Decision support only — the recruiter decides.</em></p>
+  <h1>Browse 1,000 roles. Hire on fit, not guesswork.</h1>
+  <p class="purpose">Filter the live JD database, open a role to rank candidates with explainable scores. <em>Decision support only — the recruiter decides.</em></p>
 </section>
 
 <section class="section">
   <div class="grid grid-4">
     <?= lumina_kpi(number_format($total), 'Roles matching filters') ?>
-    <?= lumina_kpi(number_format($totalJd), 'Total JD in database') ?>
+    <?= lumina_kpi('1,000', 'Total JD in database') ?>
     <?= lumina_kpi((string) count($shortlist), 'Shortlisted') ?>
     <?= lumina_kpi('40/20/20/10/5/5', 'Talent Match Signal') ?>
-  </div>
-</section>
-
-<section class="section" style="padding-top:0">
-  <div class="card card-tight" style="border-left:3px solid var(--gold)">
-    <span class="muted" style="font-size:13px"><strong class="gold">Demo dataset:</strong> <?= number_format($totalJd) ?> synthetic job descriptions across <?= count($options['domains']) ?> domains, generated from market research (Gemini + Lumina) — not live job postings. Company names illustrate sector patterns; every listing is labelled synthetic.</span>
   </div>
 </section>
 
@@ -41,7 +29,7 @@
           <label class="fl">Domain</label>
           <select class="field" name="domain" onchange="this.form.submit()">
             <option value="">All domains</option>
-            <?php foreach ($options['domains'] as $d): ?><option value="<?= esc($d,'attr') ?>" <?= $filters['domain']===$d?'selected':'' ?>><?= esc($d) ?></option><?php endforeach; ?>
+            <?php foreach ($options['domains'] as $d): ?><option value="<?= $d ?>" <?= $filters['domain']===$d?'selected':'' ?>><?= $d ?></option><?php endforeach; ?>
           </select>
         </div>
         <div>
@@ -78,17 +66,17 @@
 <section class="section">
   <div class="section-label"><?= number_format($total) ?> roles · page <?= $page ?> of <?= max(1,$pages) ?></div>
   <div class="grid grid-3">
-    <?php foreach ($roles as $r): $col = $domColor($r['target_domain']); ?>
+    <?php foreach ($roles as $r):
+      $col = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'var(--violet)','Business'=>'var(--gold)'][$r['target_domain']] ?? 'var(--indigo)'; ?>
       <a class="card" href="<?= base_url('employer/role/' . $r['id']) ?>" style="text-decoration:none;border-left:3px solid <?= $col ?>">
         <div class="section-label"><?= esc($r['company_name']) ?> · <?= esc($r['country']) ?></div>
         <h3 style="margin:2px 0"><?= esc($r['role_title']) ?></h3>
         <div class="muted" style="font-size:13px"><?= esc($r['sector']) ?> · <?= esc($r['role_level']) ?></div>
         <div style="margin-top:8px">
-          <span class="skill" style="font-size:11px;border-color:<?= $col ?>;color:<?= $col ?>"><?= esc($r['target_domain']) ?></span>
+          <span class="pill <?= $r['target_domain']==='Data'?'ok':($r['target_domain']==='Business'?'nudge':'') ?>"><?= esc($r['target_domain']) ?></span>
           <span class="skill" style="font-size:11px"><?= esc($r['work_arrangement']) ?></span>
           <span class="skill" style="font-size:11px"><?= esc($r['salary_band']) ?></span>
         </div>
-        <div class="muted" style="font-size:10px;margin-top:6px">Synthetic listing · demo</div>
       </a>
     <?php endforeach; ?>
     <?php if (empty($roles)): ?>
