@@ -56,9 +56,9 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
       <div class="section-label">Student segmentation</div>
       <canvas id="segChart" height="170"></canvas>
       <div class="row" style="justify-content:center;gap:14px;margin-top:10px">
-        <a class="pill ok" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('On track').($uni!==''?'&uni='.urlencode($uni):'') ?>">On track <?= (int)$bands['On track'] ?></a>
-        <a class="pill nudge" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('Needs a nudge').($uni!==''?'&uni='.urlencode($uni):'') ?>">Needs a nudge <?= (int)$bands['Needs a nudge'] ?></a>
-        <a class="pill risk" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('At risk').($uni!==''?'&uni='.urlencode($uni):'') ?>">At risk <?= (int)$bands['At risk'] ?></a>
+        <span class="pill ok">On track <?= (int)$bands['On track'] ?></span>
+        <span class="pill nudge">Needs a nudge <?= (int)$bands['Needs a nudge'] ?></span>
+        <span class="pill risk">At risk <?= (int)$bands['At risk'] ?></span>
       </div>
     </div>
   </div>
@@ -74,12 +74,12 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
     <div class="card">
       <div class="section-label">Top skill gaps · across cohort</div>
       <?php foreach (($topGaps ?? []) as $g): ?>
-        <a href="<?= base_url('university/students').'?gap='.urlencode($g['code'] ?? '').($uni!==''?'&uni='.urlencode($uni):'') ?>" style="display:block;margin:8px 0;text-decoration:none;color:inherit">
-          <div class="row" style="justify-content:space-between"><span><?= esc($g['label']) ?></span><span class="muted"><?= (int)$g['count'] ?> students →</span></div>
+        <div style="margin:8px 0">
+          <div class="row" style="justify-content:space-between"><span><?= esc($g['label']) ?></span><span class="muted"><?= (int)$g['count'] ?> students</span></div>
           <div style="height:8px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;margin-top:4px">
             <div style="height:100%;width:<?= $total? (int)round(100*$g['count']/$total):0 ?>%;background:var(--gold)"></div>
           </div>
-        </a>
+        </div>
       <?php endforeach; ?>
       <?php if (empty($topGaps)): ?><p class="muted">No gaps detected.</p><?php endif; ?>
     </div>
@@ -136,11 +136,10 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
       <div class="section-label">Students needing support · At risk</div>
       <div class="stack">
         <?php foreach (($needSupport ?? []) as $s): ?>
-          <a class="card card-tight" href="<?= base_url('university/student/'.(int)($s['id'] ?? 0)) ?>" style="display:flex;align-items:center;gap:12px;text-decoration:none">
+          <div class="card card-tight" style="display:flex;align-items:center;gap:12px">
             <div class="ring risk"><?= (int)$s['readiness'] ?></div>
-            <div style="flex:1"><strong><?= esc($s['name']) ?></strong><div class="muted" style="font-size:13px"><?= esc($s['programme']) ?> · <?= esc($s['faculty']) ?></div></div>
-            <span class="muted">→</span>
-          </a>
+            <div><strong><?= esc($s['name']) ?></strong><div class="muted" style="font-size:13px"><?= esc($s['programme']) ?> · <?= esc($s['faculty']) ?></div></div>
+          </div>
         <?php endforeach; ?>
         <?php if (empty($needSupport)): ?><p class="muted">No at-risk students — great cohort health.</p><?php endif; ?>
       </div>
@@ -151,7 +150,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
         <thead><tr><th style="text-align:left;padding:8px;color:var(--muted)">Programme</th><th style="padding:8px;color:var(--muted)">Gap</th><th style="padding:8px;color:var(--muted)">At risk</th></tr></thead>
         <tbody>
           <?php foreach (($gapsByProgramme ?? []) as $g): ?>
-            <tr><td style="padding:8px"><a href="<?= base_url('university/students').'?programme='.urlencode($g['programme']).'&gap='.urlencode($g['code'] ?? '').($uni!==''?'&uni='.urlencode($uni):'') ?>" class="gold" style="text-decoration:none"><?= esc($g['programme']) ?></a></td><td style="padding:8px;text-align:center"><span class="skill inferred"><?= esc($g['gap']) ?></span></td><td style="padding:8px;text-align:center"><?= (int)$g['atrisk'] ?>/<?= (int)$g['total'] ?></td></tr>
+            <tr><td style="padding:8px"><?= esc($g['programme']) ?></td><td style="padding:8px;text-align:center"><span class="skill inferred"><?= esc($g['gap']) ?></span></td><td style="padding:8px;text-align:center"><?= (int)$g['atrisk'] ?>/<?= (int)$g['total'] ?></td></tr>
           <?php endforeach; ?>
           <?php if (empty($gapsByProgramme)): ?><tr><td colspan="3" class="muted" style="padding:8px">No data.</td></tr><?php endif; ?>
         </tbody>

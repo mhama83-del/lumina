@@ -145,29 +145,6 @@ class University extends BaseController
         ]);
     }
 
-    /** Drill-down: filtered student list. */
-    public function students()
-    {
-        if (session('role') !== 'university') session()->set(['role' => 'university']);
-        $f = [
-            'uni'       => trim((string) $this->request->getGet('uni')),
-            'band'      => trim((string) $this->request->getGet('band')),
-            'gap'       => trim((string) $this->request->getGet('gap')),
-            'programme' => trim((string) $this->request->getGet('programme')),
-        ];
-        $list = (new UniversityInsightService())->studentList($f);
-        return view('university/students', ['title' => 'Lumina · Students', 'list' => $list, 'f' => $f]);
-    }
-
-    /** Drill-down: single student profile + why. */
-    public function student($id = null)
-    {
-        if (session('role') !== 'university') session()->set(['role' => 'university']);
-        $p = (new UniversityInsightService())->studentProfile((int) $id);
-        if (! $p) return redirect()->to(base_url('university'));
-        return view('university/student', $p + ['title' => 'Lumina · ' . ($p['s']['name'] ?? 'Student')]);
-    }
-
     private function roleKeyFor(string $domain): string
     {
         $d = ucfirst(strtolower($domain));

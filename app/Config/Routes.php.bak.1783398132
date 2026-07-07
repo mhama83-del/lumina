@@ -19,8 +19,6 @@ $routes->get('candidate', 'Candidate::home');
 $routes->get('employer', 'Employer::index');
 $routes->get('university', 'University::dashboard');
 $routes->get('university/interventions', 'University::interventions');
-$routes->get('university/students', 'University::students');
-$routes->get('university/student/(:num)', 'University::student/$1');
 
 // ---- Fasa 4B: employer DB browser + role detail + compare + shortlist ----
 $routes->get('employer/role/(:num)', 'Employer::role/$1');
