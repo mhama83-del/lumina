@@ -270,6 +270,3 @@ select.field{ appearance:none; }
   .hero{ padding:32px 0 18px; }
   .tour-pop{ bottom:12px; }
 }
-/* LUMINA-SELECT-FIX: readable native dropdown options on dark theme */
-select.field, select.stage-select { color: var(--text, #F5F7FA); }
-select.field option, select.stage-select option { background:#0F1830; color:#F5F7FA; }

@@ -36,7 +36,7 @@ class Employer extends BaseController
             'perPage'   => $perPage,
             'total'     => $total,
             'totalJd'   => $totalJd,
-            'options'   => $this->filterOptions($filters['domain']),
+            'options'   => $this->filterOptions(),
             'shortlist' => session('shortlist') ?? [],
         ]);
     }
@@ -217,7 +217,7 @@ class Employer extends BaseController
         return $b->countAllResults();
     }
 
-    private function filterOptions(string $domain = ''): array
+    private function filterOptions(): array
     {
         $db = \Config\Database::connect();
         $col = function ($sql) use ($db) { return array_column($db->query($sql)->getResultArray(), 'k'); };
@@ -225,7 +225,7 @@ class Employer extends BaseController
             'domains'   => $col("SELECT target_domain k FROM employer_roles GROUP BY target_domain ORDER BY COUNT(*) DESC"),
             'levels'    => ['Internship', 'Fresh Graduate', 'Graduate Trainee', 'Junior Executive', 'Junior Engineer', 'Junior Analyst'],
             'countries' => $col("SELECT DISTINCT location_country k FROM employer_roles ORDER BY k"),
-            'sectors'   => $col("SELECT DISTINCT e.sector k FROM employer_roles r JOIN employers e ON e.id = r.employer_id WHERE e.sector IS NOT NULL" . ($domain !== '' ? ' AND r.target_domain = ' . $db->escape($domain) : '') . ' ORDER BY k'),
+            'sectors'   => $col("SELECT DISTINCT sector k FROM employers WHERE sector IS NOT NULL ORDER BY k"),
         ];
     }
 }
