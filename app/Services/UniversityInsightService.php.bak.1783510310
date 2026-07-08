@@ -161,17 +161,16 @@ class UniversityInsightService
     /** Filtered student list for drill-down. */
     public function studentList(array $f): array
     {
-        $db  = \Config\Database::connect();
         $svc = new ScoreService();
         $statedMap = [];
         try {
-            foreach ($db->table('student_skills ss')->select('ss.student_id, sk.code')
+            foreach ($this->db->table('student_skills ss')->select('ss.student_id, sk.code')
                 ->join('skills sk', 'sk.id = ss.skill_id')->get()->getResultArray() as $r) {
                 $statedMap[$r['student_id']][] = $r['code'];
             }
         } catch (\Throwable $e) {}
 
-        $q = $db->table('students')->select('id, name, university, faculty, programme, target_domain, evidence_text, has_resume');
+        $q = $this->db->table('students')->select('id, name, university, faculty, programme, target_domain, evidence_text, has_resume');
         if (! empty($f['uni']))       $q->where('university', $f['uni']);
         if (! empty($f['programme'])) $q->where('programme', $f['programme']);
         $students = $q->get()->getResultArray();
@@ -201,11 +200,10 @@ class UniversityInsightService
     /** Full student profile + why (for the drill-down detail page). */
     public function studentProfile(int $id): ?array
     {
-        $db = \Config\Database::connect();
-        $s = $db->table('students')->where('id', $id)->get()->getRowArray();
+        $s = $this->db->table('students')->where('id', $id)->get()->getRowArray();
         if (! $s) return null;
         $stated = [];
-        foreach ($db->table('student_skills ss')->select('sk.code')->join('skills sk', 'sk.id = ss.skill_id')
+        foreach ($this->db->table('student_skills ss')->select('sk.code')->join('skills sk', 'sk.id = ss.skill_id')
                  ->where('ss.student_id', $id)->get()->getResultArray() as $r) { $stated[] = $r['code']; }
 
         $svc = new ScoreService(); $par = new ResumeParserService();
