@@ -5,6 +5,7 @@
   if (!empty($f['band'])) $ctx[] = 'band: ' . $f['band'];
   if (!empty($f['gap'])) $ctx[] = 'missing: ' . ucwords(str_replace('_',' ', $f['gap']));
   if (!empty($f['programme'])) $ctx[] = 'programme: ' . $f['programme'];
+  if (!empty($f['metric'])) { $ml=['ready'=>'career-ready','transfer'=>'transferable skills','industry'=>'industry exposure','highinc'=>'high-income potential','jobcreator'=>'job-creator potential','matched'=>'opportunity match']; $ctx[] = $ml[$f['metric']] ?? $f['metric']; }
   if (!empty($f['uni'])) $ctx[] = $f['uni'];
   $backUni = !empty($f['uni']) ? '?uni=' . urlencode($f['uni']) : '';
 ?>

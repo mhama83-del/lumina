@@ -273,3 +273,6 @@ select.field{ appearance:none; }
 /* LUMINA-SELECT-FIX: readable native dropdown options on dark theme */
 select.field, select.stage-select { color: var(--text, #F5F7FA); }
 select.field option, select.stage-select option { background:#0F1830; color:#F5F7FA; }
+/* LUMINA-KPI-LINK */
+.kpi-link{transition:transform .12s ease,border-color .12s ease;cursor:pointer}
+a:hover > .kpi-link{transform:translateY(-2px);border-color:var(--gold)}

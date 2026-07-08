@@ -40,14 +40,15 @@ if (! function_exists('lumina_ring')) {
 }
 
 if (! function_exists('lumina_kpi')) {
-    function lumina_kpi(string $num, string $label, string $tag = ''): string
+    function lumina_kpi(string $num, string $label, string $tag = '', string $href = ''): string
     {
-        return '
-        <div class="card card-tight kpi">
+        $inner = '
+        <div class="card card-tight kpi' . ($href ? ' kpi-link' : '') . '">
           <div class="num">' . esc($num) . '</div>
           <div class="lab">' . esc($label) . '</div>' .
           ($tag ? '<span class="tag">' . esc($tag) . '</span>' : '') . '
         </div>';
+        return $href ? '<a href="' . esc($href, 'attr') . '" style="text-decoration:none;color:inherit;display:block">' . $inner . '</a>' : $inner;
     }
 }
 

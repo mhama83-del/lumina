@@ -3,3 +3,5 @@ writable/logs/
 writable/session/
 .env
 vendor/
+_trash/
+*.bak.*

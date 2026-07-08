@@ -14,6 +14,7 @@ use App\Services\ResumeParserService;
 class UniversityInsightService
 {
     private static array $animalMap = ['beaver'=>'Ant']; // legacy alias; 12 new ids resolve via ucfirst()
+    private array $highValue = ['sql','python','data_analysis','software','cloud','entrepreneurship'];
 
     /** One pass over the cohort → all aggregates used by dashboard + interventions. */
     public function cohort(?string $university = null): array
@@ -186,6 +187,7 @@ class UniversityInsightService
             $role = $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
             $m    = $svc->match($cand, $role);
             if (! empty($f['gap']) && ! in_array($f['gap'], $m['gap'], true)) continue;
+            if (! empty($f['metric']) && ! $this->passesMetric($f['metric'], $cand, $ready, $m, $s['evidence_text'] ?? '', $s['target_domain'] ?? 'Data', $svc)) continue;
             $out[] = [
                 'id' => (int) $s['id'], 'name' => $s['name'], 'university' => $s['university'],
                 'programme' => $s['programme'], 'faculty' => $s['faculty'],
@@ -256,6 +258,40 @@ class UniversityInsightService
             if ($sc > $bestSc) { $bestSc = $sc; $best = $r; }
         }
         return $best;
+    }
+
+    /** Same attribute extraction the dashboard uses (kept in sync for exact KPI drill-down). */
+    private function attrsFor(string $text, array $skills, string $domain): array
+    {
+        $t = strtolower($text);
+        return [
+            'internship'         => str_contains($t, 'internship') ? 1 : 0,
+            'projects'           => min(3, substr_count($t, 'project') + substr_count($t, 'app') + substr_count($t, 'built') + substr_count($t, 'dashboard')),
+            'certs'              => str_contains($t, 'cert') ? 1 : 0,
+            'global'             => (str_contains($t, 'global') || str_contains($t, 'international') || str_contains($t, 'exchange')) ? 1 : 0,
+            'high_value_skills'  => count(array_intersect(array_keys($skills), $this->highValue)),
+            'high_income_domain' => in_array(ucfirst(strtolower($domain)), ['Data', 'Engineering'], true) ? 1 : 0,
+            'entrepreneur'       => (str_contains($t, 'startup') || str_contains($t, 'business')) ? 1 : 0,
+            'innovation'         => (str_contains($t, 'innovation') || str_contains($t, 'built') || str_contains($t, 'app')) ? 1 : 0,
+            'leadership'         => isset($skills['leadership']) ? 1 : 0,
+        ];
+    }
+
+    /** Whether a student belongs to a KPI metric bucket (mirrors University::index thresholds). */
+    private function passesMetric(string $metric, array $cand, int $ready, array $m, string $evidence, string $domain, ScoreService $svc): bool
+    {
+        switch ($metric) {
+            case 'ready':    return $ready >= 60;
+            case 'transfer': return isset($cand['skills']['leadership']) || isset($cand['skills']['communication']) || isset($cand['skills']['teamwork']);
+            case 'matched':  return (($m['matchScore'] ?? 0) >= 65);
+        }
+        $attr = $this->attrsFor($evidence, $cand['skills'], $domain);
+        return match ($metric) {
+            'industry'   => $svc->industryExposure($attr) >= 40,
+            'highinc'    => $svc->highIncome($attr) >= 50,
+            'jobcreator' => $svc->jobCreator($attr) >= 50,
+            default      => true,
+        };
     }
 
     private function roleKeyFor(string $domain): string

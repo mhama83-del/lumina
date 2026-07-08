@@ -40,7 +40,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 <section class="section">
   <div class="grid grid-4">
     <?php foreach ($kpis as $k): ?>
-      <?= lumina_kpi($k['n'], $k['l'], $k['t']) ?>
+      <?= lumina_kpi($k['n'], $k['l'], $k['t'], $k['href'] ?? '') ?>
     <?php endforeach; ?>
   </div>
 </section>

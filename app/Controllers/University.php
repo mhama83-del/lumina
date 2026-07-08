@@ -104,15 +104,19 @@ class University extends BaseController
             }
         } catch (\Throwable $e) {}
 
+        $sUrl = function (array $q) use ($uni) {
+            if ($uni !== '') { $q['uni'] = $uni; }
+            return site_url('university/students') . (empty($q) ? '' : '?' . http_build_query($q));
+        };
         $kpis = [
-            ['n' => $pct($cnt['ready']) . '%',  'l' => 'Career-ready',           't' => 'readiness ≥ 60'],
-            ['n' => $pct($cnt['transfer']) . '%', 'l' => 'Transferable skills',   't' => 'leadership / comms'],
-            ['n' => $pct($cnt['industry']) . '%', 'l' => 'Industry exposure',     't' => 'internship / projects'],
-            ['n' => $pct($cnt['highinc']) . '%',  'l' => 'High-income potential', 't' => 'high-value skills'],
-            ['n' => $pct($cnt['jobcreator']) . '%', 'l' => 'Job-creator potential', 't' => 'entrepreneurial'],
-            ['n' => $pct($cnt['matched']) . '%',  'l' => 'Opportunity match rate', 't' => 'match ≥ 65%'],
-            ['n' => ($sat ?: 84) . '%',           'l' => 'Employer satisfaction', 't' => 'from feedback'],
-            ['n' => (string) $total,              'l' => 'Students active',       't' => 'this cohort'],
+            ['n' => $pct($cnt['ready']) . '%',      'l' => 'Career-ready',          't' => 'readiness ≥ 60',    'href' => $sUrl(['metric' => 'ready'])],
+            ['n' => $pct($cnt['transfer']) . '%',   'l' => 'Transferable skills',   't' => 'leadership / comms',  'href' => $sUrl(['metric' => 'transfer'])],
+            ['n' => $pct($cnt['industry']) . '%',   'l' => 'Industry exposure',     't' => 'internship / projects','href' => $sUrl(['metric' => 'industry'])],
+            ['n' => $pct($cnt['highinc']) . '%',    'l' => 'High-income potential', 't' => 'high-value skills',   'href' => $sUrl(['metric' => 'highinc'])],
+            ['n' => $pct($cnt['jobcreator']) . '%', 'l' => 'Job-creator potential', 't' => 'entrepreneurial',     'href' => $sUrl(['metric' => 'jobcreator'])],
+            ['n' => $pct($cnt['matched']) . '%',    'l' => 'Opportunity match rate','t' => 'match ≥ 65%',        'href' => $sUrl(['metric' => 'matched'])],
+            ['n' => ($sat ?: 84) . '%',             'l' => 'Employer satisfaction', 't' => 'from feedback',       'href' => ''],
+            ['n' => (string) $total,                'l' => 'Students active',       't' => 'this cohort',         'href' => $sUrl([])],
         ];
 
         // ---- Fasa 5: cohort extras (No-Resume %, animal distribution, gaps, support) ----
@@ -154,6 +158,7 @@ class University extends BaseController
             'band'      => trim((string) $this->request->getGet('band')),
             'gap'       => trim((string) $this->request->getGet('gap')),
             'programme' => trim((string) $this->request->getGet('programme')),
+            'metric'    => trim((string) $this->request->getGet('metric')),
         ];
         $list = (new UniversityInsightService())->studentList($f);
         return view('university/students', ['title' => 'Lumina · Students', 'list' => $list, 'f' => $f]);
