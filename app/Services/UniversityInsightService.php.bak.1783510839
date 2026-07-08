@@ -213,7 +213,7 @@ class UniversityInsightService
         $cand      = $svc->signal($s['evidence_text'] ?? '', $stated, (int) $s['has_resume'], $s['target_domain'] ?? 'Data');
         $ready     = $svc->employability($cand);
         $band      = $svc->risk($ready);
-        $role      = $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
+        $role$1= $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
         $rd        = $svc->readiness($cand, $role);
         $m         = $svc->match($cand, $role);
         $animal    = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');

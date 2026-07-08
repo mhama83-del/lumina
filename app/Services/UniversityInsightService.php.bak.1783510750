@@ -55,7 +55,7 @@ class UniversityInsightService
             $aName = self::$animalMap[$pid] ?? ucfirst($pid);
             $animalDist[$aName] = ($animalDist[$aName] ?? 0) + 1;
 
-            $role = $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
+            $role = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));
             $m    = $svc->match($cand, $role);
             foreach ($m['gap'] as $g) { $gapFreq[$g] = ($gapFreq[$g] ?? 0) + 1; }
 
@@ -183,7 +183,7 @@ class UniversityInsightService
             $ready  = $svc->employability($cand);
             $band   = $svc->risk($ready);
             if (! empty($f['band']) && $band !== $f['band']) continue;
-            $role = $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
+            $role = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));
             $m    = $svc->match($cand, $role);
             if (! empty($f['gap']) && ! in_array($f['gap'], $m['gap'], true)) continue;
             $out[] = [
@@ -213,7 +213,7 @@ class UniversityInsightService
         $cand      = $svc->signal($s['evidence_text'] ?? '', $stated, (int) $s['has_resume'], $s['target_domain'] ?? 'Data');
         $ready     = $svc->employability($cand);
         $band      = $svc->risk($ready);
-        $role      = $this->roleForCand($cand, $s['target_domain'] ?? 'Data', $svc);
+        $role      = Catalog::role($this->roleKeyFor($s['target_domain'] ?? 'Data'));
         $rd        = $svc->readiness($cand, $role);
         $m         = $svc->match($cand, $role);
         $animal    = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '');
@@ -231,31 +231,6 @@ class UniversityInsightService
             'projects' => $par->detectProjects($s['evidence_text'] ?? ''),
             'leadership' => $par->detectLeadership($s['evidence_text'] ?? ''),
         ];
-    }
-
-    private ?array $rbd = null;
-    private function rolesByDomain(): array
-    {
-        if ($this->rbd === null) {
-            $this->rbd = [];
-            foreach (Catalog::roles() as $r) { $this->rbd[$r['domain']][] = $r; }
-        }
-        return $this->rbd;
-    }
-
-    /** Best-fit Catalog role for a candidate WITHIN their own domain (relevant gaps). */
-    private function roleForCand(array $cand, string $domain, ScoreService $svc): array
-    {
-        $rbd   = $this->rolesByDomain();
-        $cands = $rbd[$domain] ?? ($rbd['Data'] ?? []);
-        if (! $cands) return Catalog::role('data_analyst');
-        if (count($cands) === 1) return $cands[0];
-        $best = $cands[0]; $bestSc = -1;
-        foreach ($cands as $r) {
-            $sc = $svc->match($cand, $r)['matchScore'];
-            if ($sc > $bestSc) { $bestSc = $sc; $best = $r; }
-        }
-        return $best;
     }
 
     private function roleKeyFor(string $domain): string
