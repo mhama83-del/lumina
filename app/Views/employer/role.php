@@ -54,7 +54,7 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
         <?php foreach ($accept as $a): ?><span class="skill inferred"><?= esc($a) ?></span> <?php endforeach; ?>
       </div>
       <p class="muted" style="font-size:13px"><strong>Team fit:</strong> <?= esc($af['team_fit_note'] ?? '') ?></p>
-      <p class="muted" style="font-size:13px"><strong>Poor-fit risk:</strong> <?= esc($af['poor_fit_risk'] ?? '') ?></p>
+      <p class="muted" style="font-size:13px"><strong>Consideration:</strong> <?= esc($af['poor_fit_risk'] ?? '') ?></p>
       <div class="section-label" style="margin-top:10px">Synthetic JD</div>
       <p class="muted" style="font-size:13px"><?= esc($role['synthetic_jd_text']) ?></p>
       <p class="purpose" style="font-size:12px;margin-top:8px">Source: <?= esc($role['source_reference']) ?> · synthetic listing.</p>

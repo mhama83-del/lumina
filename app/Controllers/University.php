@@ -106,7 +106,7 @@ class University extends BaseController
 
         $sUrl = function (array $q) use ($uni) {
             if ($uni !== '') { $q['uni'] = $uni; }
-            return site_url('university/students') . (empty($q) ? '' : '?' . http_build_query($q));
+            return base_url('university/students') . (empty($q) ? '' : '?' . http_build_query($q));
         };
         $kpis = [
             ['n' => $pct($cnt['ready']) . '%',      'l' => 'Career-ready',          't' => 'readiness ≥ 60',    'href' => $sUrl(['metric' => 'ready'])],
