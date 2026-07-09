@@ -866,12 +866,34 @@ class Candidate extends BaseController
 
     private function trajectoryFor(ScoreService $svc, array $cand, array $role, array $gap): array
     {
-        return [
-            'now' => $svc->readiness($cand, $role)['score'],
-            'd30' => $svc->whatIf($cand, $role, array_slice($gap, 0, 1))['after'],
-            'd60' => $svc->whatIf($cand, $role, array_slice($gap, 0, 2))['after'],
-            'd90' => $svc->whatIf($cand, $role, $gap)['after'],
-        ];
+        // Model the 30/60/90 plan itself (coverage + evidence + activity + pace),
+        // so the line rises even when few skill gaps remain — and matches the plan shown below.
+        $now = $svc->readiness($cand, $role)['score'];
+
+        // 30d — strengthen fundamentals: close the first skill gap
+        $c30 = $cand;
+        if (isset($gap[0])) { $c30['skills'][$gap[0]] = ['confidence' => 1.0, 'source' => 'stated']; }
+        $d30 = $svc->readiness($c30, $role)['score'];
+
+        // 60d — build a portfolio project: +1 project, +1 activity, close another gap
+        $c60 = $c30;
+        if (isset($gap[1])) { $c60['skills'][$gap[1]] = ['confidence' => 1.0, 'source' => 'stated']; }
+        $c60['projects']   = ($c60['projects'] ?? 0) + 1;
+        $c60['activities'] = ($c60['activities'] ?? 0) + 1;
+        $d60 = $svc->readiness($c60, $role)['score'];
+
+        // 90d — internship / verified evidence: verify, +1 project, close remaining gaps, faster pace
+        $c90 = $c60;
+        foreach ($gap as $g) { $c90['skills'][$g] = ['confidence' => 1.0, 'source' => 'stated']; }
+        $c90['verified'] = 1;
+        $c90['projects'] = ($c90['projects'] ?? 0) + 1;
+        $c90['pace']     = 'Fast';
+        $d90 = $svc->readiness($c90, $role)['score'];
+
+        // never dip: enforce monotonic non-decreasing for a clean trajectory
+        $d30 = max($now, $d30); $d60 = max($d30, $d60); $d90 = max($d60, $d90);
+
+        return ['now' => $now, 'd30' => $d30, 'd60' => $d60, 'd90' => $d90];
     }
 
     private function samplePreset(string $stage): array
