@@ -9,7 +9,7 @@
   <p class="muted" style="margin-top:6px">Opportunity for all — SDG 4, 8 &amp; 10.</p>
 
   <div class="row" style="margin-top:18px">
-    <a href="#" class="btn btn-gold btn-lg" data-tour="1">▶ Start the 3-minute guided tour</a>
+    <a href="#" class="btn btn-gold btn-lg" data-tour="1">▶ Start the 5-minute guided tour</a>
   </div>
 
   <div class="row persona-cta" style="margin-top:14px;gap:10px;flex-wrap:wrap">
