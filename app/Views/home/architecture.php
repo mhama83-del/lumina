@@ -54,25 +54,17 @@ $layers = [
   </div>
 </section>
 
+<!-- LUMINA-MATH-START -->
 <!-- The exact math -->
 <section class="section">
   <div class="section-label">The exact math · every score is traceable</div>
-  <p class="muted" style="font-size:13px;margin:-4px 0 14px">Deterministic formulas — no black box. Every component is on a 0–100 scale and the weights sum to 1. <code>#skills</code> = number of skills detected from evidence.</p>
+  <p class="muted" style="font-size:13px;margin:-4px 0 6px">Read each engine top-to-bottom: <strong>the question it answers → the formula → a worked example with real numbers → where you see it in the product.</strong> No black box; every component is 0–100 and the weights sum to 1.</p>
+  <div class="mathmap">Evidence in&nbsp; →&nbsp; 6 scoring engines&nbsp; →&nbsp; 3 decisions&nbsp;: &nbsp;Candidate direction · Employer shortlist · University intervention</div>
   <div class="grid grid-2">
 
     <div class="card">
-      <div class="section-label">0 · From evidence → signals</div>
-      <div class="mathbox">projects   = mentions of "project | app | built | dashboard"   (min 1)
-activities = club/treasurer + volunteer + led/president/mentor
-             + internship                                     (min 1)
-pace       = Fast     if 2+ yrs · senior · internship · "won"
-             Building if first-year · foundation · pre-u · diploma
-             Steady   otherwise
-verified   = 1 when evidence is confirmed (transcript / internship)</div>
-    </div>
-
-    <div class="card">
-      <div class="section-label">1 · Career Readiness (candidate)</div>
+      <div class="section-label">1 · Career Readiness</div>
+      <p class="mathq"><span>Q.</span> Is this candidate ready for a <em>specific target role</em> — and what exactly holds the number back?</p>
       <div class="mathbox">Readiness = 0.40·coverage + 0.25·evidence
           + 0.20·activity + 0.15·pace
 
@@ -80,20 +72,30 @@ coverage = matched required skills ÷ required × 100
 evidence = min(100, 25·verified + 10·projects + 3·#skills)
 activity = min(100, 20·activities)
 pace     = Fast 80 · Steady 60 · Building 40</div>
-      <p class="muted" style="font-size:12px">Bands: 0–49 At Risk · 50–74 Needs a Nudge · 75–100 On Track.</p>
+      <div class="mathbox eg">Worked example — Aiman, target Data Analyst
+coverage 50 · evidence 85 · activity 60 · pace 60
+= 0.40×50 + 0.25×85 + 0.20×60 + 0.15×60
+= 20 + 21 + 12 + 9   →   62%  ·  Needs a nudge</div>
+      <p class="muted" style="font-size:12px">Bands: 0–49 At Risk · 50–74 Needs a Nudge · 75–100 On Track. &nbsp;<strong>Shown on:</strong> candidate Living Portfolio → "Why this score?"</p>
     </div>
 
     <div class="card">
-      <div class="section-label">2 · Employability (university cohort)</div>
-      <p class="muted" style="font-size:12px;margin-top:0">Field-agnostic — judges every faculty fairly, not against one role.</p>
+      <div class="section-label">2 · Employability</div>
+      <p class="mathq"><span>Q.</span> Across a whole cohort, how employable is each student <em>regardless of one role</em> — so every faculty is judged fairly?</p>
       <div class="mathbox">Employability = min(100, 6·#skills + 8·verified
               + 9·projects + 8·activities + paceBonus)
 
 paceBonus = Fast 18 · Steady 12 · Building 4</div>
+      <div class="mathbox eg">Worked example — a thin profile
+5 skills · not yet verified · 1 project · 1 activity · Building
+= min(100, 6×5 + 8×0 + 9×1 + 8×1 + 4)
+= 30 + 0 + 9 + 8 + 4   →   51  ·  Needs a nudge</div>
+      <p class="muted" style="font-size:12px">Field-agnostic. &nbsp;<strong>Shown on:</strong> University dashboard segmentation (On track / nudge / at risk).</p>
     </div>
 
     <div class="card">
       <div class="section-label">3 · Learning Velocity</div>
+      <p class="mathq"><span>Q.</span> How fast is this person <em>growing</em> — trajectory, not just where they are today?</p>
       <div class="mathbox">Velocity = 0.30·skillGrowth + 0.25·projComplexity
          + 0.20·recency + 0.15·diversity
          + 0.10·domainProgression
@@ -103,38 +105,47 @@ projComplexity = min(100, 25·projects)
 recency        = Fast 90 · Steady 60 · Building 35
 diversity      = min(100, 20·#distinct-skill-groups)
 domainProg     = 75 if verified else 45</div>
-      <p class="muted" style="font-size:12px">Bands: ≥70 High · 45–69 Steady · &lt;45 Emerging.</p>
+      <div class="mathbox eg">Worked example — Aiman
+10 skills · 2 projects · Steady · 3 groups · verified
+skillGrowth 100 · projComplex 50 · recency 60
+diversity 60 · domainProg 75
+= 30 + 12.5 + 12 + 9 + 7.5   →   71  ·  High</div>
+      <p class="muted" style="font-size:12px">Bands: ≥70 High · 45–69 Steady · &lt;45 Emerging. &nbsp;<strong>Feeds:</strong> 20% of the employer Talent Match Signal.</p>
     </div>
 
     <div class="card">
-      <div class="section-label">4 · Talent Match Signal (employer)</div>
+      <div class="section-label">4 · Talent Match Signal</div>
+      <p class="mathq"><span>Q.</span> For a given job, how well does this candidate fit — on skills <em>and</em> trajectory — with a defensible reason?</p>
       <div class="mathbox">Match = 0.40·skill + 0.20·evidence + 0.20·velocity
       + 0.10·animalFit + 0.05·domainFit + 0.05·cgpaFit
 
-skill     = 100·credit ÷ required   (exact 1.0 · graph-adjacent 0.5)
-            + 4·pref + 2·pref-adj + 3·keyword-hits      (cap 100)
-evidence  = employability + 8 (has numbers) + 3·action-verb (cap 100)
-velocity  = the Learning Velocity score (panel 3)
+skill     = 100·credit ÷ required  (exact 1.0 · graph-adjacent 0.5)
+            + prefs + keyword hits            (cap 100)
+evidence  = employability + numbers + action verbs  (cap 100)
+velocity  = engine 3 above
 animalFit = 100 primary · 85 secondary · 60 same-category
             · 50 acceptable · 0 poor-fit
 domainFit = 100 same domain / programme · else 40
-cgpaFit   = 100 meets min · scaled below · 70 if unknown</div>
-      <p class="muted" style="font-size:12px">Bands: 85+ Strong · 70–84 Good · 55–69 Potential · 40–54 Needs Development · &lt;40 Weak.</p>
+cgpaFit   = 100 meets min · scaled below · 70 unknown</div>
+      <div class="mathbox eg">See it live — click <strong>"Why?"</strong> on any ranked candidate.
+Lumina prints these six numbers for that exact
+person against that exact role — nothing hidden.</div>
+      <p class="muted" style="font-size:12px">Bands: 85+ Strong · 70–84 Good · 55–69 Potential · 40–54 Needs Development · &lt;40 Weak. &nbsp;<strong>Shown on:</strong> every employer role page.</p>
     </div>
 
-    <div class="card">
-      <div class="section-label">5 · Opportunity sub-signals (cohort KPIs)</div>
-      <div class="mathbox">Industry exposure = min(100, 25·internship + 20·projects
-                          + 15·certs + 10·global)
-High-income       = min(100, 15·high-value-skills
-                          + 20·certs + 25·high-income-domain)
-Job-creator       = min(100, 20·entrepreneur + 20·innovation
-                          + 15·leadership + 10·projects)</div>
+    <div class="card" style="grid-column:1 / -1">
+      <div class="section-label">5 · Opportunity sub-signals — the clickable cohort KPIs</div>
+      <p class="mathq"><span>Q.</span> Beyond readiness, what is each student's exposure to <em>industry</em>, <em>high-income</em> paths and <em>entrepreneurship</em>?</p>
+      <div class="mathbox">Industry exposure = min(100, 25·internship + 20·projects + 15·certs + 10·global)
+High-income       = min(100, 15·high-value-skills + 20·certs + 25·high-income-domain)
+Job-creator       = min(100, 20·entrepreneur + 20·innovation + 15·leadership + 10·projects)</div>
+      <p class="muted" style="font-size:12px"><strong>Shown on:</strong> the University KPI cards — click any card to drill into the exact students behind that number.</p>
     </div>
 
   </div>
-  <p class="muted" style="font-size:12px;margin-top:12px"><strong>Graph-adjacency:</strong> the Lumina Graph awards partial credit (0.5) when a candidate has skills that co-occur with a required one — trajectory over exact history. Every number here also appears in the "Why?" panel on the candidate and employer views.</p>
+  <p class="muted" style="font-size:12px;margin-top:12px"><strong>Graph-adjacency:</strong> the Lumina Graph gives partial credit (0.5) when a candidate has skills that co-occur with a required one — rewarding trajectory over exact history. Every number above is reproduced in the "Why?" panels, so judges can verify any score by clicking.</p>
 </section>
+<!-- LUMINA-MATH-END -->
 <!-- Three personas flow -->
 <section class="section">
   <div class="section-label">One layer, three stakeholders</div>

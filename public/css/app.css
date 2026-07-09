@@ -280,3 +280,11 @@ a:hover > .kpi-link{transform:translateY(-2px);border-color:var(--gold)}
 .mathbox{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;white-space:pre;overflow-x:auto;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--text);margin:6px 0}
 .mathbox::-webkit-scrollbar{height:6px}
 .mathbox::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+/* LUMINA-MATH-STYLE2 */
+.mathbox{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;white-space:pre;overflow-x:auto;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--text);margin:6px 0}
+.mathbox.eg{border-left:3px solid var(--gold);background:rgba(224,168,46,.06)}
+.mathbox::-webkit-scrollbar{height:6px}
+.mathbox::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.mathq{font-size:13.5px;margin:2px 0 8px;color:var(--text)}
+.mathq span{color:var(--gold);font-weight:700;margin-right:4px}
+.mathmap{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin:0 0 14px;text-align:center}
