@@ -269,9 +269,16 @@ class TaxonomyService
             }
         }
         if (preg_match('/(?:skills?|technologies|tools|tech\s*stack|proficient in|familiar with|competencies)\s*[:\-]\s*([^\n\r]{3,200})/i', $text, $m)) {
+            // Precision: only single-word, tool-like tokens become novel skills.
+            // Multi-word tokens are almost always job titles or soft-skill phrases
+            // ("Event Coordinator", "Project Management") and must NOT pollute the graph.
+            $stop = ['coordinator','manager','management','executive','officer','assistant','intern','trainee','leadership','teamwork','communication','collaboration','specialist','consultant','director','supervisor','president','secretary','treasurer','volunteer','member','participant','organizer','organiser','planning','strategy','operations','administration','relationship','engagement','mentoring','coaching','facilitation'];
             foreach (preg_split('/[,;|\/•]+/', $m[1]) as $tok) {
                 $tok = trim($tok);
-                if ($tok === '' || mb_strlen($tok) < 2 || mb_strlen($tok) > 28 || str_word_count($tok) > 3) continue;
+                if ($tok === '' || mb_strlen($tok) < 2 || mb_strlen($tok) > 24) continue;
+                if (str_word_count($tok) !== 1) continue;              // single word only
+                if (in_array(strtolower($tok), $stop, true)) continue;  // reject generic titles / soft words
+                if (! preg_match('/[a-zA-Z]/', $tok)) continue;         // must contain letters
                 $code = $this->slug($tok);
                 if ($code !== '' && ! isset($found[$code])) $found[$code] = ['label' => ucwords($tok), 'domain' => null];
             }
