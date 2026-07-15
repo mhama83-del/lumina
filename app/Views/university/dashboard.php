@@ -11,7 +11,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
   <h1>Which talent is almost ready — and what unlocks them.</h1>
   <p class="purpose">Live cohort readiness across your faculties. <?= (int)$total ?> students · <strong class="gold"><?= (int)($noResumePct ?? 0) ?>% have no resume yet</strong> (<?= (int)($noResumeCount ?? 0) ?> students).</p>
   <div class="row" style="margin-top:12px">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('university/interventions') . $uq ?>">Generate Intervention Plan →</a>
+    <a class="btn btn-gold btn-lg" href="<?= base_url('university/interventions') . $uq ?>">See Where Support Is Needed →</a>
   </div>
 </section>
 
@@ -118,7 +118,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
       <div class="section-label">Recommended intervention</div>
       <h3 style="margin:6px 0"><?= esc($intervention) ?></h3>
       <p class="purpose">Based on the most common skill gap across the cohort.</p>
-      <a class="btn btn-ghost" href="<?= base_url('university/interventions') . $uq ?>" style="margin-top:6px">See full intervention plan →</a>
+      <a class="btn btn-ghost" href="<?= base_url('university/interventions') . $uq ?>" style="margin-top:6px">See where support is needed →</a>
       <?php if (!empty($employers)): ?>
         <div class="section-label" style="margin-top:16px">Top employers hiring your graduates</div>
         <?php foreach ($employers as $e): ?>
