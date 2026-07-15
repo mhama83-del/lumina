@@ -54,6 +54,8 @@
       <canvas id="trajChart" height="150"></canvas>
       <h3 style="margin:16px 0 8px">30 / 60 / 90-day plan</h3>
       <div id="planList" class="stack"></div>
+      <div id="cStrength" class="muted" style="font-size:13px;margin-top:10px"></div>
+      <div id="cUnlocked" class="muted" style="font-size:13px;margin-top:4px"></div>
     </div>
 
   </div>
@@ -63,6 +65,28 @@
     <a class="btn btn-ghost" href="<?= base_url('passport') ?>">← Back to portfolio</a>
   </div>
 </section>
+
+<?php if (!empty($chosenPath)): ?>
+<!-- Chosen Pathway (Strategic B6) -->
+<section class="section">
+  <div class="section-label">Your Chosen Pathway</div>
+  <div class="card" style="--pc:<?= $chosenPath['color'] ?>">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h3 style="margin:0"><?= esc($chosenPath['title']) ?></h3>
+      <span class="pill <?= $chosenPath['label']==='best'?'ok':($chosenPath['label']==='growth'?'nudge':'risk') ?>"><?= (int)$chosenPath['readiness'] ?>% ready</span>
+    </div>
+    <div class="muted" style="font-size:13px;margin-top:10px">
+      <?php foreach ($chosenPath['plan'] as $s): ?>
+        <div style="margin-bottom:4px"><strong class="gold"><?= esc($s['stage'] ?? $s['d']) ?></strong> (<?= esc($s['d']) ?>) — <?= esc($s['t']) ?></div>
+      <?php endforeach; ?>
+    </div>
+    <?php if (!empty($chosenPath['strength_to_develop'])): ?>
+      <p class="muted" style="font-size:13px;margin-top:8px">Strength to develop: <strong style="color:var(--text)"><?= esc($chosenPath['strength_to_develop']) ?></strong></p>
+    <?php endif; ?>
+    <p class="muted" style="font-size:13px">Unlocks: <strong class="gold"><?= esc($chosenPath['role_unlocked']) ?></strong></p>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- Explore Another Career (Strategic B5) -->
 <section class="section">
@@ -93,6 +117,8 @@
         <canvas id="eTrajChart" height="150"></canvas>
         <h3 style="margin:16px 0 8px">30 / 60 / 90-day plan</h3>
         <div id="ePlanList" class="stack"></div>
+        <div id="eStrength" class="muted" style="font-size:13px;margin-top:10px"></div>
+        <div id="eUnlocked" class="muted" style="font-size:13px;margin-top:4px"></div>
       </div>
     </div>
   </div>
@@ -103,7 +129,8 @@
 <script>
 const PATHS = <?= json_encode(array_map(fn($p)=>[
   'key'=>$p['key'],'title'=>$p['title'],'readiness'=>$p['readiness'],
-  'colorHex'=>$p['colorHex'],'gaps'=>$p['gaps'],'plan'=>$p['plan'],'traj'=>$p['traj']
+  'colorHex'=>$p['colorHex'],'gaps'=>$p['gaps'],'plan'=>$p['plan'],'traj'=>$p['traj'],
+  'strength_to_develop'=>$p['strength_to_develop'] ?? null,'role_unlocked'=>$p['role_unlocked'] ?? null
 ], $paths)) ?>;
 const WHATIF_URL = "<?= base_url('whatif') ?>";
 let active = PATHS[0], chart = null;
@@ -130,7 +157,7 @@ function buildGaps(p){
 }
 function buildPlan(p){
   document.getElementById('planList').innerHTML = p.plan.map(s =>
-    '<div class="ev"><strong class="gold">'+s.d+'</strong> — '+s.t+'</div>').join('');
+    '<div class="ev"><strong class="gold">'+s.d+'</strong>'+(s.stage?' <span class="muted" style="font-size:11px">('+s.stage+')</span>':'')+' — '+s.t+'</div>').join('');
 }
 function renderChart(p){
   const ctx = document.getElementById('trajChart').getContext('2d');
@@ -161,6 +188,10 @@ function selectPath(key){
   setDonut(active.readiness, active.colorHex);
   setDelta(active.readiness, active.readiness, 0);
   buildGaps(active); buildPlan(active); renderChart(active);
+  document.getElementById('cStrength').innerHTML = active.strength_to_develop
+    ? ('Strength to develop: <strong style="color:var(--text)">'+active.strength_to_develop+'</strong>') : '';
+  document.getElementById('cUnlocked').innerHTML = active.role_unlocked
+    ? ('Unlocks: <strong class="gold">'+active.role_unlocked+'</strong>') : '';
 }
 document.addEventListener('click', e=>{
   const card = e.target.closest('.path-card'); if(card){ selectPath(card.dataset.key); }
@@ -195,8 +226,12 @@ function renderExplore(e){
     ? e.gaps.map(function(g){return '<span class="skill">'+g.label+'</span>';}).join(' ')
     : '<p class="muted">No gaps — strong match already.</p>';
   document.getElementById('ePlanList').innerHTML = e.plan.map(function(s){
-    return '<div class="ev"><strong class="gold">'+s.d+'</strong> — '+s.t+'</div>';
+    return '<div class="ev"><strong class="gold">'+s.d+'</strong>'+(s.stage?' <span class="muted" style="font-size:11px">('+s.stage+')</span>':'')+' — '+s.t+'</div>';
   }).join('');
+  document.getElementById('eStrength').innerHTML = e.strength_to_develop
+    ? ('Strength to develop: <strong style="color:var(--text)">'+e.strength_to_develop+'</strong>') : '';
+  document.getElementById('eUnlocked').innerHTML = e.role_unlocked
+    ? ('Unlocks: <strong class="gold">'+e.role_unlocked+'</strong>') : '';
   if(exploreChart) exploreChart.destroy();
   var ctx = document.getElementById('eTrajChart').getContext('2d');
   exploreChart = new Chart(ctx, {
