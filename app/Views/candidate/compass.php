@@ -64,6 +64,40 @@
   </div>
 </section>
 
+<!-- Explore Another Career (Strategic B5) -->
+<section class="section">
+  <div class="section-label">Explore Another Career</div>
+  <p class="purpose">Not one of your top 3 paths? Pick any role and see where you stand today.</p>
+  <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">
+    <select id="eRoleSelect" style="padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:inherit;font-size:14px">
+      <?php foreach ($allRoles as $r): ?>
+        <option value="<?= esc($r['key']) ?>"><?= esc($r['title']) ?> · <?= esc($r['domain']) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <button class="btn btn-gold" id="eGoBtn">Show my pathway →</button>
+  </div>
+  <div id="eResult" style="display:none;margin-top:16px">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h3 id="eTitle" style="margin:0"></h3>
+      <span class="pill" id="eFitPill"></span>
+    </div>
+    <div class="grid grid-2" style="margin-top:12px">
+      <div class="card">
+        <div class="donut-wrap" id="eDonut"></div>
+        <div id="eMatched" class="muted" style="font-size:13px;margin:10px 0"></div>
+        <h3 style="margin:12px 0 8px">Skills to build</h3>
+        <div id="eGapList" class="stack"></div>
+      </div>
+      <div class="card">
+        <div class="section-label">Your trajectory</div>
+        <canvas id="eTrajChart" height="150"></canvas>
+        <h3 style="margin:16px 0 8px">30 / 60 / 90-day plan</h3>
+        <div id="ePlanList" class="stack"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- data + scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -134,6 +168,54 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('change', e=>{ if(e.target.classList.contains('gap-cb')) recompute(); });
 selectPath(PATHS[0].key);
+
+// ---- Explore Another Career (Strategic B5) ----
+const EXPLORE_URL = "<?= base_url('compass/explore') ?>";
+let exploreChart = null;
+function donutSVGFor(pct, color){
+  const r=45, c=2*Math.PI*r, off = c*(1-pct/100);
+  return '<svg class="donut" viewBox="0 0 120 120">'+
+    '<circle class="track" cx="60" cy="60" r="'+r+'"></circle>'+
+    '<circle class="val" cx="60" cy="60" r="'+r+'" style="stroke:'+color+';stroke-dasharray:'+c.toFixed(1)+';stroke-dashoffset:'+off.toFixed(1)+'"></circle>'+
+    '<text class="pct" x="60" y="68" text-anchor="middle">'+pct+'%</text></svg>';
+}
+function renderExplore(e){
+  if(e.error){ return; }
+  document.getElementById('eResult').style.display = '';
+  document.getElementById('eTitle').textContent = e.title;
+  var fitClass = e.fitLabel==='Ready Now'?'ok':(e.fitLabel==='Reachable'?'nudge':'risk');
+  var pill = document.getElementById('eFitPill');
+  pill.className = 'pill '+fitClass;
+  pill.textContent = e.fitLabel;
+  document.getElementById('eDonut').innerHTML = donutSVGFor(e.readiness, e.colorHex);
+  document.getElementById('eMatched').innerHTML = (e.matched && e.matched.length)
+    ? 'Transferable strengths: <strong style="color:var(--text)">'+e.matched.map(function(m){return m.label;}).join(', ')+'</strong>'
+    : '';
+  document.getElementById('eGapList').innerHTML = (e.gaps && e.gaps.length)
+    ? e.gaps.map(function(g){return '<span class="skill">'+g.label+'</span>';}).join(' ')
+    : '<p class="muted">No gaps — strong match already.</p>';
+  document.getElementById('ePlanList').innerHTML = e.plan.map(function(s){
+    return '<div class="ev"><strong class="gold">'+s.d+'</strong> — '+s.t+'</div>';
+  }).join('');
+  if(exploreChart) exploreChart.destroy();
+  var ctx = document.getElementById('eTrajChart').getContext('2d');
+  exploreChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels:['Now','30d','60d','90d'], datasets:[{ data:[e.traj.now,e.traj.d30,e.traj.d60,e.traj.d90], borderColor:e.colorHex,
+      backgroundColor:'transparent', tension:.35, pointRadius:4, pointBackgroundColor:e.colorHex, borderWidth:3 }] },
+    options:{ plugins:{legend:{display:false}}, scales:{
+      y:{ min:0, max:100, grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'#9AA4B8'} },
+      x:{ grid:{display:false}, ticks:{color:'#9AA4B8'} } } }
+  });
+}
+document.getElementById('eGoBtn').onclick = function(){
+  var key = document.getElementById('eRoleSelect').value;
+  var body = new URLSearchParams(); body.append('role', key);
+  fetch(EXPLORE_URL, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body})
+    .then(function(r){return r.json();})
+    .then(renderExplore)
+    .catch(function(){});
+};
 </script>
 
 <?= $this->endSection() ?>

@@ -94,4 +94,64 @@ class RecommendationService
         $ml = $m ? Catalog::label($m) : 'your strongest skill';
         return "You're match-ready — apply now and prepare interview stories around {$ml}.";
     }
+
+    /**
+     * Resume Coach (Fasa B4 — Strategic B). Restructures existing signals
+     * into: top strengths, evidence gaps, role alignment gap, improvements
+     * (reuses feedback() as-is), and one before/after example.
+     */
+    public function resumeCoach(
+        string $text,
+        array $skills,
+        array $projects,
+        array $leadership,
+        array $bestGapCodes,
+        ?string $bestRoleTitle,
+        int $readiness
+    ): array {
+        $strengths = [];
+        $gaps      = [];
+        foreach ($skills as $code => $s) {
+            $label = $s['evidence_label'] ?? (($s['source'] ?? '') === 'stated' ? 'Stated' : 'Inferred');
+            if (in_array($label, ['Stated', 'Supported'], true)) {
+                $strengths[] = Catalog::label($code);
+            } elseif ($label === 'Needs Evidence') {
+                $gaps[] = Catalog::label($code);
+            }
+        }
+        $strengths = array_slice(array_unique($strengths), 0, 3);
+        $gaps      = array_slice(array_unique($gaps), 0, 3);
+
+        $roleGap = null;
+        if ($bestRoleTitle && !empty($bestGapCodes)) {
+            $roleGap = "To move closer to {$bestRoleTitle}, add evidence of " . Catalog::label($bestGapCodes[0]) . '.';
+        }
+
+        return [
+            'top_strengths'      => $strengths,
+            'evidence_gaps'      => $gaps,
+            'role_alignment_gap' => $roleGap,
+            'improvements'       => $this->feedback($text, $skills, $readiness, $projects, $leadership),
+            'before_after'       => $this->beforeAfterExample($projects, $leadership),
+        ];
+    }
+
+    /**
+     * Picks the first detected project/leadership line lacking a number and
+     * shows how to reframe it — without inventing a specific fake outcome.
+     * Returns null if nothing suitable is found (UI hides the section).
+     */
+    private function beforeAfterExample(array $projects, array $leadership): ?array
+    {
+        foreach (array_merge($leadership, $projects) as $line) {
+            $line = trim((string) $line);
+            if ($line !== '' && ! preg_match('/\d/', $line)) {
+                return [
+                    'before' => $line,
+                    'after'  => $line . ' — add a number (team size, users, %, budget, or duration) to show scale and impact.',
+                ];
+            }
+        }
+        return null;
+    }
 }

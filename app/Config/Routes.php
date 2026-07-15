@@ -40,6 +40,7 @@ $routes->post('resume/analyze', 'Candidate::resumeAnalyze');
 // ---- Fasa 4: candidate career compass ----
 $routes->get('compass', 'Candidate::compass');
 $routes->post('whatif', 'Candidate::whatif');
+$routes->post('compass/explore', 'Candidate::exploreCareer'); // Strategic B5: Career Explorer
 
 // ---- Fasa 6.2: headless JSON API ----
 $routes->match(['get', 'post'], 'api/analyze-resume', 'Api::analyzeResume');

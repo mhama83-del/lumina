@@ -156,6 +156,8 @@ class Candidate extends BaseController
             'title'   => 'Lumina · Career Compass',
             'profile' => $profile,
             'paths'   => $paths,
+            // Strategic B5: full catalog for "Explore Another Career".
+            'allRoles' => \App\Libraries\Catalog::roles(),
         ]);
     }
 
@@ -172,6 +174,57 @@ class Candidate extends BaseController
         $svc = new ScoreService();
         $w   = $svc->whatIf($cand, $role, is_array($add) ? $add : []);
         return $this->response->setJSON($w);
+    }
+
+    /**
+     * Career Explorer (Fasa B5 — Strategic B): compute fit against ANY role
+     * in the full catalog, not just the 3 preset paths. Reuses buildSignal(),
+     * planFor(), trajectoryFor(), skillLabel() and ScoreService::readiness()/
+     * match() as-is — no new scoring logic. Additive: new route + method.
+     */
+    public function exploreCareer()
+    {
+        $key   = (string) $this->request->getPost('role');
+        $roles = \App\Libraries\Catalog::roles();
+        $role  = $roles[$key] ?? null;
+        if (! $role) {
+            return $this->response->setJSON(['error' => 'invalid_role']);
+        }
+
+        $profile = session('profile');
+        if (! $profile) { $this->sample(); $profile = session('profile'); }
+
+        $svc  = new ScoreService();
+        $cand = $this->buildSignal($profile);
+
+        $readiness = $svc->readiness($cand, $role);
+        $match     = $svc->match($cand, $role);
+        $gap       = $match['gap'];
+
+        // Explorer-specific, positive-only labels — cosmetic remap only,
+        // reuses the Protected Baseline match() label/thresholds as-is.
+        $fitLabel = [
+            'best'    => 'Ready Now',
+            'growth'  => 'Reachable',
+            'stretch' => 'Longer Path',
+        ][$match['label']] ?? 'Reachable';
+
+        // Remember the chosen career for later phases (e.g. B6 Growth Pathway).
+        $profile['chosen_career'] = $key;
+        session()->set('profile', $profile);
+
+        return $this->response->setJSON([
+            'key'       => $role['key'],
+            'title'     => $role['title'],
+            'color'     => $role['color'],
+            'colorHex'  => $role['hex'],
+            'readiness' => $readiness['score'],
+            'fitLabel'  => $fitLabel,
+            'matched'   => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $match['matched']),
+            'gaps'      => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $gap),
+            'plan'      => $this->planFor($gap),
+            'traj'      => $this->trajectoryFor($svc, $cand, $role, $gap),
+        ]);
     }
 
     // ---------- Fasa 5: Smart Matching (candidate) ----------
@@ -346,6 +399,7 @@ class Candidate extends BaseController
                 'source' => $s['source'] ?? 'inferred',
                 'conf'   => round(($s['confidence'] ?? 0.6) * 100),
                 'from'   => $s['from'] ?? (($s['source'] ?? '') === 'programme' ? ('from your field of study: ' . ($degree['raw'] ?? '')) : null),
+                'evidence_label' => $s['evidence_label'] ?? (($s['source'] ?? '') === 'stated' ? 'Stated' : 'Inferred'),
             ];
         }
 
@@ -368,6 +422,10 @@ class Candidate extends BaseController
         $feedback    = $rec->feedback($text, $cand['skills'], $readiness['score'], $projects, $leadership);
         $nextAction  = $rec->nextAction($band, $bestM['gap'], $bestM['matched']);
         $courses     = $rec->microCourses($bestM['gap']);
+        $resumeCoach = $rec->resumeCoach(
+            $text, $cand['skills'], $projects, $leadership,
+            $bestM['gap'], $bestRole['title'] ?? null, $readiness['score']
+        );
 
         // ---- Lumina Graph: enrich + learn ----
         $tax        = new \App\Services\TaxonomyService();
@@ -438,6 +496,7 @@ class Candidate extends BaseController
             'feedback'       => $feedback,
             'next_action'    => $nextAction,
             'courses'        => $courses,
+            'resume_coach'   => $resumeCoach,
             'saved'          => (bool) $savedId,
             'saved_id'       => $savedId,
             'graph_related'  => $graph['related'],
