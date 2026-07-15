@@ -20,6 +20,9 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
             . '<div class="section-label" style="margin-top:12px">Matched skills</div><p>' . esc(implode(', ', $o['matched']) ?: '—') . '</p>'
             . ($o['gap'] ? '<div class="section-label" style="margin-top:10px">To close</div><p>' . esc(implode(', ', $o['gap'])) . '</p>' : '')
             . '<p class="purpose" style="margin-top:12px">Decision support only. Improve your match in Career Compass.</p>';
+      $prepBody = '<p class="muted" style="margin-bottom:8px">Practice answering these before you apply or interview:</p><ol style="padding-left:18px;font-size:14px">'
+                . implode('', array_map(fn ($q) => '<li style="margin-bottom:8px">' . esc($q) . '</li>', $o['interview_prep'] ?? []))
+                . '</ol><p class="purpose" style="margin-top:12px">Use the STAR method: Situation, Task, Action, Result.</p>';
     ?>
       <div class="card" style="--pc:<?= $o['color'] ?>">
         <div class="row" style="justify-content:space-between">
@@ -32,8 +35,9 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
         <p class="muted" style="margin:10px 0 0">
           <?php if ($o['gap']): ?>Gap: <?= esc(implode(', ', $o['gap'])) ?><?php else: ?>Strong match — no gaps.<?php endif; ?>
         </p>
-        <div style="margin-top:12px">
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-ghost" data-drawer="1" data-title="<?= esc($o['title'] . ' — why this match', 'attr') ?>" data-body="<?= esc($body, 'attr') ?>">Why this match?</button>
+          <button class="btn btn-ghost" data-drawer="1" data-title="<?= esc($o['title'] . ' — interview prep', 'attr') ?>" data-body="<?= esc($prepBody, 'attr') ?>">Prepare for interview</button>
         </div>
       </div>
     <?php endforeach; ?>

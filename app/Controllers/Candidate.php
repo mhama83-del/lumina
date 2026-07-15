@@ -132,11 +132,15 @@ class Candidate extends BaseController
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
+        // Strategic B6: Potential Profile (B1/B2), used for "Strength to develop".
+        $potentialProfile = $profile['potential_profile'] ?? null;
 
         $paths = [];
         foreach ($this->pathRoles($cand) as $role) {
             $r = $svc->readiness($cand, $role);
             $m = $svc->match($cand, $role);
+            $traj = $this->trajectoryFor($svc, $cand, $role, $m['gap']);
+            $extras = $this->growthExtras($potentialProfile, $traj, $role['title']);
             $paths[] = [
                 'key'       => $role['key'],
                 'title'     => $role['title'],
@@ -147,10 +151,35 @@ class Candidate extends BaseController
                 'match'     => $m['matchScore'],
                 'gaps'      => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $m['gap']),
                 'plan'      => $this->planFor($m['gap']),
-                'traj'      => $this->trajectoryFor($svc, $cand, $role, $m['gap']),
-            ];
+                'traj'      => $traj,
+            ] + $extras;
         }
         usort($paths, fn ($a, $b) => $b['readiness'] <=> $a['readiness']);
+
+        // Strategic B6: Chosen Pathway, if the candidate explored a career (B5).
+        $chosenPath = null;
+        $chosenKey  = $profile['chosen_career'] ?? null;
+        if ($chosenKey) {
+            $allRolesForChosen = \App\Libraries\Catalog::roles();
+            if (isset($allRolesForChosen[$chosenKey])) {
+                $cRole   = $allRolesForChosen[$chosenKey];
+                $cR      = $svc->readiness($cand, $cRole);
+                $cM      = $svc->match($cand, $cRole);
+                $cTraj   = $this->trajectoryFor($svc, $cand, $cRole, $cM['gap']);
+                $cExtras = $this->growthExtras($potentialProfile, $cTraj, $cRole['title']);
+                $chosenPath = [
+                    'key'       => $cRole['key'],
+                    'title'     => $cRole['title'],
+                    'color'     => $cRole['color'],
+                    'colorHex'  => $cRole['hex'],
+                    'readiness' => $cR['score'],
+                    'label'     => $cM['label'],
+                    'gaps'      => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $cM['gap']),
+                    'plan'      => $this->planFor($cM['gap']),
+                    'traj'      => $cTraj,
+                ] + $cExtras;
+            }
+        }
 
         return view('candidate/compass', [
             'title'   => 'Lumina · Career Compass',
@@ -158,6 +187,8 @@ class Candidate extends BaseController
             'paths'   => $paths,
             // Strategic B5: full catalog for "Explore Another Career".
             'allRoles' => \App\Libraries\Catalog::roles(),
+            // Strategic B6: Chosen Pathway comparison.
+            'chosenPath' => $chosenPath,
         ]);
     }
 
@@ -196,10 +227,14 @@ class Candidate extends BaseController
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
+        // Strategic B6: Potential Profile (B1/B2), used for "Strength to develop".
+        $potentialProfile = $profile['potential_profile'] ?? null;
 
         $readiness = $svc->readiness($cand, $role);
         $match     = $svc->match($cand, $role);
         $gap       = $match['gap'];
+        $traj      = $this->trajectoryFor($svc, $cand, $role, $gap);
+        $extras    = $this->growthExtras($potentialProfile, $traj, $role['title']);
 
         // Explorer-specific, positive-only labels — cosmetic remap only,
         // reuses the Protected Baseline match() label/thresholds as-is.
@@ -223,8 +258,8 @@ class Candidate extends BaseController
             'matched'   => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $match['matched']),
             'gaps'      => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $gap),
             'plan'      => $this->planFor($gap),
-            'traj'      => $this->trajectoryFor($svc, $cand, $role, $gap),
-        ]);
+            'traj'      => $traj,
+        ] + $extras);
     }
 
     // ---------- Fasa 5: Smart Matching (candidate) ----------
@@ -239,6 +274,8 @@ class Candidate extends BaseController
         $opps = [];
         foreach (\App\Libraries\Catalog::roles() as $role) {
             $m = $svc->match($cand, $role);
+            $matchedLabels = \App\Libraries\Catalog::labels($m['matched']);
+            $gapLabels     = \App\Libraries\Catalog::labels($m['gap']);
             $opps[] = [
                 'title'   => $role['title'],
                 'company' => $role['company'],
@@ -247,9 +284,10 @@ class Candidate extends BaseController
                 'color'   => $role['color'],
                 'match'   => $m['matchScore'],
                 'label'   => $m['label'],
-                'matched' => \App\Libraries\Catalog::labels($m['matched']),
-                'gap'     => \App\Libraries\Catalog::labels($m['gap']),
+                'matched' => $matchedLabels,
+                'gap'     => $gapLabels,
                 'reason'  => \App\Libraries\Explain::match($m, $role['domain']),
+                'interview_prep' => $this->interviewPrep($matchedLabels, $gapLabels, $role['title']),
             ];
         }
         usort($opps, fn ($a, $b) => $b['match'] <=> $a['match']);
@@ -263,6 +301,23 @@ class Candidate extends BaseController
             'profile' => $profile,
             'opps'    => $opps,
         ]);
+    }
+
+    /**
+     * Interview Prep (Fasa B7a — Strategic B): STAR-style questions built
+     * from THIS candidate's actual matched skills and gaps — not generic.
+     */
+    private function interviewPrep(array $matched, array $gap, string $roleTitle): array
+    {
+        $questions = [];
+        foreach (array_slice($matched, 0, 2) as $skill) {
+            $questions[] = "Tell me about a time you used {$skill}. What was the situation, your action, and the result?";
+        }
+        if ($gap) {
+            $questions[] = "How are you building your {$gap[0]} skills for a {$roleTitle} role?";
+        }
+        $questions[] = "Why are you interested in a {$roleTitle} role specifically?";
+        return array_slice($questions, 0, 4);
     }
 
     public function placed()  { return $this->soon('Placed / Growing', 'Fasa 6', 'Your career keeps growing after you are hired.'); }
@@ -930,9 +985,9 @@ class Candidate extends BaseController
     {
         $g = array_map(fn ($c) => $this->skillLabel($c), $gap);
         return [
-            ['d' => '30 days', 't' => $g ? 'Learn ' . $g[0] : 'Strengthen your fundamentals'],
-            ['d' => '60 days', 't' => isset($g[1]) ? 'Build a project using ' . $g[0] . ' + ' . $g[1] : ($g ? 'Build a project using ' . $g[0] : 'Build a portfolio project')],
-            ['d' => '90 days', 't' => $g ? 'Add evidence / a cert in ' . implode(', ', array_slice($g, 0, 2)) : 'Get an internship or verified evidence'],
+            ['d' => '30 days', 'stage' => 'Learn', 't' => $g ? 'Learn ' . $g[0] : 'Strengthen your fundamentals'],
+            ['d' => '60 days', 'stage' => 'Build & Prove', 't' => isset($g[1]) ? 'Build a project using ' . $g[0] . ' + ' . $g[1] : ($g ? 'Build a project using ' . $g[0] : 'Build a portfolio project')],
+            ['d' => '90 days', 'stage' => 'Apply & Validate', 't' => $g ? 'Add evidence / a cert in ' . implode(', ', array_slice($g, 0, 2)) : 'Get an internship or verified evidence'],
         ];
     }
 
@@ -966,6 +1021,23 @@ class Candidate extends BaseController
         $d30 = max($now, $d30); $d60 = max($d30, $d60); $d90 = max($d60, $d90);
 
         return ['now' => $now, 'd30' => $d30, 'd60' => $d60, 'd90' => $d90];
+    }
+
+    /**
+     * Growth Pathway extras (Fasa B6 — Strategic B): "Strength to develop"
+     * (from the B1/B2 Potential Profile, if present) and "Role unlocked"
+     * (the 90-day projected readiness for this role). Additive only.
+     */
+    private function growthExtras(?array $potentialProfile, array $traj, string $roleTitle): array
+    {
+        $strength = null;
+        if (! empty($potentialProfile['build_next'][0])) {
+            $strength = $potentialProfile['build_next'][0];
+        }
+        return [
+            'strength_to_develop' => $strength,
+            'role_unlocked'       => "{$roleTitle} at {$traj['d90']}% readiness",
+        ];
     }
 
     private function samplePreset(string $stage): array
