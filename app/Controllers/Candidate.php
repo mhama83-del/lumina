@@ -55,6 +55,7 @@ class Candidate extends BaseController
             $profile['animalLabel'] = $a['label'];
             $profile['traits']      = $a['traits'];
             $profile['domains']     = $a['domains'];
+            $profile['quiz_ps']     = WorkAnimal::psScore(array_values($answers));
             session()->set('profile', $profile);
             return redirect()->to(base_url('onboard/input'));
         }
@@ -119,6 +120,7 @@ class Candidate extends BaseController
             'risk'      => $risk,
             'role'      => $role,
             'whyText'   => Explain::readiness($readiness),
+            'potentialProfile' => $profile['potential_profile'] ?? null,
         ]);
     }
 
@@ -591,6 +593,13 @@ class Candidate extends BaseController
             'verified'      => $verified,
             'target_domain' => $this->normaliseDomain($domain),
         ]);
+
+        $profile['potential_profile'] = (new \App\Services\PotentialProfileService())->build(
+            $profile['quiz_ps'] ?? [],
+            $text,
+            $skills
+        );
+
         session()->set('profile', $profile);
     }
 

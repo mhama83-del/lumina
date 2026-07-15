@@ -56,6 +56,85 @@ $rc = [
       </div>
     </div>
   </div>
+  <?php if (!empty($potentialProfile)): ?>
+  <div class="section-label" style="margin-top:22px">Potential Profile</div>
+  <div class="grid grid-3" style="margin-top:8px">
+    <div class="card card-tight" style="grid-column:span 2">
+      <div class="section-label">Six-domain view</div>
+      <canvas id="ppRadar" height="220"></canvas>
+    </div>
+    <div class="card card-tight">
+      <div class="section-label">Thinking Style</div>
+      <h3 style="margin:4px 0 10px"><?= esc($potentialProfile['thinking_style']) ?></h3>
+      <?php if (!empty($potentialProfile['animal'])): $ab = $potentialProfile['animal']; ?>
+        <p class="muted" style="font-size:13px">
+          Secondary: <strong style="color:var(--text)"><?= esc($ab['secondary']['label']) ?></strong>
+          · Growth edge: <strong style="color:var(--text)"><?= esc($ab['growth']['label']) ?></strong>
+        </p>
+        <p class="muted" style="font-size:12px;margin-top:6px"><?= esc($ab['line']) ?></p>
+      <?php endif; ?>
+      <div style="margin-top:12px">
+        <div class="row" style="flex-wrap:wrap;gap:6px">
+          <?php foreach ($potentialProfile['top_strengths'] as $s): ?>
+            <?= lumina_chip($s, 'gold') ?>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-2" style="margin-top:14px">
+    <div class="card card-tight">
+      <div class="section-label">Growing areas</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <?php foreach ($potentialProfile['growing_areas'] as $g): ?>
+          <?= lumina_chip($g, 'teal') ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="card card-tight">
+      <div class="section-label">Build next</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <?php foreach ($potentialProfile['build_next'] as $b): ?>
+          <?= lumina_chip($b, 'violet') ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:10px"><?= esc($potentialProfile['disclaimer']) ?></p>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+  (function () {
+    var domains = <?= json_encode($potentialProfile['domains']) ?>;
+    var labels = Object.keys(domains).map(function (k) { return k.charAt(0).toUpperCase() + k.slice(1); });
+    var data = Object.values(domains);
+    var css = getComputedStyle(document.documentElement);
+    var indigo = (css.getPropertyValue('--indigo') || '#6C5CE7').trim();
+    var ctx = document.getElementById('ppRadar');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Potential Profile',
+            data: data,
+            backgroundColor: 'rgba(108,92,231,.15)',
+            borderColor: indigo,
+            pointBackgroundColor: indigo
+          }]
+        },
+        options: {
+          scales: { r: { min: 0, max: 100, ticks: { display: false },
+            grid: { color: 'rgba(255,255,255,.08)' },
+            angleLines: { color: 'rgba(255,255,255,.08)' },
+            pointLabels: { color: '#9aa4b2', font: { size: 11 } } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+  })();
+  </script>
+  <?php endif; ?>
   <div class="row" style="margin-top:18px">
     <a class="btn btn-gold btn-lg" href="<?= base_url('compass') ?>">See my career paths →</a>
     <a class="btn btn-ghost" href="<?= base_url('start') ?>">Rebuild</a>
