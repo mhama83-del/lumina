@@ -582,7 +582,11 @@ class Candidate extends BaseController
     private function buildProfile(string $text, array $stated, string $domain, ?string $animal, int $verified, ?string $name): void
     {
         $svc = new ScoreService();
-        $skills = $svc->inferSkills($text, $stated);
+        // Strategic B3: explained variant adds 'from' (trigger word); each
+        // skill is then labelled with its canonical evidence status.
+        // Additive — readiness()/match() only read 'confidence'/'source'.
+        $skills = $svc->inferSkillsExplained($text, $stated);
+        $skills = (new \App\Services\EvidenceCheckService())->label($skills, $verified);
         $profile = session('profile') ?? [];
         $profile = array_merge($profile, [
             'name'          => $name ?: ($profile['name'] ?? 'You'),

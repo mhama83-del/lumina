@@ -40,7 +40,9 @@ $rc = [
       <p class="purpose">Dashed = inferred by Lumina from your evidence.</p>
       <div>
         <?php foreach (($p['skills'] ?? []) as $code => $s):
-            echo lumina_skill(ucwords(str_replace('_', ' ', $code)), $s['source'], $s['confidence']);
+            $evLabel = $s['evidence_label'] ?? (($s['source'] ?? '') === 'stated' ? 'Stated' : 'Inferred');
+            $evTitle = !empty($s['from']) ? "{$evLabel} \xc2\xb7 where we found it: {$s['from']}" : $evLabel;
+            echo '<span title="' . esc($evTitle, 'attr') . '">' . lumina_skill(ucwords(str_replace('_', ' ', $code)), $s['source'], $s['confidence']) . '</span>';
         endforeach; ?>
       </div>
     </div>
