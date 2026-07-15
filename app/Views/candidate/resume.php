@@ -3,7 +3,7 @@
 <?php helper('ui'); ?>
 
 <section class="hero">
-  <div class="section-label">Resume Analysis · AI</div>
+  <div class="section-label">My Career Intelligence · Resume Analysis</div>
   <h1>Paste your resume. Watch Lumina read it.</h1>
   <p class="purpose">Lumina extracts your skills, scores your readiness, reads your Work Animal, and finds your best match — in seconds.</p>
 </section>
@@ -101,7 +101,7 @@
 
         <div class="row" style="margin-top:6px">
           <a class="btn btn-gold" href="<?= base_url('compass') ?>">See my career paths →</a>
-          <a class="btn btn-ghost" href="<?= base_url('passport') ?>">View portfolio</a>
+          <a class="btn btn-ghost" href="<?= base_url('passport') ?>">View My EDGE Profile →</a>
         </div>
       </div>
     </div>

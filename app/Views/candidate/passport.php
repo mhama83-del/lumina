@@ -59,7 +59,8 @@ $rc = [
     </div>
   </div>
   <?php if (!empty($potentialProfile)): ?>
-  <div class="section-label" style="margin-top:22px">Potential Profile</div>
+  <div class="section-label" style="margin-top:22px">Lumina EDGE Profile</div>
+  <?php if (!empty($potentialProfile['has_quiz_data'])): ?>
   <div class="grid grid-3" style="margin-top:8px">
     <div class="card card-tight" style="grid-column:span 2">
       <div class="section-label">Six-domain view</div>
@@ -118,7 +119,7 @@ $rc = [
         data: {
           labels: labels,
           datasets: [{
-            label: 'Potential Profile',
+            label: 'EDGE Signals',
             data: data,
             backgroundColor: 'rgba(108,92,231,.15)',
             borderColor: indigo,
@@ -136,6 +137,12 @@ $rc = [
     }
   })();
   </script>
+  <?php else: ?>
+    <div class="card card-tight" style="margin-top:8px">
+      <p class="muted" style="margin:0 0 10px">Your Lumina EDGE Profile isn't ready yet — answer a quick 2-minute assessment to see your strengths and thinking style.</p>
+      <a class="btn btn-gold" href="<?= base_url('onboard/animal') ?>">Start Assessment →</a>
+    </div>
+  <?php endif; ?>
   <?php endif; ?>
   <div class="row" style="margin-top:18px">
     <a class="btn btn-gold btn-lg" href="<?= base_url('compass') ?>">See my career paths →</a>

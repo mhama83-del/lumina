@@ -23,6 +23,11 @@ class PotentialProfileService
 
     public function build(array $quizPsTally, string $evidenceText, array $skills): array
     {
+        // Strategic C fix: distinguish "quiz answered" from "flat 50-baseline
+        // fallback" so the UI can show a clear "not ready yet" state instead
+        // of a fake, un-personalised radar chart.
+        $hasQuizData = !empty($quizPsTally);
+
         $scores = $this->normaliseDomainScores($quizPsTally);
         arsort($scores);
         $domainOrder = array_keys($scores);
@@ -37,6 +42,7 @@ class PotentialProfileService
             'animal'         => $animalBlock,
             'source'         => $animalBlock !== null ? 'evidence' : 'quiz',
             'disclaimer'     => self::DISCLAIMER,
+            'has_quiz_data'  => $hasQuizData,
         ];
     }
 

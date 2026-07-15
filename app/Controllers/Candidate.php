@@ -39,6 +39,12 @@ class Candidate extends BaseController
     {
         $stage = session('stage') ?? '19-22';
         $p = $this->samplePreset($stage);
+        // Strategic C fix: sample personas skip the assessment entirely, so
+        // pre-fill their EDGE Signal quiz tally into session before
+        // buildProfile() reads it — avoids a flat 50-baseline radar chart.
+        $profile = session('profile') ?? [];
+        $profile['quiz_ps'] = $p['quiz_ps'] ?? [];
+        session()->set('profile', $profile);
         $this->buildProfile($p['evidence_text'], $p['stated'], $p['domain'], $p['animal'], $p['verified'], $p['name']);
         return redirect()->to(base_url('passport'));
     }
@@ -1043,10 +1049,12 @@ class Candidate extends BaseController
     private function samplePreset(string $stage): array
     {
         $presets = [
-            '16-18'  => ['name' => 'Nurul',   'evidence_text' => 'Active in Science Club; built a small weather logger; enjoys maths.', 'stated' => ['data_analysis'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 0],
-            '19-22'  => ['name' => 'Aiman',   'evidence_text' => self::SAMPLE_MYCSD, 'stated' => ['python', 'teamwork'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 1],
-            '23-28'  => ['name' => 'Wei Jie', 'evidence_text' => 'Internship at a fintech; built dashboards; led a small analytics team.', 'stated' => ['sql', 'dashboarding', 'python'], 'domain' => 'Data', 'animal' => 'fox', 'verified' => 1],
-            '26-28+' => ['name' => 'Sara',    'evidence_text' => '3 years backend dev; mentors juniors; shipped cloud microservices.', 'stated' => ['software', 'cloud', 'communication'], 'domain' => 'Engineering', 'animal' => 'eagle', 'verified' => 1],
+            // Strategic C fix: 'quiz_ps' pre-filled (raw EDGE Signal tally)
+            // since sample personas never answer the /onboard/animal quiz.
+            '16-18'  => ['name' => 'Nurul',   'evidence_text' => 'Active in Science Club; built a small weather logger; enjoys maths.', 'stated' => ['data_analysis'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 0, 'quiz_ps' => ['thinking' => 7, 'learning' => 4, 'execution' => 2]],
+            '19-22'  => ['name' => 'Aiman',   'evidence_text' => self::SAMPLE_MYCSD, 'stated' => ['python', 'teamwork'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 1, 'quiz_ps' => ['thinking' => 6, 'execution' => 4, 'leadership' => 3]],
+            '23-28'  => ['name' => 'Wei Jie', 'evidence_text' => 'Internship at a fintech; built dashboards; led a small analytics team.', 'stated' => ['sql', 'dashboarding', 'python'], 'domain' => 'Data', 'animal' => 'fox', 'verified' => 1, 'quiz_ps' => ['adaptability' => 6, 'leadership' => 5, 'execution' => 3]],
+            '26-28+' => ['name' => 'Sara',    'evidence_text' => '3 years backend dev; mentors juniors; shipped cloud microservices.', 'stated' => ['software', 'cloud', 'communication'], 'domain' => 'Engineering', 'animal' => 'eagle', 'verified' => 1, 'quiz_ps' => ['leadership' => 7, 'people' => 5, 'execution' => 4]],
         ];
         return $presets[$stage] ?? $presets['19-22'];
     }
