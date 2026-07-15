@@ -97,10 +97,18 @@ $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('emplo
       <div><div class="section-label">Skill overlap</div><p style="font-size:13px"><?= esc(implode(', ', $match['skill_overlap'])) ?: '—' ?></p></div>
       <div><div class="section-label">Missing / to develop</div><p style="font-size:13px"><?= esc(implode(', ', $match['missing_skills'])) ?: 'none' ?></p></div>
     </div>
-    <div class="section-label" style="margin-top:8px">Suggested interview questions</div>
+    <div class="section-label" style="margin-top:8px">Questions to Confirm</div>
+    <p class="muted" style="font-size:12px;margin:2px 0 6px">Use these questions to understand the candidate's experience and confirm the evidence shown.</p>
     <ol style="font-size:13px;margin:4px 0 0 18px">
-      <li>Tell me about a time you used <?= esc($tm) ?> to solve a real problem — what was the outcome?</li>
-      <li><?= $mm ? 'How would you get up to speed on ' . esc($mm) . ' in your first 30 days?' : 'What would you improve first in this role?' ?></li>
+      <li><strong>Strength to explore:</strong> Tell me about a time you used <?= esc($tm) ?> to solve a real problem — what was the outcome?</li>
+      <?php if ($mm): ?>
+        <li><strong>Skill to check:</strong> How would you get up to speed on <?= esc($mm) ?> in your first 30 days?</li>
+      <?php else: ?>
+        <li><strong>Suggested follow-up:</strong> What would you improve first in this role?</li>
+      <?php endif; ?>
+      <?php if (($match['evidence_strength_score'] ?? 100) < 60): ?>
+        <li><strong>Evidence gap:</strong> Can you share a specific project outcome or metric that shows this in practice?</li>
+      <?php endif; ?>
     </ol>
     <p class="purpose" style="margin-top:10px">Decision support only — the recruiter decides.</p>
   </div>
