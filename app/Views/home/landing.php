@@ -81,4 +81,15 @@
     <?= lumina_chip('University Intelligence','violet') ?>
   </div>
 </section>
+<!-- Talentbank Career OS Value (Strategic C6) -->
+<section class="section">
+  <div class="section-label">A Career Intelligence layer for Talentbank Career OS</div>
+  <p class="muted" style="margin-bottom:14px">Lumina plugs into Talentbank to enrich every stakeholder with deeper, evidence-backed intelligence — beyond resumes and keywords.</p>
+  <div class="grid grid-4">
+    <div class="card"><h3>Candidate Intelligence</h3><p class="muted">Richer profiles — strengths, evidence, readiness and career intent.</p></div>
+    <div class="card"><h3>Matching Intelligence</h3><p class="muted">Explainable matching using skills, evidence strength and trajectory.</p></div>
+    <div class="card"><h3>Employer Intelligence</h3><p class="muted">Clearer comparisons, evidence confidence and focused interview questions.</p></div>
+    <div class="card"><h3>University Intelligence</h3><p class="muted">Cohort readiness, aspiration trends and where support is needed.</p></div>
+  </div>
+</section>
 <?= $this->endSection() ?>
