@@ -10,7 +10,7 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
   <p class="purpose">Matched by readiness and trajectory — not just keywords. <em>Example roles inspired by market patterns — synthetic demo data, not live postings.</em></p>
 </section>
 <section class="section" style="padding-top:6px">
-  <?= lumina_journey('match') ?>
+  <?= lumina_career_journey('perform') ?>
   <?= lumina_note("Matched to opportunities by readiness and trajectory — not keywords.") ?>
 </section>
 <section class="section">

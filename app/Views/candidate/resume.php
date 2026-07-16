@@ -8,6 +8,10 @@
   <p class="purpose">Lumina extracts your skills, scores your readiness, reads your Work Animal, and finds your best match — in seconds.</p>
 </section>
 
+<section class="section" style="padding-top:6px">
+  <?= lumina_career_journey('prepare') ?>
+</section>
+
 <section class="section">
   <div class="grid grid-2">
     <!-- Input -->

@@ -9,7 +9,7 @@
 </section>
 
 <section class="section" style="padding-top:6px">
-  <?= lumina_journey('compass') ?>
+  <?= lumina_career_journey('apply') ?>
   <?= lumina_note("Based on your portfolio, here are 3 real directions — and how ready you are for each.") ?>
 </section>
 
