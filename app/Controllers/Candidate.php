@@ -263,6 +263,14 @@ class Candidate extends BaseController
         $profile['chosen_career'] = $key;
         session()->set('profile', $profile);
 
+        // Strategic C5: Interview Prep for Career Explorer — updates whenever
+        // the candidate explores a different career (chosen career changes).
+        $interviewPrepExplore = $this->interviewPrep(
+            array_map(fn ($c) => $this->skillLabel($c), $match['matched']),
+            array_map(fn ($c) => $this->skillLabel($c), $gap),
+            $role['title']
+        );
+
         return $this->response->setJSON([
             'key'       => $role['key'],
             'title'     => $role['title'],
@@ -274,6 +282,7 @@ class Candidate extends BaseController
             'gaps'      => array_map(fn ($c) => ['code' => $c, 'label' => $this->skillLabel($c)], $gap),
             'plan'      => $this->planFor($gap),
             'traj'      => $traj,
+            'interview_prep' => $interviewPrepExplore,
         ] + $extras);
     }
 
@@ -500,6 +509,12 @@ class Candidate extends BaseController
         $consistencyFlags = (new \App\Services\ProfileConsistencyService())->check(
             $cand['skills'], $projects, $leadership, session('profile')['potential_profile'] ?? null
         );
+        // Strategic C5: Interview Prep for /resume, reuses interviewPrep() from B7a.
+        $interviewPrepResume = $this->interviewPrep(
+            \App\Libraries\Catalog::labels($bestM['matched']),
+            \App\Libraries\Catalog::labels($bestM['gap']),
+            $bestRole['title'] ?? 'this role'
+        );
 
         // ---- Lumina Graph: enrich + learn ----
         $tax        = new \App\Services\TaxonomyService();
@@ -572,6 +587,7 @@ class Candidate extends BaseController
             'courses'           => $courses,
             'resume_coach'      => $resumeCoach,
             'consistency_flags' => $consistencyFlags,
+            'interview_prep'    => $interviewPrepResume,
             'saved'             => (bool) $savedId,
             'saved_id'       => $savedId,
             'graph_related'  => $graph['related'],

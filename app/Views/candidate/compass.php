@@ -121,6 +121,7 @@
         <div id="eUnlocked" class="muted" style="font-size:13px;margin-top:4px"></div>
       </div>
     </div>
+    <div id="eInterviewPrep" style="margin-top:14px"></div>
   </div>
 </section>
 
@@ -232,6 +233,11 @@ function renderExplore(e){
     ? ('Strength to develop: <strong style="color:var(--text)">'+e.strength_to_develop+'</strong>') : '';
   document.getElementById('eUnlocked').innerHTML = e.role_unlocked
     ? ('Unlocks: <strong class="gold">'+e.role_unlocked+'</strong>') : '';
+  document.getElementById('eInterviewPrep').innerHTML = (e.interview_prep && e.interview_prep.length)
+    ? '<div class="section-label" style="margin-top:4px">Prepare for interview</div>' + e.interview_prep.map(function(q,i){
+        return '<div class="muted" style="font-size:13px;margin-top:4px">'+(i+1)+'. '+q+'</div>';
+      }).join('')
+    : '';
   if(exploreChart) exploreChart.destroy();
   var ctx = document.getElementById('eTrajChart').getContext('2d');
   exploreChart = new Chart(ctx, {

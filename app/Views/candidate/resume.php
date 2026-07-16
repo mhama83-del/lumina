@@ -88,6 +88,10 @@
         <!-- Profile Consistency Check (Strategic C2) -->
         <div id="rConsistency" style="margin-bottom:14px"></div>
 
+        <!-- Interview Prep (Strategic C5) -->
+        <div class="section-label">Prepare for Interview</div>
+        <div id="rInterviewPrep" style="margin-bottom:14px"></div>
+
         <!-- Internships -->
         <div class="section-label">Recommended internship roles</div>
         <div id="rInternships" style="margin-bottom:14px"></div>
@@ -272,6 +276,11 @@ function analyze(text, name){
       // Profile Consistency Check (Strategic C2)
       document.getElementById('rConsistency').innerHTML = (data.consistency_flags||[]).map(function(f){
         return '<div class="muted" style="font-size:13px;background:rgba(253,224,71,.08);border:1px solid rgba(253,224,71,.3);border-radius:8px;padding:8px 11px;margin-bottom:6px">'+f.message+'</div>';
+      }).join('');
+
+      // Interview Prep (Strategic C5)
+      document.getElementById('rInterviewPrep').innerHTML = (data.interview_prep||[]).map(function(q,i){
+        return '<div class="muted" style="font-size:13px;margin-bottom:6px">'+(i+1)+'. '+q+'</div>';
       }).join('');
 
       // internships
