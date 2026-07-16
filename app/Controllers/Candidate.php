@@ -96,7 +96,16 @@ class Candidate extends BaseController
             }
 
             $this->buildProfile($text, $stated, $domain, $profile['animal'] ?? null, $verified, $profile['name'] ?? null);
-            return redirect()->to(base_url('passport'));
+            // Strategic C3: brief "reveal" before continuing, so this path
+            // feels consistent with Analyze Resume's inline AI reveal —
+            // same eventual destination (/passport), same moment of
+            // acknowledgement, instead of an instant, unexplained redirect.
+            $updated = session('profile') ?? [];
+            return view('candidate/reveal', [
+                'title'       => 'Lumina · Reading your evidence',
+                'skillCount'  => count($updated['skills'] ?? []),
+                'animalLabel' => $updated['animalLabel'] ?? null,
+            ]);
         }
         return view('candidate/input', [
             'title'  => 'Lumina · Build your portfolio',
@@ -487,6 +496,10 @@ class Candidate extends BaseController
             $text, $cand['skills'], $projects, $leadership,
             $bestM['gap'], $bestRole['title'] ?? null, $readiness['score']
         );
+        // Strategic C2: reuses $projects/$leadership already computed above.
+        $consistencyFlags = (new \App\Services\ProfileConsistencyService())->check(
+            $cand['skills'], $projects, $leadership, session('profile')['potential_profile'] ?? null
+        );
 
         // ---- Lumina Graph: enrich + learn ----
         $tax        = new \App\Services\TaxonomyService();
@@ -555,10 +568,11 @@ class Candidate extends BaseController
             'animal'         => $animal,
             'internships'    => $internships,
             'feedback'       => $feedback,
-            'next_action'    => $nextAction,
-            'courses'        => $courses,
-            'resume_coach'   => $resumeCoach,
-            'saved'          => (bool) $savedId,
+            'next_action'       => $nextAction,
+            'courses'           => $courses,
+            'resume_coach'      => $resumeCoach,
+            'consistency_flags' => $consistencyFlags,
+            'saved'             => (bool) $savedId,
             'saved_id'       => $savedId,
             'graph_related'  => $graph['related'],
             'graph_added'    => count($graphLearn['added_skills']),
@@ -706,7 +720,7 @@ class Candidate extends BaseController
         // skill is then labelled with its canonical evidence status.
         // Additive — readiness()/match() only read 'confidence'/'source'.
         $skills = $svc->inferSkillsExplained($text, $stated);
-        $skills = (new \App\Services\EvidenceCheckService())->label($skills, $verified);
+        $skills = (new \App\Services\EvidenceCheckService())->label($skills, $verified, $text);
         $profile = session('profile') ?? [];
         $profile = array_merge($profile, [
             'name'          => $name ?: ($profile['name'] ?? 'You'),
@@ -722,6 +736,16 @@ class Candidate extends BaseController
             $profile['quiz_ps'] ?? [],
             $text,
             $skills
+        );
+
+        // Strategic C2: Profile Consistency Check — additive, reuses
+        // ResumeParserService detection already used elsewhere.
+        $parser = new \App\Services\ResumeParserService();
+        $profile['consistency_flags'] = (new \App\Services\ProfileConsistencyService())->check(
+            $skills,
+            $parser->detectProjects($text),
+            $parser->detectLeadership($text),
+            $profile['potential_profile']
         );
 
         session()->set('profile', $profile);

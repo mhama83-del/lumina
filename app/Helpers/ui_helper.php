@@ -86,3 +86,32 @@ if (! function_exists('lumina_note')) {
              . 'font-size:13px;margin:0 0 16px"><span>✓</span><span>' . $text . '</span></div>';
     }
 }
+if (! function_exists('lumina_career_journey')) {
+    /**
+     * Career Action Journey (Strategic C3): Prepare -> Apply -> Perform ->
+     * Progress. Reuses the existing .journey/.jstep/.jsep/.jdot CSS classes
+     * (same visual language as lumina_journey()) — additive, does not
+     * change that function. Non-active steps are clickable links.
+     */
+    function lumina_career_journey(string $active): string
+    {
+        $steps = [
+            ['prepare',  'Prepare',  base_url('passport')],
+            ['apply',    'Apply',    base_url('compass')],
+            ['perform',  'Perform',  base_url('match')],
+            ['progress', 'Progress', base_url('compass')],
+        ];
+        $html = '<div class="journey career-journey">';
+        foreach ($steps as $i => [$key, $label, $url]) {
+            $isActive = ($key === $active);
+            if ($i > 0) $html .= '<div class="jsep"></div>';
+            $inner = '<span class="jdot">' . ($i + 1) . '</span><span>' . esc($label) . '</span>';
+            if ($isActive) {
+                $html .= '<div class="jstep active">' . $inner . '</div>';
+            } else {
+                $html .= '<a href="' . esc($url, 'attr') . '" class="jstep" style="text-decoration:none;color:inherit">' . $inner . '</a>';
+            }
+        }
+        return $html . '</div>';
+    }
+}

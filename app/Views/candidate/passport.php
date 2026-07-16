@@ -20,7 +20,7 @@ $rc = [
   <p class="purpose">This is your living portfolio — built from what you've already done.<?php if (!empty($p['animalLabel'])): ?> Work style: <strong class="gold"><?= esc($p['animalLabel']) ?></strong>.<?php endif; ?></p>
 </section>
 <section class="section" style="padding-top:6px">
-  <?= lumina_journey('portfolio') ?>
+  <?= lumina_career_journey('prepare') ?>
   <?= lumina_note("We read your evidence and found {$skillTotal} skills — {$skillInferred} you didn't even list.") ?>
   <div class="grid grid-3">
     <div class="card">
@@ -51,6 +51,12 @@ $rc = [
       <?php foreach ($evidenceLines as $line): ?>
         <div class="ev">• <?= esc($line) ?></div>
       <?php endforeach; ?>
+      <?php if (!empty($p['consistency_flags'])): ?>
+        <div class="section-label" style="margin-top:12px">Profile Consistency Check</div>
+        <?php foreach ($p['consistency_flags'] as $f): ?>
+          <div class="muted" style="font-size:12px;background:rgba(253,224,71,.08);border:1px solid rgba(253,224,71,.3);border-radius:8px;padding:7px 10px;margin-bottom:5px"><?= esc($f['message']) ?></div>
+        <?php endforeach; ?>
+      <?php endif; ?>
       <div style="margin-top:14px">
         <div class="section-label">Smart Matching preview</div>
         <p class="muted"><strong style="color:var(--text)"><?= esc($role['title']) ?></strong> — <?= (int)$match['matchScore'] ?>% match (<?= esc($match['label']) ?>).
