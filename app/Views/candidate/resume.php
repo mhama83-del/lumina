@@ -14,6 +14,7 @@
     <div class="card">
       <div class="section-label">Your resume</div>
       <textarea id="resumeText" placeholder="Paste your resume or a summary of your experience here…&#10;&#10;e.g. Final-year Computer Science student. Treasurer of the Robotics Club. Built an attendance app with Python. Led a data analysis project."></textarea>
+      <div id="liveHints" class="muted" style="font-size:12px;margin-top:6px;min-height:16px"></div>
       <div style="margin-top:12px" class="row">
         <button class="btn btn-gold btn-lg" id="analyzeBtn">Analyze with AI →</button>
         <button class="btn btn-ghost" id="sampleBtn">Use a sample</button>
@@ -79,6 +80,13 @@
         <!-- Feedback -->
         <div class="section-label">Resume feedback</div>
         <ul id="rFeedback" class="muted" style="font-size:13px;margin:0 0 14px;padding-left:18px"></ul>
+
+        <!-- Resume Coach (Strategic B4, restored) -->
+        <div class="section-label">Resume Coach</div>
+        <div id="rCoach" style="margin-bottom:14px"></div>
+
+        <!-- Profile Consistency Check (Strategic C2) -->
+        <div id="rConsistency" style="margin-bottom:14px"></div>
 
         <!-- Internships -->
         <div class="section-label">Recommended internship roles</div>
@@ -242,6 +250,30 @@ function analyze(text, name){
       // feedback
       document.getElementById('rFeedback').innerHTML = (data.feedback||[]).map(function(f){return '<li>'+f+'</li>';}).join('');
 
+      // Resume Coach (Strategic B4, restored)
+      if(data.resume_coach){ var rc=data.resume_coach; var coachHtml='';
+        if(rc.top_strengths && rc.top_strengths.length){
+          coachHtml += '<div class="muted" style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text)">What works:</strong> '+rc.top_strengths.join(', ')+'</div>';
+        }
+        if(rc.evidence_gaps && rc.evidence_gaps.length){
+          coachHtml += '<div class="muted" style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text)">What is missing:</strong> '+rc.evidence_gaps.join(', ')+'</div>';
+        }
+        if(rc.role_alignment_gap){
+          coachHtml += '<div class="muted" style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text)">Fix next:</strong> '+rc.role_alignment_gap+'</div>';
+        }
+        if(rc.before_after){
+          coachHtml += '<div style="background:rgba(108,92,231,.08);border:1px solid rgba(108,92,231,.3);border-radius:10px;padding:10px 13px;font-size:13px;margin-top:8px">'+
+            '<div class="muted" style="margin-bottom:4px"><strong style="color:var(--text)">Before:</strong> '+rc.before_after.before+'</div>'+
+            '<div class="muted"><strong class="gold">Better:</strong> '+rc.before_after.after+'</div>'+
+            '</div>';
+        }
+        document.getElementById('rCoach').innerHTML = coachHtml || '<span class="muted" style="font-size:13px">Not enough evidence yet to coach \xe2\x80\x94 add more detail to your resume.</span>';
+      }
+      // Profile Consistency Check (Strategic C2)
+      document.getElementById('rConsistency').innerHTML = (data.consistency_flags||[]).map(function(f){
+        return '<div class="muted" style="font-size:13px;background:rgba(253,224,71,.08);border:1px solid rgba(253,224,71,.3);border-radius:8px;padding:8px 11px;margin-bottom:6px">'+f.message+'</div>';
+      }).join('');
+
       // internships
       document.getElementById('rInternships').innerHTML = (data.internships||[]).map(function(x){return '<span class="skill">'+x+'</span>';}).join(' ');
 
@@ -277,5 +309,40 @@ document.getElementById('confirmGo').onclick = ()=>{
   analyze(t, n);
 };
 document.getElementById('confirmEdit').onclick = ()=>{ showOnly('idle'); };
+
+// Strategic C4: Responsive Resume Intelligence — deterministic, client-side
+// live hints while typing (debounced). No AI API, no server round-trip.
+(function () {
+  var ta = document.getElementById('resumeText');
+  var hintBox = document.getElementById('liveHints');
+  if (!ta || !hintBox) return;
+  var leadershipWords = ['led ','lead ','president','treasurer','captain','head ','manage','mentor','coordinat','organis','founder'];
+  var outcomeWords = ['increas','improv','reduc','grew','deliver','achiev','launch','sav','cut ','boost','streamlin','automat'];
+  var timer = null;
+  function hasAny(text, words) {
+    for (var i = 0; i < words.length; i++) { if (text.indexOf(words[i]) !== -1) return true; }
+    return false;
+  }
+  function checkText() {
+    var text = ta.value.toLowerCase();
+    if (text.trim().length < 25) { hintBox.innerHTML = ''; return; }
+    var hasNumber = /\d/.test(text);
+    var hasOutcome = hasAny(text, outcomeWords);
+    var hasLeadership = hasAny(text, leadershipWords);
+    var msg;
+    if (hasLeadership && !hasNumber && !hasOutcome) {
+      msg = 'You mentioned leadership — add team size and what changed.';
+    } else if (!hasNumber && !hasOutcome) {
+      msg = 'Add a number, scale or outcome to make this stronger.';
+    } else {
+      msg = 'Your evidence is looking stronger.';
+    }
+    hintBox.innerHTML = '<span style="color:var(--gold)">•</span> ' + msg;
+  }
+  ta.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(checkText, 600);
+  });
+})();
 </script>
 <?= $this->endSection() ?>
