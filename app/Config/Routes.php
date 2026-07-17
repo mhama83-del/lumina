@@ -36,6 +36,7 @@ $routes->match(['get', 'post'], 'onboard/input',  'Candidate::input');
 $routes->get('passport',        'Candidate::passport');
 $routes->get('resume',          'Candidate::resume');
 $routes->post('resume/analyze', 'Candidate::resumeAnalyze');
+$routes->post('resume/preview', 'Candidate::resumePreview');
 
 // ---- Fasa 4: candidate career compass ----
 $routes->get('compass', 'Candidate::compass');

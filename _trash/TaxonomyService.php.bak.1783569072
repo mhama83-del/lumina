@@ -1,0 +1,555 @@
+<?php
+
+namespace App\Services;
+
+use App\Libraries\Catalog;
+use App\Services\ScoreService;
+use App\Services\ResumeParserService;
+
+/**
+ * TaxonomyService (Lumina Graph)
+ * A self-growing knowledge graph of skills and profile patterns.
+ * - seedFromExisting(): builds the graph from current students + employer JD.
+ * - enrich(): given a new profile, suggests RELATED skills/traits from the graph
+ *   (labelled "from graph", never claimed as detected).
+ * - learn(): folds a new profile back in — new skills/patterns grow the graph.
+ * - seedFromRoles() / seedMarketSkills() (Fasa 5): market-grounded growth —
+ *   role-family patterns from the real 1,000-JD dataset + curated Malaysia/ASEAN
+ *   market skills. Both are additive/idempotent — never truncate.
+ * Deterministic (Jaccard + domain/programme). No external AI.
+ */
+class TaxonomyService
+{
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = \Config\Database::connect();
+    }
+
+    // ============ BUILD (one-time / re-runnable) ============
+    public function seedFromExisting(): array
+    {
+        $svc = new ScoreService();
+        $par = new ResumeParserService();
+
+        $this->db->table('taxonomy_skills')->truncate();
+        $this->db->table('taxonomy_patterns')->truncate();
+
+        $skillFreq = []; $cooc = []; $patterns = [];
+
+        // ---- students ----
+        $students = $this->db->table('students')
+            ->select('programme, target_domain, evidence_text, has_resume')
+            ->get()->getResultArray();
+
+        foreach ($students as $s) {
+            $domain = $s['target_domain'] ?: 'Business';
+            $cand   = $svc->signal($s['evidence_text'] ?? '', [], (int) ($s['has_resume'] ?? 0), $domain);
+            $codes  = array_keys($cand['skills']);
+            foreach ($codes as $c) { $skillFreq[$c] = ($skillFreq[$c] ?? 0) + 1; }
+            // co-occurrence
+            $n = count($codes);
+            for ($i = 0; $i < $n; $i++) {
+                for ($j = $i + 1; $j < $n; $j++) {
+                    $a = $codes[$i]; $b = $codes[$j];
+                    $cooc[$a][$b] = ($cooc[$a][$b] ?? 0) + 1;
+                    $cooc[$b][$a] = ($cooc[$b][$a] ?? 0) + 1;
+                }
+            }
+            // pattern
+            $prog = $s['programme'] ?: 'General';
+            $key  = $domain . '|' . $prog;
+            $patterns[$key]['domain'] = $domain;
+            $patterns[$key]['programme'] = $prog;
+            foreach ($codes as $c) { $patterns[$key]['skills'][$c] = ($patterns[$key]['skills'][$c] ?? 0) + 1; }
+            $an = $par->animalFromEvidence($cand['skills'], $s['evidence_text'] ?? '')['primary']['id'] ?? 'owl';
+            $patterns[$key]['animals'][$an] = ($patterns[$key]['animals'][$an] ?? 0) + 1;
+            foreach ($this->keywords($s['evidence_text'] ?? '') as $w) { $patterns[$key]['ev'][$w] = ($patterns[$key]['ev'][$w] ?? 0) + 1; }
+            $patterns[$key]['count'] = ($patterns[$key]['count'] ?? 0) + 1;
+        }
+
+        // ---- employer required skills add frequency + co-occurrence ----
+        try {
+            $rows = $this->db->table('employer_skill_requirements')
+                ->select('role_id, skill_code')->where('importance', 'required')->get()->getResultArray();
+            $byRole = [];
+            foreach ($rows as $r) { if ($r['skill_code']) $byRole[$r['role_id']][] = $r['skill_code']; }
+            foreach ($byRole as $codes) {
+                $codes = array_values(array_unique($codes));
+                foreach ($codes as $c) { $skillFreq[$c] = ($skillFreq[$c] ?? 0) + 1; }
+                $n = count($codes);
+                for ($i = 0; $i < $n; $i++) for ($j = $i + 1; $j < $n; $j++) {
+                    $a = $codes[$i]; $b = $codes[$j];
+                    $cooc[$a][$b] = ($cooc[$a][$b] ?? 0) + 1;
+                    $cooc[$b][$a] = ($cooc[$b][$a] ?? 0) + 1;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        $now = date('Y-m-d H:i:s');
+
+        // ---- insert skills ----
+        $skillRows = [];
+        foreach ($skillFreq as $code => $freq) {
+            $rel = $cooc[$code] ?? [];
+            arsort($rel);
+            $related = array_slice(array_keys($rel), 0, 6);
+            $skillRows[] = [
+                'code' => $code, 'label' => Catalog::label($code), 'domain' => $this->skillDomain($code),
+                'aliases_json' => json_encode([]), 'related_skills_json' => json_encode($related),
+                'common_evidence_json' => json_encode([]), 'frequency' => $freq,
+                'created_at' => $now, 'updated_at' => $now,
+            ];
+        }
+        foreach (array_chunk($skillRows, 100) as $chunk) { $this->db->table('taxonomy_skills')->insertBatch($chunk); }
+
+        // ---- edges (weighted co-occurrence) ----
+        $this->db->table('taxonomy_edges')->truncate();
+        $edgeRows = [];
+        foreach ($cooc as $a => $bs) {
+            foreach ($bs as $b => $w) { $edgeRows[] = ['a_code' => $a, 'b_code' => $b, 'weight' => $w, 'updated_at' => $now]; }
+        }
+        foreach (array_chunk($edgeRows, 500) as $chunk) { $this->db->table('taxonomy_edges')->insertBatch($chunk); }
+
+        // ---- insert patterns (keep meaningful ones) ----
+        $patRows = [];
+        foreach ($patterns as $key => $d) {
+            if (($d['count'] ?? 0) < 2) continue;
+            $sk = $d['skills'] ?? []; arsort($sk);
+            $an = $d['animals'] ?? []; arsort($an);
+            $ev = $d['ev'] ?? []; arsort($ev);
+            $patRows[] = [
+                'pattern_key' => $key, 'domain' => $d['domain'], 'programme' => $d['programme'],
+                'typical_skills_json'  => json_encode(array_slice(array_keys($sk), 0, 8)),
+                'typical_animals_json' => json_encode(array_slice(array_keys($an), 0, 2)),
+                'evidence_keywords_json'=> json_encode(array_slice(array_keys($ev), 0, 10)),
+                'sample_count' => $d['count'], 'updated_at' => $now,
+            ];
+        }
+        foreach (array_chunk($patRows, 100) as $chunk) { $this->db->table('taxonomy_patterns')->insertBatch($chunk); }
+
+        return $this->stats() + ['inserted_skills' => count($skillRows), 'inserted_patterns' => count($patRows)];
+    }
+
+    // ============ ENRICH (read-only) ============
+    /** Suggest related skills from the graph for a new profile. */
+    public function enrich(array $detectedCodes, string $programme = '', string $domain = 'Data'): array
+    {
+        $detected = array_flip($detectedCodes);
+        $suggest = [];
+
+        // 1) adjacency: related skills of what we already detected
+        if ($detectedCodes) {
+            $rows = $this->db->table('taxonomy_skills')->whereIn('code', $detectedCodes)->get()->getResultArray();
+            foreach ($rows as $r) {
+                foreach (json_decode($r['related_skills_json'] ?? '[]', true) ?: [] as $rc) {
+                    if (! isset($detected[$rc])) $suggest[$rc] = ($suggest[$rc] ?? 0) + 2;
+                }
+            }
+        }
+
+        // 2) pattern: typical skills for this domain|programme
+        $pat = $this->bestPattern($programme, $domain);
+        if ($pat) {
+            foreach (json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [] as $tc) {
+                if (! isset($detected[$tc])) $suggest[$tc] = ($suggest[$tc] ?? 0) + 1;
+            }
+        }
+
+        arsort($suggest);
+        $out = [];
+        foreach (array_slice(array_keys($suggest), 0, 6) as $code) {
+            $out[] = ['code' => $code, 'label' => Catalog::label($code)];
+        }
+        return ['related' => $out, 'pattern' => $pat ? $pat['pattern_key'] : null];
+    }
+
+    // ============ LEARN (write — grows the graph) ============
+    public function learn(array $detectedCodes, string $evidence, string $programme = '', string $domain = 'Data'): array
+    {
+        $now = date('Y-m-d H:i:s'); $added = [];
+        foreach ($detectedCodes as $code) {
+            $row = $this->db->table('taxonomy_skills')->where('code', $code)->get()->getRowArray();
+            if ($row) {
+                $this->db->table('taxonomy_skills')->where('code', $code)
+                    ->update(['frequency' => (int) $row['frequency'] + 1, 'updated_at' => $now]);
+            } else {
+                $this->db->table('taxonomy_skills')->insert([
+                    'code' => $code, 'label' => Catalog::label($code), 'domain' => $this->skillDomain($code),
+                    'aliases_json' => json_encode([]), 'related_skills_json' => json_encode([]),
+                    'common_evidence_json' => json_encode([]), 'frequency' => 1,
+                    'created_at' => $now, 'updated_at' => $now,
+                ]);
+                $added[] = $code;
+            }
+        }
+
+        // pattern upsert
+        $prog = $programme ?: 'General';
+        $key  = $domain . '|' . $prog;
+        $pat  = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
+        if ($pat) {
+            $typ = json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [];
+            $typ = array_values(array_unique(array_merge($typ, $detectedCodes)));
+            $ev  = json_decode($pat['evidence_keywords_json'] ?? '[]', true) ?: [];
+            $ev  = array_values(array_unique(array_merge($ev, $this->keywords($evidence))));
+            $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->update([
+                'typical_skills_json' => json_encode(array_slice($typ, 0, 12)),
+                'evidence_keywords_json' => json_encode(array_slice($ev, 0, 14)),
+                'sample_count' => (int) $pat['sample_count'] + 1, 'updated_at' => $now,
+            ]);
+            $newPattern = false;
+        } else {
+            $this->db->table('taxonomy_patterns')->insert([
+                'pattern_key' => $key, 'domain' => $domain, 'programme' => $prog,
+                'typical_skills_json' => json_encode($detectedCodes),
+                'typical_animals_json' => json_encode([]),
+                'evidence_keywords_json' => json_encode($this->keywords($evidence)),
+                'sample_count' => 1, 'updated_at' => $now,
+            ]);
+            $newPattern = true;
+        }
+
+        return ['added_skills' => $added, 'new_pattern' => $newPattern];
+    }
+
+    public function stats(): array
+    {
+        $edges = 0;
+        try { $edges = (int) $this->db->table('taxonomy_edges')->countAllResults(); } catch (\Throwable $e) {}
+        return [
+            'skills'   => (int) $this->db->table('taxonomy_skills')->countAllResults(),
+            'patterns' => (int) $this->db->table('taxonomy_patterns')->countAllResults(),
+            'profiles_learned' => (int) ($this->db->table('taxonomy_patterns')->selectSum('sample_count', 't')->get()->getRowArray()['t'] ?? 0),
+            'connections' => (int) floor($edges / 2),
+        ];
+    }
+
+    /** Expand a role's required skills with graph-adjacent skills (for matching). */
+    public function expandSkills(array $codes): array
+    {
+        if (! $codes) return [];
+        $out = [];
+        $rows = $this->db->table('taxonomy_skills')->whereIn('code', $codes)->get()->getResultArray();
+        foreach ($rows as $r) {
+            foreach (json_decode($r['related_skills_json'] ?? '[]', true) ?: [] as $rc) { $out[$rc] = true; }
+        }
+        return array_keys($out);
+    }
+
+    // ============ NOVEL SKILL EXTRACTION (graph grows + maps new vocabulary) ============
+    /** Detect skills/tools the graph does NOT know yet. Each carries a domain hint (or null). */
+    public function extractNovel(string $text): array
+    {
+        // needle => [label, domain hint]
+        $lex = [
+            'Rust'=>['Rust','Engineering'],'Golang'=>['Go','Engineering'],'Kotlin'=>['Kotlin','Engineering'],
+            'Swift'=>['Swift','Engineering'],'Scala'=>['Scala','Engineering'],'TypeScript'=>['TypeScript','Engineering'],
+            'Solidity'=>['Solidity','Engineering'],'Ethereum'=>['Ethereum','Engineering'],'Flutter'=>['Flutter','Engineering'],
+            'Dart'=>['Dart','Engineering'],'Kubernetes'=>['Kubernetes','Engineering'],'Terraform'=>['Terraform','Engineering'],
+            'Ansible'=>['Ansible','Engineering'],'Jenkins'=>['Jenkins','Engineering'],'GraphQL'=>['GraphQL','Data'],
+            'MongoDB'=>['MongoDB','Data'],'PostgreSQL'=>['PostgreSQL','Data'],'Redis'=>['Redis','Data'],
+            'Kafka'=>['Kafka','Data'],'Hadoop'=>['Hadoop','Data'],'Airflow'=>['Airflow','Data'],'Snowflake'=>['Snowflake','Data'],
+            'TensorFlow'=>['TensorFlow','Data'],'PyTorch'=>['PyTorch','Data'],'Keras'=>['Keras','Data'],'OpenCV'=>['OpenCV','Data'],
+            'SPSS'=>['SPSS','Data'],'Stata'=>['Stata','Data'],'QGIS'=>['QGIS','Data'],'ArcGIS'=>['ArcGIS','Data'],
+            'Blender'=>['Blender','Design'],'SketchUp'=>['SketchUp','Design'],'Unity'=>['Unity','Design'],
+            'Godot'=>['Godot','Design'],'Premiere Pro'=>['Premiere Pro','Design'],'After Effects'=>['After Effects','Design'],
+            'SolidWorks'=>['SolidWorks','Engineering'],'CATIA'=>['CATIA','Engineering'],'Solid Edge'=>['Solid Edge','Engineering'],
+            'MATLAB'=>['MATLAB','Engineering'],'Simulink'=>['Simulink','Engineering'],'Revit'=>['Revit','Engineering'],
+            'Arduino'=>['Arduino','Engineering'],'Raspberry Pi'=>['Raspberry Pi','Engineering'],'LabVIEW'=>['LabVIEW','Engineering'],
+            'Selenium'=>['Selenium','Engineering'],'Postman'=>['Postman','Engineering'],'Jira'=>['Jira','Business'],
+            'Salesforce'=>['Salesforce','Business'],'HubSpot'=>['HubSpot','Business'],'SAP'=>['SAP','Business'],
+            'Notion'=>['Notion','Business'],'Webflow'=>['Webflow','Design'],
+        ];
+        $found = [];
+        foreach ($lex as $needle => $meta) {
+            if (preg_match('/\b' . preg_quote($needle, '/') . '\b/i', $text)) {
+                $found[$this->slug($meta[0])] = ['label' => $meta[0], 'domain' => $meta[1]];
+            }
+        }
+        if (preg_match('/(?:skills?|technologies|tools|tech\s*stack|proficient in|familiar with|competencies)\s*[:\-]\s*([^\n\r]{3,200})/i', $text, $m)) {
+            foreach (preg_split('/[,;|\/•]+/', $m[1]) as $tok) {
+                $tok = trim($tok);
+                if ($tok === '' || mb_strlen($tok) < 2 || mb_strlen($tok) > 28 || str_word_count($tok) > 3) continue;
+                $code = $this->slug($tok);
+                if ($code !== '' && ! isset($found[$code])) $found[$code] = ['label' => ucwords($tok), 'domain' => null];
+            }
+        }
+        if (! $found) return [];
+        $known = [];
+        foreach ($this->db->table('taxonomy_skills')->select('code')->whereIn('code', array_keys($found))->get()->getResultArray() as $r) { $known[$r['code']] = true; }
+        $out = [];
+        foreach ($found as $code => $meta) {
+            if (isset($known[$code])) continue;
+            $out[] = ['code' => $code, 'label' => $meta['label'], 'domain' => $meta['domain']];
+        }
+        return array_slice($out, 0, 8);
+    }
+
+    /**
+     * Insert novel skills into the graph AND map them:
+     * - domain: lexicon hint, else the resume's domain
+     * - related: the co-occurring skills in this resume (edges both ways)
+     * - pattern: added to the candidate's domain|programme pattern
+     * Returns labels actually added.
+     */
+    public function learnNovel(array $novel, string $resumeDomain = 'Data', array $coSkills = [], string $programme = ''): array
+    {
+        $now = date('Y-m-d H:i:s'); $added = []; $addedCodes = [];
+        $coSkills = array_values(array_unique($coSkills));
+
+        foreach ($novel as $n) {
+            if ($this->db->table('taxonomy_skills')->where('code', $n['code'])->countAllResults()) continue;
+            $dom = ! empty($n['domain']) ? $n['domain'] : $resumeDomain;
+            $this->db->table('taxonomy_skills')->insert([
+                'code' => $n['code'], 'label' => $n['label'], 'domain' => $dom,
+                'aliases_json' => json_encode([]),
+                'related_skills_json' => json_encode(array_slice($coSkills, 0, 6)),  // edges to resume skills
+                'common_evidence_json' => json_encode([]), 'frequency' => 1,
+                'created_at' => $now, 'updated_at' => $now,
+            ]);
+            $added[] = $n['label']; $addedCodes[] = $n['code'];
+        }
+
+        // reciprocal edges: existing co-skills gain the new codes as related
+        if ($addedCodes && $coSkills) {
+            foreach ($this->db->table('taxonomy_skills')->whereIn('code', $coSkills)->get()->getResultArray() as $r) {
+                $rel = json_decode($r['related_skills_json'] ?? '[]', true) ?: [];
+                $rel = array_values(array_unique(array_merge($rel, $addedCodes)));
+                $this->db->table('taxonomy_skills')->where('id', $r['id'])
+                    ->update(['related_skills_json' => json_encode(array_slice($rel, 0, 10)), 'updated_at' => $now]);
+            }
+        }
+
+        // pattern membership: add new codes to the candidate's pattern
+        if ($addedCodes) {
+            // attach to the nearest existing pattern (never orphan a new skill)
+            $pat = $this->bestPattern($programme, $resumeDomain);
+            if ($pat) {
+                $typ = json_decode($pat['typical_skills_json'] ?? '[]', true) ?: [];
+                $typ = array_values(array_unique(array_merge($typ, $addedCodes)));
+                $this->db->table('taxonomy_patterns')->where('id', $pat['id'])
+                    ->update(['typical_skills_json' => json_encode(array_slice($typ, 0, 16)), 'updated_at' => $now]);
+            }
+        }
+        return $added;
+    }
+
+    // ============ MARKET ENRICHMENT (Fasa 5: real JD role-families + curated Malaysia/ASEAN skills) ============
+
+    /**
+     * Build/refresh patterns from the real 1,000-JD role-family dataset.
+     * Additive: upserts by pattern_key (never truncates). Safe to re-run anytime
+     * (e.g. after re-seeding EmployerDatabaseSeeder) to keep these in sync.
+     * Pattern key uses a "JD: " prefix on programme so these never collide with
+     * cohort (student-derived) patterns.
+     */
+    public function seedFromRoles(): array
+    {
+        $now = date('Y-m-d H:i:s');
+        $rows = $this->db->table('employer_skill_requirements s')
+            ->select('r.target_domain, r.role_family, s.role_id, s.skill_code, s.importance, s.weight')
+            ->join('employer_roles r', 'r.id = s.role_id')
+            ->where('r.is_synthetic', 1)
+            ->get()->getResultArray();
+
+        $groups = [];
+        foreach ($rows as $r) {
+            if (! $r['role_family'] || ! $r['skill_code'] || ! $r['target_domain']) continue;
+            $key = $r['target_domain'] . '|' . $r['role_family'];
+            $groups[$key]['domain']      = $r['target_domain'];
+            $groups[$key]['role_family'] = $r['role_family'];
+            $groups[$key]['skills'][$r['skill_code']] = ($groups[$key]['skills'][$r['skill_code']] ?? 0) + (float) $r['weight'];
+            $groups[$key]['roles'][(int) $r['role_id']] = true;
+        }
+
+        $inserted = 0; $updated = 0;
+        foreach ($groups as $g) {
+            arsort($g['skills']);
+            $typical  = array_slice(array_keys($g['skills']), 0, 8);
+            $roleIds  = array_keys($g['roles']);
+            $sampleId = $roleIds[0] ?? null;
+
+            $keywords = []; $animals = [];
+            if ($sampleId) {
+                $roleRow = $this->db->table('employer_roles')->select('keywords_for_matching_json')
+                    ->where('id', $sampleId)->get()->getRowArray();
+                if ($roleRow) $keywords = json_decode($roleRow['keywords_for_matching_json'] ?? '[]', true) ?: [];
+                $aRow = $this->db->table('role_work_animal_fit')->where('role_id', $sampleId)->get()->getRowArray();
+                if ($aRow) $animals = array_values(array_filter([$aRow['preferred_primary_animal'] ?? null, $aRow['preferred_secondary_animal'] ?? null]));
+            }
+
+            $patKey = $g['domain'] . '|JD: ' . $g['role_family'];
+            $data = [
+                'domain' => $g['domain'], 'programme' => 'JD: ' . $g['role_family'],
+                'typical_skills_json'    => json_encode($typical),
+                'typical_animals_json'   => json_encode(array_slice($animals, 0, 2)),
+                'evidence_keywords_json' => json_encode(array_slice($keywords, 0, 10)),
+                'sample_count' => count($roleIds), 'updated_at' => $now,
+            ];
+            $existing = $this->db->table('taxonomy_patterns')->where('pattern_key', $patKey)->get()->getRowArray();
+            if ($existing) {
+                $this->db->table('taxonomy_patterns')->where('id', $existing['id'])->update($data);
+                $updated++;
+            } else {
+                $data['pattern_key'] = $patKey;
+                $this->db->table('taxonomy_patterns')->insert($data);
+                $inserted++;
+            }
+        }
+        return ['role_families' => count($groups), 'role_patterns_inserted' => $inserted, 'role_patterns_updated' => $updated];
+    }
+
+    /** Curated Malaysia/ASEAN market skills not derivable from resumes/JD text alone. code => [label, domain, related codes]. */
+    private function marketSkillCatalog(): array
+    {
+        return [
+            'halal_certification_jakim'         => ['Halal Certification (JAKIM)', 'Business', ['compliance', 'regulatory_analysis', 'quality_control', 'supply_chain']],
+            'halal_supply_chain_mgmt'           => ['Halal Supply Chain Management', 'Business', ['supply_chain', 'compliance', 'quality_control']],
+            'pdpa_compliance'                   => ['PDPA Compliance', 'Business', ['compliance', 'regulatory_analysis', 'data_analysis', 'integrity']],
+            'bnm_regulatory_compliance'          => ['Bank Negara Malaysia (BNM) Regulatory Compliance', 'Business', ['compliance', 'regulatory_analysis', 'risk_analysis', 'financial_analysis']],
+            'mfrs_reporting_standards'           => ['MFRS Reporting Standards', 'Business', ['ifrs', 'accounting', 'audit', 'financial_analysis']],
+            'sukuk_islamic_finance_structuring'  => ['Islamic Finance Structuring (Sukuk)', 'Business', ['syariah_compliance', 'financial_analysis', 'compliance']],
+            'bahasa_malaysia_business_writing'   => ['Bahasa Malaysia Business Writing', 'Business', ['communication', 'content', 'writing']],
+            'mandarin_business_communication'    => ['Mandarin Business Communication', 'Business', ['communication', 'sales', 'business_development']],
+            'bahasa_indonesia_communication'     => ['Bahasa Indonesia Communication', 'Business', ['communication', 'business_development']],
+            'asean_trade_logistics_compliance'   => ['ASEAN Trade & Logistics Compliance', 'Business', ['supply_chain', 'procurement', 'vendor_management']],
+            'e_kyc_digital_onboarding'           => ['E-KYC / Digital Onboarding', 'Data', ['kyc_aml', 'compliance', 'data_analysis']],
+            'welding_certification_noss'        => ['Welding Certification (NOSS)', 'Engineering', ['maintenance', 'troubleshooting', 'safety_management']],
+            'industrial_electrical_wiring_noss'  => ['Industrial Electrical Wiring (NOSS)', 'Engineering', ['circuit_design', 'electrical_schematics', 'plc']],
+            'automotive_systems_technology'      => ['Automotive Systems Technology', 'Engineering', ['mechanical_design', 'troubleshooting', 'maintenance']],
+            'hvac_systems_maintenance'           => ['HVAC Systems Maintenance', 'Engineering', ['maintenance', 'troubleshooting', 'reliability']],
+            'semiconductor_cleanroom_protocols'  => ['Semiconductor Cleanroom Protocols', 'Engineering', ['failure_analysis', 'preventive_maintenance', 'six_sigma']],
+            'aircraft_mro_compliance'            => ['Aircraft MRO Compliance (CAAM/EASA)', 'Engineering', ['aircraft_systems', 'maintenance', 'safety']],
+        ];
+    }
+
+    /** Insert curated market skills the graph doesn't know yet + wire edges both ways. Idempotent. */
+    public function seedMarketSkills(): array
+    {
+        $now = date('Y-m-d H:i:s');
+        $added = []; $skipped = [];
+
+        foreach ($this->marketSkillCatalog() as $code => $meta) {
+            [$label, $domain, $related] = $meta;
+            if ($this->db->table('taxonomy_skills')->where('code', $code)->countAllResults()) { $skipped[] = $code; continue; }
+
+            $this->db->table('taxonomy_skills')->insert([
+                'code' => $code, 'label' => $label, 'domain' => $domain,
+                'aliases_json' => json_encode([]), 'related_skills_json' => json_encode($related),
+                'common_evidence_json' => json_encode([]), 'frequency' => 0,
+                'created_at' => $now, 'updated_at' => $now,
+            ]);
+            $added[] = $code;
+
+            // wire edges: new skill <-> each related existing skill (safe re-run via ON DUPLICATE KEY)
+            $vals = [];
+            foreach ($related as $rc) {
+                $a = $this->db->escape($code); $b = $this->db->escape($rc); $t = $this->db->escape($now);
+                $vals[] = "($a,$b,1,$t)"; $vals[] = "($b,$a,1,$t)";
+            }
+            if ($vals) {
+                try {
+                    $this->db->query('INSERT INTO taxonomy_edges (a_code,b_code,weight,updated_at) VALUES '
+                        . implode(',', $vals) . ' ON DUPLICATE KEY UPDATE weight = weight + 1, updated_at = VALUES(updated_at)');
+                } catch (\Throwable $e) {}
+            }
+
+            // reciprocal: existing related skills list the new one back too
+            foreach ($this->db->table('taxonomy_skills')->whereIn('code', $related)->get()->getResultArray() as $row) {
+                $rel = json_decode($row['related_skills_json'] ?? '[]', true) ?: [];
+                $rel = array_values(array_unique(array_merge($rel, [$code])));
+                $this->db->table('taxonomy_skills')->where('id', $row['id'])
+                    ->update(['related_skills_json' => json_encode(array_slice($rel, 0, 10)), 'updated_at' => $now]);
+            }
+        }
+        return ['added' => $added, 'skipped' => $skipped];
+    }
+
+    private function slug(string $s): string
+    {
+        return trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($s))), '_');
+    }
+
+    // ============ CONTINUOUS LEARNING (edges grow with every resume) ============
+    public function reinforce(array $codes): void
+    {
+        $codes = array_values(array_unique(array_filter($codes)));
+        $n = count($codes);
+        if ($n < 2) return;
+        $now = date('Y-m-d H:i:s');
+        $vals = [];
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = $i + 1; $j < $n; $j++) {
+                $a = $this->db->escape($codes[$i]); $b = $this->db->escape($codes[$j]); $t = $this->db->escape($now);
+                $vals[] = "($a,$b,1,$t)";
+                $vals[] = "($b,$a,1,$t)";
+            }
+        }
+        if (! $vals) return;
+        try {
+            $this->db->query('INSERT INTO taxonomy_edges (a_code,b_code,weight,updated_at) VALUES '
+                . implode(',', $vals) . ' ON DUPLICATE KEY UPDATE weight = weight + 1, updated_at = VALUES(updated_at)');
+        } catch (\Throwable $e) { return; }
+        $this->refreshRelated($codes);
+    }
+
+    /** Refresh the cached related_skills for these codes from the strongest edges. */
+    private function refreshRelated(array $codes): void
+    {
+        $now = date('Y-m-d H:i:s');
+        foreach ($codes as $c) {
+            $top = $this->db->table('taxonomy_edges')->select('b_code')
+                ->where('a_code', $c)->orderBy('weight', 'DESC')->limit(8)->get()->getResultArray();
+            $rel = array_column($top, 'b_code');
+            if ($rel) {
+                $this->db->table('taxonomy_skills')->where('code', $c)
+                    ->update(['related_skills_json' => json_encode($rel), 'updated_at' => $now]);
+            }
+        }
+    }
+
+    // ============ helpers ============
+    private function bestPattern(string $programme, string $domain): ?array
+    {
+        $prog = $programme ?: 'General';
+        foreach ([$domain . '|' . $prog, $domain . '|General'] as $key) {
+            $p = $this->db->table('taxonomy_patterns')->where('pattern_key', $key)->get()->getRowArray();
+            if ($p) return $p;
+        }
+        // fallback: any pattern in this domain with the largest sample_count
+        return $this->db->table('taxonomy_patterns')->where('domain', $domain)
+            ->orderBy('sample_count', 'DESC')->get(1)->getRowArray() ?: null;
+    }
+
+    private function skillDomain(string $code): string
+    {
+        $d = ['Data' => ['sql','python','data_analysis','dashboarding','statistics','machine_learning','research'],
+              'Engineering' => ['software','cloud','java','javascript','api'],
+              'Design' => ['ui_ux','figma','graphic_design','design_thinking']];
+        foreach ($d as $dom => $set) { if (in_array($code, $set, true)) return $dom; }
+        // data-driven fallback: majority target_domain among real employer roles requiring this skill
+        try {
+            $row = $this->db->table('employer_skill_requirements s')
+                ->select('r.target_domain, COUNT(*) c')
+                ->join('employer_roles r', 'r.id = s.role_id')
+                ->where('s.skill_code', $code)
+                ->groupBy('r.target_domain')->orderBy('c', 'DESC')->get(1)->getRowArray();
+            if ($row && ! empty($row['target_domain'])) return $row['target_domain'];
+        } catch (\Throwable $e) {}
+        return 'Business';
+    }
+
+    private array $stop = ['the','and','for','with','was','were','have','has','had','that','this','from','are','you','your','our','their','and','also','into','over','under','a','an','of','in','on','to','at','as','by','is','it','or','be'];
+
+    private function keywords(string $text): array
+    {
+        $words = preg_split('/[^a-z0-9]+/', strtolower($text));
+        $out = [];
+        foreach ($words as $w) {
+            if (mb_strlen($w) >= 4 && ! in_array($w, $this->stop, true)) $out[$w] = true;
+        }
+        return array_slice(array_keys($out), 0, 20);
+    }
+}

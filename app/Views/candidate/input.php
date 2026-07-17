@@ -9,15 +9,15 @@
 <section class="section">
   <div class="card" data-tabs>
     <div class="tabs">
-      <div class="tab active" data-tab="panel-guided">Guided setup ★</div>
-      <div class="tab" data-tab="panel-paste">Paste activities</div>
+      <div class="tab" data-tab="panel-guided">Guided setup ★</div>
+      <div class="tab active" data-tab="panel-paste">Paste activities</div>
       <div class="tab" data-tab="panel-transcript">Import transcript</div>
       <div class="tab" data-tab="panel-5q">5 questions</div>
     </div>
     <form method="post" action="<?= base_url('onboard/input') ?>">
 
       <!-- Guided setup (Fasa 3) -->
-      <div class="tabpanel active" id="panel-guided">
+      <div class="tabpanel" id="panel-guided">
         <div class="grid grid-2">
           <div>
             <label class="fl">Programme / course</label>
@@ -95,15 +95,27 @@
           </select>
         </div>
         <div style="margin-top:14px">
-          <button class="btn btn-gold btn-lg" type="submit" name="method" value="guided">Build my Starter Portfolio →</button>
+          <button class="btn btn-primary btn-lg" type="submit" name="method" value="guided">Build my Starter Portfolio →</button>
         </div>
       </div>
 
       <!-- Paste -->
-      <div class="tabpanel" id="panel-paste">
+      <div class="tabpanel active" id="panel-paste">
         <label class="fl">Paste your clubs, projects, or experience (1–3 sentences is enough)</label>
+        <div class="row" style="margin:0 0 10px">
+          <button class="btn btn-ghost" type="button" id="demoEvidenceBtn">Use demo answers</button>
+          <button class="btn btn-ghost" type="button" id="fillSelfBtn">Fill it myself</button>
+        </div>
+        <div id="evidenceNote"></div>
+        <div class="grid grid-2" style="gap:10px;margin-bottom:10px">
+          <input class="field" type="text" id="pName" name="p_name" placeholder="Your name (optional)">
+          <input class="field" type="text" id="pProgramme" name="p_programme" placeholder="Programme (optional)">
+          <input class="field" type="text" id="pUniversity" name="p_university" placeholder="University (optional)">
+          <input class="field" type="text" id="pYear" name="p_year" placeholder="Study year (optional)">
+          <input class="field" type="text" id="pCgpa" name="p_cgpa" placeholder="CGPA (optional)">
+        </div>
         <textarea id="evidenceText" name="evidence_text" placeholder="e.g. Treasurer of the Robotics Club; built an attendance app; led a data project."></textarea>
-        <div style="margin-top:12px"><button class="btn btn-gold" type="submit" name="method" value="paste">Build my Living Portfolio →</button></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" type="submit" name="method" value="paste">Build my Living Portfolio →</button></div>
       </div>
 
       <!-- Transcript -->
@@ -111,7 +123,7 @@
         <label class="fl">Co-curricular transcript (MyCSD) — demo sample</label>
         <div class="card card-tight" style="background:var(--card-2)"><span class="muted"><?= esc($sample) ?></span></div>
         <p class="purpose" style="margin-top:8px">Lumina reads verified activities and translates them into skills.</p>
-        <button class="btn btn-gold" type="submit" name="method" value="transcript">Import &amp; build →</button>
+        <button class="btn btn-primary" type="submit" name="method" value="transcript">Import &amp; build →</button>
       </div>
 
       <!-- 5 questions -->
@@ -124,9 +136,36 @@
         <input class="field" type="text" name="q_subject" placeholder="e.g. Mathematics, Computing, Business">
         <label class="fl">One activity or thing you've done?</label>
         <input class="field" type="text" name="q_activity" placeholder="e.g. Led a club project">
-        <div style="margin-top:12px"><button class="btn btn-gold" type="submit" name="method" value="fiveq">Build my Living Portfolio →</button></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" type="submit" name="method" value="fiveq">Build my Living Portfolio →</button></div>
       </div>
     </form>
   </div>
 </section>
+<script>
+(function () {
+  var DEMO_EVIDENCE = <?= json_encode($sample) ?>;
+  var ta = document.getElementById('evidenceText');
+  var note = document.getElementById('evidenceNote');
+  var demoBtn = document.getElementById('demoEvidenceBtn');
+  var selfBtn = document.getElementById('fillSelfBtn');
+  if (!ta || !demoBtn) return;
+  demoBtn.onclick = function () {
+    ta.value = DEMO_EVIDENCE;
+    var demo = { pName:'Aiman Hakim', pProgramme:'BSc Information Technology',
+                 pUniversity:'Universiti Sains Malaysia', pYear:'Year 3', pCgpa:'3.62' };
+    Object.keys(demo).forEach(function (k) {
+      var el = document.getElementById(k); if (el) el.value = demo[k];
+    });
+    note.innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px;margin:0 0 12px"><span>&#10003;</span><span>Demo mode &middot; Sample answers can still be edited.</span></div>';
+    ta.focus();
+  };
+  selfBtn.onclick = function () {
+    ta.value = ''; note.innerHTML = '';
+    ['pName','pProgramme','pUniversity','pYear','pCgpa'].forEach(function (k) {
+      var el = document.getElementById(k); if (el) el.value = '';
+    });
+    ta.focus();
+  };
+})();
+</script>
 <?= $this->endSection() ?>

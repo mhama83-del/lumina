@@ -1,0 +1,173 @@
+<?= $this->extend('layouts/main') ?>
+<?= $this->section('content') ?>
+<?php
+helper('ui');
+$p = $profile;
+$riskClass = $risk === 'On track' ? 'ok' : ($risk === 'Needs a nudge' ? 'nudge' : 'risk');
+$evidenceLines = array_filter(array_map('trim', preg_split('/[;.]/', $p['evidence_text'] ?? '')));
+$skillTotal = count($p['skills'] ?? []);
+$skillInferred = 0; foreach (($p['skills'] ?? []) as $s) { if (($s['source'] ?? '') === 'inferred') $skillInferred++; }
+$rc = [
+  ['Skill coverage', (int)$readiness['coverage'], 40],
+  ['Evidence strength', (int)$readiness['evidence'], 25],
+  ['Activity signals', (int)$readiness['activity'], 20],
+  ['Learning pace', (int)$readiness['pace'], 15],
+];
+?>
+<section class="hero">
+  <div class="section-label">Living Portfolio · Stage <?= esc($p['stage'] ?? '19-22') ?></div>
+  <h1><?= esc($p['name'] ?? 'You') ?>'s Living Portfolio</h1>
+  <p class="purpose">This is your living portfolio — built from what you've already done.<?php if (!empty($p['animalLabel'])): ?> Work style: <strong class="gold"><?= esc($p['animalLabel']) ?></strong>.<?php endif; ?></p>
+</section>
+<section class="section" style="padding-top:6px">
+  <?= lumina_journey('portfolio') ?>
+  <?= lumina_note("We read your evidence and found {$skillTotal} skills — {$skillInferred} you didn't even list.") ?>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="section-label">Adaptive Readiness</div>
+      <div class="donut-wrap"><?= lumina_donut($readiness['score'], $role['title'], $role['color']) ?></div>
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <span class="pill <?= $riskClass ?>"><?= esc($risk) ?></span>
+      </div>
+      <p class="muted" style="font-size:11px;text-align:center;margin-top:8px">40% coverage · 25% evidence · 20% activity · 15% pace</p>
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <button class="btn btn-ghost" data-why="1">Why this score?</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Skill signals</div>
+      <h3 style="margin-bottom:6px">Inferred + stated</h3>
+      <p class="purpose">Dashed = inferred by Lumina from your evidence.</p>
+      <div>
+        <?php foreach (($p['skills'] ?? []) as $code => $s):
+            $evLabel = $s['evidence_label'] ?? (($s['source'] ?? '') === 'stated' ? 'Stated' : 'Inferred');
+            $evTitle = !empty($s['from']) ? "{$evLabel} \xc2\xb7 where we found it: {$s['from']}" : $evLabel;
+            echo '<span title="' . esc($evTitle, 'attr') . '">' . lumina_skill(ucwords(str_replace('_', ' ', $code)), $s['source'], $s['confidence']) . '</span>';
+        endforeach; ?>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Evidence</div>
+      <?php foreach ($evidenceLines as $line): ?>
+        <div class="ev">• <?= esc($line) ?></div>
+      <?php endforeach; ?>
+      <div style="margin-top:14px">
+        <div class="section-label">Smart Matching preview</div>
+        <p class="muted"><strong style="color:var(--text)"><?= esc($role['title']) ?></strong> — <?= (int)$match['matchScore'] ?>% match (<?= esc($match['label']) ?>).
+        <?php if (!empty($match['gap'])): ?> Gap: <?= esc(implode(', ', array_map(fn($g)=>ucwords(str_replace('_',' ',$g)),$match['gap']))) ?>.<?php endif; ?></p>
+      </div>
+    </div>
+  </div>
+  <?php if (!empty($potentialProfile)): ?>
+  <div class="section-label" style="margin-top:22px">Potential Profile</div>
+  <div class="grid grid-3" style="margin-top:8px">
+    <div class="card card-tight" style="grid-column:span 2">
+      <div class="section-label">Six-domain view</div>
+      <canvas id="ppRadar" height="220"></canvas>
+    </div>
+    <div class="card card-tight">
+      <div class="section-label">Thinking Style</div>
+      <h3 style="margin:4px 0 10px"><?= esc($potentialProfile['thinking_style']) ?></h3>
+      <?php if (!empty($potentialProfile['animal'])): $ab = $potentialProfile['animal']; ?>
+        <p class="muted" style="font-size:13px">
+          Secondary: <strong style="color:var(--text)"><?= esc($ab['secondary']['label']) ?></strong>
+          · Growth edge: <strong style="color:var(--text)"><?= esc($ab['growth']['label']) ?></strong>
+        </p>
+        <p class="muted" style="font-size:12px;margin-top:6px"><?= esc($ab['line']) ?></p>
+      <?php endif; ?>
+      <div style="margin-top:12px">
+        <div class="row" style="flex-wrap:wrap;gap:6px">
+          <?php foreach ($potentialProfile['top_strengths'] as $s): ?>
+            <?= lumina_chip($s, 'gold') ?>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-2" style="margin-top:14px">
+    <div class="card card-tight">
+      <div class="section-label">Growing areas</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <?php foreach ($potentialProfile['growing_areas'] as $g): ?>
+          <?= lumina_chip($g, 'teal') ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="card card-tight">
+      <div class="section-label">Build next</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <?php foreach ($potentialProfile['build_next'] as $b): ?>
+          <?= lumina_chip($b, 'violet') ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:10px"><?= esc($potentialProfile['disclaimer']) ?></p>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+  (function () {
+    var domains = <?= json_encode($potentialProfile['domains']) ?>;
+    var labels = Object.keys(domains).map(function (k) { return k.charAt(0).toUpperCase() + k.slice(1); });
+    var data = Object.values(domains);
+    var css = getComputedStyle(document.documentElement);
+    var indigo = (css.getPropertyValue('--indigo') || '#6C5CE7').trim();
+    var ctx = document.getElementById('ppRadar');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Potential Profile',
+            data: data,
+            backgroundColor: 'rgba(108,92,231,.15)',
+            borderColor: indigo,
+            pointBackgroundColor: indigo
+          }]
+        },
+        options: {
+          scales: { r: { min: 0, max: 100, ticks: { display: false },
+            grid: { color: 'rgba(255,255,255,.08)' },
+            angleLines: { color: 'rgba(255,255,255,.08)' },
+            pointLabels: { color: '#9aa4b2', font: { size: 11 } } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+  })();
+  </script>
+  <?php endif; ?>
+  <div class="row" style="margin-top:18px">
+    <a class="btn btn-gold btn-lg" href="<?= base_url('compass') ?>">See my career paths →</a>
+    <a class="btn btn-ghost" href="<?= base_url('start') ?>">Rebuild</a>
+  </div>
+</section>
+<div class="drawer-backdrop" id="whyBackdrop"></div>
+<aside class="drawer" id="whyDrawer" aria-label="Why this score">
+  <div class="row" style="justify-content:space-between">
+    <h3>Why this readiness?</h3>
+    <button class="btn btn-ghost" data-close="1">✕</button>
+  </div>
+  <p class="muted"><?= esc($whyText) ?></p>
+  <div class="section-label" style="margin-top:14px">How this score is built</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0">
+    <tbody>
+      <?php foreach ($rc as $r): $pts=(int)round($r[1]*$r[2]/100); ?>
+        <tr>
+          <td style="padding:4px 10px 4px 0;color:var(--muted)"><?= $r[0] ?></td>
+          <td style="padding:4px 8px;text-align:right"><?= $r[1] ?></td>
+          <td style="padding:4px 8px;color:var(--muted)">&times;<?= $r[2] ?>%</td>
+          <td style="padding:4px 0;text-align:right"><strong><?= $pts ?></strong></td>
+        </tr>
+      <?php endforeach; ?>
+      <tr>
+        <td style="padding:8px 10px 0 0;border-top:1px solid var(--line)"><strong>Adaptive Readiness</strong></td>
+        <td style="border-top:1px solid var(--line)"></td><td style="border-top:1px solid var(--line)"></td>
+        <td style="padding:8px 0 0;text-align:right;border-top:1px solid var(--line)"><strong><?= (int)$readiness['score'] ?></strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted" style="font-size:12px">Points = component &times; weight; they add up to your readiness. Every component is 0–100.</p>
+  <p class="purpose" style="margin-top:12px">Decision support only. The number rises as you close gaps — try it in Career Compass.</p>
+</aside>
+<?= $this->endSection() ?>

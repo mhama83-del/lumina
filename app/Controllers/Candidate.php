@@ -45,7 +45,12 @@ class Candidate extends BaseController
         $profile = session('profile') ?? [];
         $profile['quiz_ps'] = $p['quiz_ps'] ?? [];
         session()->set('profile', $profile);
-        $this->buildProfile($p['evidence_text'], $p['stated'], $p['domain'], $p['animal'], $p['verified'], $p['name']);
+        $this->buildProfile($p['evidence_text'], $p['stated'], $p['domain'], $p['animal'], $p['verified'], $p['name'], [
+            'programme'  => $p['programme']  ?? null,
+            'university' => $p['university'] ?? null,
+            'cgpa'       => $p['cgpa']       ?? null,
+            'study_year' => $p['study_year'] ?? null,
+        ]);
         return redirect()->to(base_url('passport'));
     }
 
@@ -62,6 +67,23 @@ class Candidate extends BaseController
             $profile['traits']      = $a['traits'];
             $profile['domains']     = $a['domains'];
             $profile['quiz_ps']     = WorkAnimal::psScore(array_values($answers));
+
+            // Fasa 3 addendum: calon yang SUDAH ada evidence (datang daripada
+            // resume) tidak perlu input evidence kedua. Bina semula blok EDGE
+            // dengan panggilan servis yang SAMA seperti buildProfile(), kerana
+            // potential_profile dibina sebelum quiz_ps wujud. Skills, readiness
+            // dan match TIDAK dikira semula — hanya blok EDGE yang memang
+            // menunggu data kuiz ini.
+            if (! empty($profile['evidence_text'])) {
+                $profile['potential_profile'] = (new \App\Services\PotentialProfileService())->build(
+                    $profile['quiz_ps'],
+                    $profile['evidence_text'],
+                    $profile['skills'] ?? []
+                );
+                session()->set('profile', $profile);
+                return redirect()->to(base_url('passport'));
+            }
+
             session()->set('profile', $profile);
             return redirect()->to(base_url('onboard/input'));
         }
@@ -95,7 +117,13 @@ class Candidate extends BaseController
                 $stated = []; $verified = 0;
             }
 
-            $this->buildProfile($text, $stated, $domain, $profile['animal'] ?? null, $verified, $profile['name'] ?? null);
+            $pName = trim((string) $this->request->getPost('p_name'));
+            $this->buildProfile($text, $stated, $domain, $profile['animal'] ?? null, $verified, $pName ?: ($profile['name'] ?? null), [
+                'programme'  => trim((string) $this->request->getPost('p_programme')) ?: null,
+                'university' => trim((string) $this->request->getPost('p_university')) ?: null,
+                'cgpa'       => trim((string) $this->request->getPost('p_cgpa')) ?: null,
+                'study_year' => trim((string) $this->request->getPost('p_year')) ?: null,
+            ]);
             // Strategic C3: brief "reveal" before continuing, so this path
             // feels consistent with Analyze Resume's inline AI reveal —
             // same eventual destination (/passport), same moment of
@@ -116,8 +144,10 @@ class Candidate extends BaseController
     // ---------- Fasa 3: Living Portfolio ----------
     public function passport()
     {
+        // Fasa 3 (D18): jangan auto-load persona sample ke sesi kosong.
+        // Aiman hanya melalui /start/sample atau demo mode yang jelas.
         $profile = session('profile');
-        if (! $profile) { $this->sample(); $profile = session('profile'); }
+        if (! $profile) { return redirect()->to(base_url('start')); }
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
@@ -142,8 +172,9 @@ class Candidate extends BaseController
     // ---------- Fasa 4: Career Compass ----------
     public function compass()
     {
+        // Fasa 3 (D18): tiada auto-load sample.
         $profile = session('profile');
-        if (! $profile) { $this->sample(); $profile = session('profile'); }
+        if (! $profile) { return redirect()->to(base_url('start')); }
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
@@ -237,8 +268,9 @@ class Candidate extends BaseController
             return $this->response->setJSON(['error' => 'invalid_role']);
         }
 
+        // Fasa 3 (D18): endpoint AJAX — pulangkan error, jangan auto-load sample.
         $profile = session('profile');
-        if (! $profile) { $this->sample(); $profile = session('profile'); }
+        if (! $profile) { return $this->response->setJSON(['error' => 'no_profile']); }
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
@@ -289,8 +321,9 @@ class Candidate extends BaseController
     // ---------- Fasa 5: Smart Matching (candidate) ----------
     public function smatch()
     {
+        // Fasa 3 (D18): tiada auto-load sample.
         $profile = session('profile');
-        if (! $profile) { $this->sample(); $profile = session('profile'); }
+        if (! $profile) { return redirect()->to(base_url('start')); }
 
         $svc  = new ScoreService();
         $cand = $this->buildSignal($profile);
@@ -425,7 +458,13 @@ class Candidate extends BaseController
         // persist profile (session) so the user can continue into Compass/Match
         $this->buildProfile(
             $text, [], $domain, session('profile')['animal'] ?? null, 0,
-            $confirmedName ?: (session('profile')['name'] ?? 'You')
+            $confirmedName ?: (session('profile')['name'] ?? null),
+            [
+                'programme'  => $this->extractProgrammeLine($text, $degree['raw'] ?? null),
+                'university' => $this->universityLabel($this->detectUniversity($text)),
+                'cgpa'       => $this->extractCgpa($text),
+                'study_year' => $this->extractStudyYear($text),
+            ]
         );
         // Ground initial matching in skills GAINED THROUGH THE PROGRAMME
         // (e.g. Chemical Engineering -> chemical_processing, process_safety),
@@ -483,10 +522,7 @@ class Candidate extends BaseController
         }
 
         // detect a university named in the resume (optional display)
-        $foundUni = null;
-        foreach (['UM','USM','UKM','UPM','UTM','UiTM','UUM','IIUM','UMS','UNIMAS','UMT','UPSI','USIM','UMK','UTHM','UTeM','UMP','UniMAP','Taylor','Sunway','MMU','UTP','UNITEN','UCSI','APU','Monash','Nottingham','Xiamen','Heriot'] as $u) {
-            if (stripos($text, $u) !== false) { $foundUni = $u; break; }
-        }
+        $foundUni = $this->detectUniversity($text);
 
         // benchmark this readiness against the cohort (same field)
         $cohort = $this->benchmark($svc, $domain, $readiness['score']);
@@ -729,7 +765,7 @@ class Candidate extends BaseController
         session()->set('profile', $profile);
     }
 
-    private function buildProfile(string $text, array $stated, string $domain, ?string $animal, int $verified, ?string $name): void
+    private function buildProfile(string $text, array $stated, string $domain, ?string $animal, int $verified, ?string $name, array $extra = []): void
     {
         $svc = new ScoreService();
         // Strategic B3: explained variant adds 'from' (trigger word); each
@@ -739,14 +775,30 @@ class Candidate extends BaseController
         $skills = (new \App\Services\EvidenceCheckService())->label($skills, $verified, $text);
         $profile = session('profile') ?? [];
         $profile = array_merge($profile, [
-            'name'          => $name ?: ($profile['name'] ?? 'You'),
+            'name'          => $name ?: ($profile['name'] ?? null),
             'stage'         => session('stage') ?? '19-22',
             'animal'        => $animal ?? ($profile['animal'] ?? null),
             'evidence_text' => $text,
             'skills'        => $skills,
             'verified'      => $verified,
             'target_domain' => $this->normaliseDomain($domain),
+            // Fasa 3 (L5): medan identiti untuk header digital-CV.
+            // Hanya ditetapkan bila pemanggil benar-benar tahu — tidak pernah direka.
+            'programme'     => $extra['programme']  ?? ($profile['programme']  ?? null),
+            'university'    => $extra['university'] ?? ($profile['university'] ?? null),
+            'cgpa'          => $extra['cgpa']       ?? ($profile['cgpa']       ?? null),
+            'study_year'    => $extra['study_year'] ?? ($profile['study_year'] ?? null),
+            'last_updated'  => date('j M Y'),
         ]);
+
+        // Fasa 3 (K5-a): label datang daripada hasil Work Animal sedia ada,
+        // tidak pernah hardcode — jadi laluan kuiz dan sample tidak boleh bercanggah.
+        if (! empty($profile['animal'])) {
+            $wa = \App\Libraries\WorkAnimal::get($profile['animal']);
+            $profile['animalLabel'] = $wa['label'];
+            $profile['traits']      = $wa['traits'];
+            $profile['domains']     = $wa['domains'];
+        }
 
         $profile['potential_profile'] = (new \App\Services\PotentialProfileService())->build(
             $profile['quiz_ps'] ?? [],
@@ -765,6 +817,113 @@ class Candidate extends BaseController
         );
 
         session()->set('profile', $profile);
+    }
+
+    /**
+     * Fasa 3 bug fix — university detection.
+     * Sebelum ini: stripos() substring scan, jadi "community" -> MMU dan
+     * apa-apa perkataan mengandungi "um" -> UM. Sekarang: nama penuh dahulu,
+     * kemudian singkatan dengan sempadan perkataan. Display sahaja — tiada
+     * kesan pada skor, formula atau taxonomy.
+     */
+    private function detectUniversity(string $text): ?string
+    {
+        $full = [
+            'universiti sains malaysia'         => 'USM',
+            'universiti kebangsaan malaysia'    => 'UKM',
+            'universiti putra malaysia'         => 'UPM',
+            'universiti teknologi malaysia'     => 'UTM',
+            'universiti teknologi mara'         => 'UiTM',
+            'universiti utara malaysia'         => 'UUM',
+            'international islamic university'  => 'IIUM',
+            'universiti malaysia sabah'         => 'UMS',
+            'universiti malaysia sarawak'       => 'UNIMAS',
+            'universiti malaysia terengganu'    => 'UMT',
+            'universiti pendidikan sultan idris'=> 'UPSI',
+            'universiti sains islam malaysia'   => 'USIM',
+            'universiti malaysia kelantan'      => 'UMK',
+            'universiti tun hussein onn'        => 'UTHM',
+            'universiti teknikal malaysia'      => 'UTeM',
+            'universiti malaysia pahang'        => 'UMP',
+            'universiti malaysia perlis'        => 'UniMAP',
+            'multimedia university'             => 'MMU',
+            'universiti teknologi petronas'     => 'UTP',
+            'universiti tenaga nasional'        => 'UNITEN',
+            'asia pacific university'           => 'APU',
+            'universiti malaya'                 => 'UM',
+            'university of malaya'              => 'UM',
+            'taylor'                            => 'Taylor',
+            'sunway'                            => 'Sunway',
+            'ucsi'                              => 'UCSI',
+            'monash'                            => 'Monash',
+            'nottingham'                        => 'Nottingham',
+            'xiamen'                            => 'Xiamen',
+            'heriot'                            => 'Heriot',
+        ];
+        $lc = mb_strtolower($text);
+        foreach ($full as $needle => $code) {
+            if (str_contains($lc, $needle)) return $code;
+        }
+        $abbr = ['USM','UKM','UPM','UTM','UiTM','UUM','IIUM','UNIMAS','UMS','UMT','UPSI','USIM','UMK','UTHM','UTeM','UniMAP','UMP','MMU','UTP','UNITEN','UCSI','APU','UM'];
+        foreach ($abbr as $a) {
+            if (preg_match('/\b' . preg_quote($a, '/') . '\b/i', $text)) return $a;
+        }
+        return null;
+    }
+
+    /** Kod universiti -> nama penuh untuk paparan CV. Display sahaja. */
+    private function universityLabel(?string $code): ?string
+    {
+        if (! $code) return null;
+        $map = [
+            'USM' => 'Universiti Sains Malaysia', 'UKM' => 'Universiti Kebangsaan Malaysia',
+            'UPM' => 'Universiti Putra Malaysia', 'UTM' => 'Universiti Teknologi Malaysia',
+            'UiTM' => 'Universiti Teknologi MARA', 'UUM' => 'Universiti Utara Malaysia',
+            'IIUM' => 'International Islamic University Malaysia', 'UMS' => 'Universiti Malaysia Sabah',
+            'UNIMAS' => 'Universiti Malaysia Sarawak', 'UMT' => 'Universiti Malaysia Terengganu',
+            'UPSI' => 'Universiti Pendidikan Sultan Idris', 'USIM' => 'Universiti Sains Islam Malaysia',
+            'UMK' => 'Universiti Malaysia Kelantan', 'UTHM' => 'Universiti Tun Hussein Onn Malaysia',
+            'UTeM' => 'Universiti Teknikal Malaysia Melaka', 'UMP' => 'Universiti Malaysia Pahang',
+            'UniMAP' => 'Universiti Malaysia Perlis', 'MMU' => 'Multimedia University',
+            'UTP' => 'Universiti Teknologi PETRONAS', 'UNITEN' => 'Universiti Tenaga Nasional',
+            'APU' => 'Asia Pacific University', 'UM' => 'Universiti Malaya',
+        ];
+        return $map[$code] ?? $code;
+    }
+
+    /**
+     * Fasa 3 (D19) — programme line untuk paparan CV.
+     * extractFieldOfStudy() memulangkan kunci peta ("Information Technology"),
+     * bukan baris resume. Kaedah ini membaca kelayakan yang BENAR-BENAR
+     * ditulis dalam teks ("BSc Information Technology"). Jika tiada kelayakan
+     * ditulis, fallback kepada field yang dikesan — kita TIDAK PERNAH mereka
+     * "BSc" yang tidak wujud dalam teks calon.
+     * Display sahaja: parser, detection rule dan scoring tidak disentuh.
+     */
+    private function extractProgrammeLine(string $text, ?string $fallback): ?string
+    {
+        $qual = '(?:B\.?Sc|B\.?A|B\.?Eng|B\.?B\.?A|B\.?I\.?T|B\.?Tech|B\.?Com|M\.?Sc|M\.?B\.?A|M\.?A|Bachelor(?:\x27s)?(?:\s+of\s+[A-Za-z]+)?|Diploma(?:\s+in)?|Foundation(?:\s+in)?|Ijazah)';
+        if (preg_match('/\b(' . $qual . '\s+[A-Za-z][A-Za-z&\s\-]{2,48}?)\s*(?=[,\x{00B7}\r\n]|$)/u', $text, $m)) {
+            $line = trim(preg_replace('/\s+/', ' ', $m[1]));
+            if (mb_strlen($line) >= 5) return $line;
+        }
+        return $fallback;
+    }
+
+    /** Study year yang dinyatakan dalam teks calon sendiri. Display sahaja. */
+    private function extractStudyYear(string $text): ?string
+    {
+        if (preg_match('/\bYear\s*([1-6])\b/i', $text, $m)) return 'Year ' . $m[1];
+        return null;
+    }
+
+    /** CGPA yang dinyatakan dalam teks. Display sahaja — tidak pernah masuk scoring. */
+    private function extractCgpa(string $text): ?string
+    {
+        if (preg_match('/\bC?GPA\b\s*[:\-]?\s*([0-4](?:\.\d{1,2})?)/i', $text, $m)) {
+            return $m[1];
+        }
+        return null;
     }
 
     private function buildSignal(array $profile): array
@@ -877,7 +1036,10 @@ class Candidate extends BaseController
         session()->set('stage', $stage);
         $verified = $intern === 'completed' ? 1 : 0;
 
-        $this->buildProfile($text, $stated, $domain, session('profile')['animal'] ?? null, $verified, 'You');
+        $this->buildProfile($text, $stated, $domain, session('profile')['animal'] ?? null, $verified, null, [
+            'programme' => $programme ?: null,
+            'cgpa'      => is_numeric($cgpaRaw) ? $cgpaRaw : null,
+        ]);
         $this->injectCoreSkills($fos['coreSkills'] ?? []);
         $cand = $this->buildSignal(session('profile'));
 
@@ -1091,10 +1253,10 @@ class Candidate extends BaseController
         $presets = [
             // Strategic C fix: 'quiz_ps' pre-filled (raw EDGE Signal tally)
             // since sample personas never answer the /onboard/animal quiz.
-            '16-18'  => ['name' => 'Nurul',   'evidence_text' => 'Active in Science Club; built a small weather logger; enjoys maths.', 'stated' => ['data_analysis'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 0, 'quiz_ps' => ['thinking' => 7, 'learning' => 4, 'execution' => 2]],
-            '19-22'  => ['name' => 'Aiman',   'evidence_text' => self::SAMPLE_MYCSD, 'stated' => ['python', 'teamwork'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 1, 'quiz_ps' => ['thinking' => 6, 'execution' => 4, 'leadership' => 3]],
-            '23-28'  => ['name' => 'Wei Jie', 'evidence_text' => 'Internship at a fintech; built dashboards; led a small analytics team.', 'stated' => ['sql', 'dashboarding', 'python'], 'domain' => 'Data', 'animal' => 'fox', 'verified' => 1, 'quiz_ps' => ['adaptability' => 6, 'leadership' => 5, 'execution' => 3]],
-            '26-28+' => ['name' => 'Sara',    'evidence_text' => '3 years backend dev; mentors juniors; shipped cloud microservices.', 'stated' => ['software', 'cloud', 'communication'], 'domain' => 'Engineering', 'animal' => 'eagle', 'verified' => 1, 'quiz_ps' => ['leadership' => 7, 'people' => 5, 'execution' => 4]],
+            '16-18'  => ['name' => 'Nurul', 'university' => 'Pre-U', 'programme' => 'STEM stream', 'evidence_text' => 'Active in Science Club; built a small weather logger; enjoys maths.', 'stated' => ['data_analysis'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 0, 'quiz_ps' => ['thinking' => 7, 'learning' => 4, 'execution' => 2]],
+            '19-22'  => ['name' => 'Aiman Hakim', 'university' => 'Universiti Sains Malaysia', 'programme' => 'BSc Information Technology', 'cgpa' => '3.62', 'study_year' => 'Year 3', 'evidence_text' => self::SAMPLE_MYCSD, 'stated' => ['python', 'teamwork'], 'domain' => 'Data', 'animal' => 'owl', 'verified' => 1, 'quiz_ps' => ['thinking' => 6, 'execution' => 4, 'leadership' => 3]],
+            '23-28'  => ['name' => 'Wei Jie', 'university' => 'Universiti Malaya', 'programme' => 'BSc Data Science', 'study_year' => 'Year 4', 'evidence_text' => 'Internship at a fintech; built dashboards; led a small analytics team.', 'stated' => ['sql', 'dashboarding', 'python'], 'domain' => 'Data', 'animal' => 'fox', 'verified' => 1, 'quiz_ps' => ['adaptability' => 6, 'leadership' => 5, 'execution' => 3]],
+            '26-28+' => ['name' => 'Sara', 'university' => 'Universiti Teknologi Malaysia', 'programme' => 'BSc Software Engineering', 'evidence_text' => '3 years backend dev; mentors juniors; shipped cloud microservices.', 'stated' => ['software', 'cloud', 'communication'], 'domain' => 'Engineering', 'animal' => 'eagle', 'verified' => 1, 'quiz_ps' => ['leadership' => 7, 'people' => 5, 'execution' => 4]],
         ];
         return $presets[$stage] ?? $presets['19-22'];
     }

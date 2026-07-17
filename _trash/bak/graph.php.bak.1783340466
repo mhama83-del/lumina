@@ -1,0 +1,118 @@
+<?= $this->extend('layouts/main') ?>
+<?= $this->section('content') ?>
+<?php
+helper('ui');
+$domColor = ['Data'=>'var(--indigo)','Engineering'=>'var(--teal)','Design'=>'#f472b6','Business'=>'var(--gold)'];
+$freshSet = array_flip($freshCodes ?? []);
+$renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
+    $out = [];
+    foreach (array_slice($codes, 0, $limit) as $c) {
+        $label = esc(ucwords(str_replace('_', ' ', $c)));
+        $out[] = isset($freshSet[$c]) ? '<span style="color:var(--gold);font-weight:700">' . $label . '</span>' : $label;
+    }
+    return implode(', ', $out);
+};
+?>
+<section class="hero">
+  <div class="section-label">Lumina Graph · self-growing taxonomy</div>
+  <h1>A knowledge graph that learns.</h1>
+  <p class="lead">Every resume and job description Lumina reads grows this graph — canonical skills, how they relate, and the profile patterns behind them. New skills it has never seen are added automatically.</p>
+</section>
+<section class="section">
+  <div class="grid grid-4">
+    <?= lumina_kpi(number_format($stats['skills']), 'Skills in the graph', 'canonical + learned') ?>
+    <?= lumina_kpi(number_format($stats['connections'] ?? 0), 'Connections', 'skill relationships') ?>
+    <?= lumina_kpi(number_format($stats['patterns']), 'Profile patterns', 'cohort + real job market') ?>
+    <?= lumina_kpi(number_format($stats['profiles_learned']), 'Profiles learned', 'and counting') ?>
+  </div>
+</section>
+<?php if (!empty($newest)): $hz = fn($c)=>ucwords(str_replace('_',' ',$c)); ?>
+<section class="section">
+  <div class="section-label">Most recently learned · where each new skill landed</div>
+  <p class="muted" style="font-size:12px;margin:2px 0 8px">Each new skill is placed into a domain, connected to the skills it appeared with, and folded into a profile pattern. Paste a resume with a new tool at <a href="<?= base_url('resume') ?>" class="gold">/resume</a>, then refresh this page.</p>
+  <div class="grid grid-2">
+    <?php foreach ($newest as $s): $dc = $domColor[$s['domain']] ?? 'var(--muted)'; ?>
+      <div class="card card-tight" style="border-left:3px solid <?= $dc ?>">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <strong><?= esc($s['label']) ?> <span class="skill inferred" style="font-size:10px">new</span></strong>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:<?= $dc ?>"><?= esc(strtoupper($s['domain'] ?: '—')) ?></span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px"><strong>Connects to:</strong>
+          <?= !empty($s['related']) ? esc(implode(', ', array_map($hz, array_slice($s['related'],0,5)))) : 'building connections…' ?>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:2px"><strong>In pattern(s):</strong>
+          <?= !empty($s['patterns']) ? esc(implode(' · ', $s['patterns'])) : 'joining nearest pattern' ?>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:2px"><strong>Connects to employers:</strong>
+          <?php if (!empty($s['role_count'])): ?><span class="gold"><?= (int)$s['role_count'] ?> role-families</span><?= !empty($s['role_examples']) ? ' (e.g. ' . esc(implode(', ', $s['role_examples'])) . ')' : '' ?> via its related skills<?php else: ?>building employer links…<?php endif; ?>
+        </div>
+        <div class="muted" style="font-size:11px;margin-top:2px">seen <?= (int)$s['frequency'] ?>&times; · learned <?= esc($s['created_at'] ?? '') ?></div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+<section class="section">
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="section-label">Top skills · and what they connect to</div>
+      <div class="stack" style="margin-top:6px">
+        <?php foreach ($topSkills as $s): $rel = json_decode($s['related_skills_json'] ?? '[]', true) ?: []; ?>
+          <div class="card card-tight">
+            <div class="row" style="justify-content:space-between">
+              <strong><?= esc($s['label']) ?></strong>
+              <span class="muted" style="font-size:12px"><?= (int)$s['frequency'] ?> uses</span>
+            </div>
+            <?php if ($rel): ?><div class="muted" style="font-size:12px;margin-top:4px">→ <?= esc(implode(' · ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($rel,0,5)))) ?></div><?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Profile patterns · learned from the cohort</div>
+      <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
+        <thead><tr><th style="text-align:left;padding:8px;color:var(--muted)">Pattern</th><th style="padding:8px;color:var(--muted)">Profiles</th></tr></thead>
+        <tbody>
+          <?php foreach ($topPatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; ?>
+            <tr>
+              <td style="padding:8px">
+                <strong><?= esc($p['pattern_key']) ?></strong>
+                <div class="muted" style="font-size:12px"><?= esc(implode(', ', array_map(fn($c)=>ucwords(str_replace('_',' ',$c)), array_slice($ts,0,5)))) ?></div>
+              </td>
+              <td style="padding:8px;text-align:center"><?= (int)$p['sample_count'] ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+<?php if (!empty($rolePatterns)): ?>
+<section class="section">
+  <div class="section-label">Role-market patterns · from 1,000 real job descriptions</div>
+  <p class="muted" style="font-size:12px;margin:2px 0 6px">Each card is a real role family from the employer JD database — its own distinct skill signature, grounded in Malaysia/ASEAN market job descriptions, separate from the student-cohort patterns above. Colour = domain (Data · Engineering · Design · Business). A "new" tag on the title means this pattern was inserted/refreshed in the last 24 hours.</p>
+  <p class="muted" style="font-size:11px;margin:0 0 8px"><span style="color:var(--gold);font-weight:700">Gold skill name</span> = that skill itself was added to the graph in the last 24 hours.</p>
+  <div class="grid grid-3">
+    <?php foreach ($rolePatterns as $p): $ts = json_decode($p['typical_skills_json'] ?? '[]', true) ?: []; $dc = $domColor[$p['domain']] ?? 'var(--muted)'; $isFresh = !empty($p['updated_at']) && strtotime($p['updated_at']) >= strtotime('-1 day'); ?>
+      <div class="card card-tight" style="border-left:3px solid <?= $dc ?>">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <strong style="font-size:13px"><?= esc(str_replace('JD: ', '', $p['programme'])) ?><?php if ($isFresh): ?> <span class="skill inferred" style="font-size:9px">new</span><?php endif; ?></strong>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:<?= $dc ?>"><?= esc(strtoupper($p['domain'])) ?></span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px"><?= $renderSkills($ts, 5) ?></div>
+        <div class="muted" style="font-size:10px;margin-top:4px">updated <?= esc($p['updated_at'] ?? '') ?></div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+<section class="section">
+  <div class="card">
+    <p class="muted" style="font-size:13px">How it works: each new profile is matched to the nearest pattern (Jaccard skill overlap + domain/programme). Known skills strengthen the graph; unknown ones are added. Deterministic today — designed to swap in embeddings/NER later.</p>
+    <div class="row" style="margin-top:10px">
+      <a class="btn btn-gold" href="<?= base_url('resume') ?>">Grow the graph — analyse a resume →</a>
+      <a class="btn btn-ghost" href="<?= base_url('how-it-works') ?>">System design</a>
+    </div>
+  </div>
+</section>
+<?= $this->endSection() ?>

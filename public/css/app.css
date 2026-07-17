@@ -64,7 +64,7 @@ body{
 /* Typography */
 h1,h2,h3{ font-family:var(--font-head); margin:0 0 8px; line-height:1.14; letter-spacing:-.015em; }
 h1{ font-size:44px; font-weight:800;
-  background:linear-gradient(135deg,#fff 10%, var(--indigo-l) 60%, var(--gold) 120%);
+  background:linear-gradient(135deg,#fff 10%, var(--indigo-l) 90%, var(--indigo-l) 120%);
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
 h2{ font-size:26px; font-weight:700; color:var(--text); }
 h3{ font-size:18px; font-weight:700; color:var(--text); }
@@ -83,7 +83,7 @@ a{ color:var(--indigo-l); text-decoration:none; }
   display:inline-flex; align-items:center; gap:8px; margin-bottom:10px;
 }
 .section-label::before{ content:""; width:16px; height:2px; border-radius:2px;
-  background:linear-gradient(90deg,var(--indigo),var(--gold)); display:inline-block; }
+  background:var(--indigo); display:inline-block; }
 
 /* Top bar — glass */
 .topbar{ position:sticky; top:0; z-index:40;
@@ -265,6 +265,7 @@ select.field{ appearance:none; }
 @media (max-width:820px){
   h1{ font-size:32px; }
   .grid-2,.grid-3,.grid-4,.steps{ grid-template-columns:1fr; }
+  .grid-3 > [style*="span 2"]{ grid-column:span 1 !important; }
   .pillars{ grid-template-columns:repeat(2,1fr); }
   .topbar .inner{ flex-wrap:wrap; }
   .hero{ padding:32px 0 18px; }

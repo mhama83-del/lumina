@@ -8,7 +8,7 @@ $isShort = in_array((int)$s['id'], $shortlist, true);
 $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('employer');
 ?>
 <section class="hero">
-  <div class="section-label">Candidate Brief<?= $role ? ' · for ' . esc($role['role_title']) : '' ?></div>
+  <div class="section-label">Employer · Review, don't auto-decide</div>
   <h1><?= esc($s['name']) ?></h1>
   <p class="purpose"><?= esc($s['university']) ?> · <?= esc($s['programme']) ?><?= !empty($s['faculty']) ? ' · ' . esc($s['faculty']) : '' ?> · target: <?= esc($s['target_domain']) ?><?= (isset($s['cgpa']) && is_numeric($s['cgpa'])) ? ' · CGPA ' . esc($s['cgpa']) : '' ?></p>
   <div class="row" style="margin-top:10px;gap:8px">
@@ -39,6 +39,71 @@ $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('emplo
   </div>
 </section>
 
+<?php if ($role && $match): ?>
+<?php
+  $wrows = [
+    ['Skill', (int)$match['skill_match_score'], 40],
+    ['Evidence', (int)$match['evidence_strength_score'], 20],
+    ['Learning velocity', (int)$match['learning_velocity_score'], 20],
+    ['Work-Animal fit', (int)$match['animal_fit_score'], 10],
+    ['Domain', (int)$match['domain_fit_score'], 5],
+    ['CGPA', (int)$match['academic_fit_score'], 5],
+  ];
+  $tm = $match['skill_overlap'][0] ?? $role['target_domain'];
+  $mm = $match['missing_skills'][0] ?? null;
+
+  $whyBody = '<p class="muted">How this Talent Match is built. Every component is 0-100; points = component &times; weight.</p>'
+    . '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0"><tbody>';
+  foreach ($wrows as $wr) {
+    $pts = (int)round($wr[1]*$wr[2]/100);
+    $whyBody .= '<tr><td style="padding:3px 10px 3px 0;color:var(--muted)">' . $wr[0] . '</td>'
+      . '<td style="padding:3px 8px;text-align:right">' . $wr[1] . '</td>'
+      . '<td style="padding:3px 8px;color:var(--muted)">&times;' . $wr[2] . '%</td>'
+      . '<td style="padding:3px 0;text-align:right"><strong>' . $pts . '</strong></td></tr>';
+  }
+  $whyBody .= '<tr><td style="padding:6px 10px 0 0;border-top:1px solid var(--line)"><strong>Talent Match</strong></td>'
+    . '<td style="border-top:1px solid var(--line)"></td><td style="border-top:1px solid var(--line)"></td>'
+    . '<td style="padding:6px 0 0;text-align:right;border-top:1px solid var(--line)"><strong>' . (int)$match['match_score'] . '</strong></td></tr>'
+    . '</tbody></table>'
+    . '<div class="section-label" style="margin-top:12px">Skill overlap</div>'
+    . '<p style="font-size:13px">' . esc(implode(', ', $match['skill_overlap']) ?: '—') . '</p>'
+    . '<div class="section-label" style="margin-top:8px">Missing / to develop</div>'
+    . '<p style="font-size:13px">' . esc(implode(', ', $match['missing_skills']) ?: 'none') . '</p>'
+    . '<p class="purpose" style="margin-top:12px">Decision support only. People decide.</p>';
+?>
+<section class="section">
+  <div class="card">
+    <div class="section-label">Match to <?= esc($role['role_title']) ?> · <?= esc($role['company_name']) ?></div>
+    <div class="row" style="align-items:center;gap:12px;margin:6px 0 8px">
+      <div class="ring gold"><?= (int)$match['match_score'] ?></div>
+      <span class="pill <?= $match['match_score']>=70?'ok':($match['match_score']>=55?'nudge':'risk') ?>"><?= esc($match['fit_label']) ?></span>
+      <button class="btn btn-ghost" data-drawer="1" data-title="Why this match?" data-body="<?= esc($whyBody, 'attr') ?>">Why this match?</button>
+    </div>
+    <p class="muted" style="font-size:13px;margin:0">Strengths: <strong style="color:var(--text)"><?= esc(implode(', ', $match['skill_overlap'])) ?: '—' ?></strong><?php if ($match['missing_skills']): ?> · To develop: <?= esc(implode(', ', $match['missing_skills'])) ?><?php endif; ?></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="card" id="questionsToConfirm">
+    <div class="section-label">Questions to Confirm</div>
+    <h3 style="margin:4px 0 2px">Useful questions before a recruiter decides.</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 10px">Review, don't auto-decide. Lumina supports the interview conversation — it does not choose whom to hire.</p>
+    <ol style="font-size:14px;margin:4px 0 0 18px;line-height:1.7">
+      <li><strong>Strength to explore:</strong> Tell me about a time you used <?= esc($tm) ?> to solve a real problem — what was the outcome?</li>
+      <?php if ($mm): ?>
+        <li><strong>Skill to check:</strong> How would you get up to speed on <?= esc($mm) ?> in your first 30 days?</li>
+      <?php else: ?>
+        <li><strong>Suggested follow-up:</strong> What would you improve first in this role?</li>
+      <?php endif; ?>
+      <?php if (($match['evidence_strength_score'] ?? 100) < 60): ?>
+        <li><strong>Evidence gap:</strong> Can you share a specific project outcome or metric that shows this in practice?</li>
+      <?php endif; ?>
+    </ol>
+    <p class="purpose" style="margin-top:12px">Decision support only. People decide.</p>
+  </div>
+</section>
+<?php endif; ?>
+
 <section class="section">
   <div class="grid grid-2">
     <div class="card">
@@ -59,61 +124,6 @@ $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('emplo
     </div>
   </div>
 </section>
-
-<?php if ($role && $match): ?>
-<section class="section">
-  <div class="card">
-    <div class="section-label">Match to <?= esc($role['role_title']) ?> · <?= esc($role['company_name']) ?></div>
-    <?php
-      $wrows = [
-        ['Skill', (int)$match['skill_match_score'], 40],
-        ['Evidence', (int)$match['evidence_strength_score'], 20],
-        ['Learning velocity', (int)$match['learning_velocity_score'], 20],
-        ['Work-Animal fit', (int)$match['animal_fit_score'], 10],
-        ['Domain', (int)$match['domain_fit_score'], 5],
-        ['CGPA', (int)$match['academic_fit_score'], 5],
-      ];
-      $tm = $match['skill_overlap'][0] ?? $role['target_domain'];
-      $mm = $match['missing_skills'][0] ?? null;
-    ?>
-    <div class="row" style="align-items:center;gap:12px;margin-bottom:8px">
-      <div class="ring gold"><?= (int)$match['match_score'] ?></div>
-      <span class="pill <?= $match['match_score']>=70?'ok':($match['match_score']>=55?'nudge':'risk') ?>"><?= esc($match['fit_label']) ?></span>
-    </div>
-    <table style="width:100%;max-width:520px;border-collapse:collapse;font-size:13px;margin:4px 0">
-      <tbody>
-      <?php foreach ($wrows as $wr): $pts=(int)round($wr[1]*$wr[2]/100); ?>
-        <tr>
-          <td style="padding:3px 10px 3px 0;color:var(--muted)"><?= $wr[0] ?></td>
-          <td style="padding:3px 8px;text-align:right"><?= $wr[1] ?></td>
-          <td style="padding:3px 8px;color:var(--muted)">&times;<?= $wr[2] ?>%</td>
-          <td style="padding:3px 0;text-align:right"><strong><?= $pts ?></strong></td>
-        </tr>
-      <?php endforeach; ?>
-        <tr><td style="padding:6px 10px 0 0;border-top:1px solid var(--line)"><strong>Talent Match</strong></td><td style="border-top:1px solid var(--line)"></td><td style="border-top:1px solid var(--line)"></td><td style="padding:6px 0 0;text-align:right;border-top:1px solid var(--line)"><strong><?= (int)$match['match_score'] ?></strong></td></tr>
-      </tbody>
-    </table>
-    <div class="grid grid-2" style="margin-top:8px">
-      <div><div class="section-label">Skill overlap</div><p style="font-size:13px"><?= esc(implode(', ', $match['skill_overlap'])) ?: '—' ?></p></div>
-      <div><div class="section-label">Missing / to develop</div><p style="font-size:13px"><?= esc(implode(', ', $match['missing_skills'])) ?: 'none' ?></p></div>
-    </div>
-    <div class="section-label" style="margin-top:8px">Questions to Confirm</div>
-    <p class="muted" style="font-size:12px;margin:2px 0 6px">Use these questions to understand the candidate's experience and confirm the evidence shown.</p>
-    <ol style="font-size:13px;margin:4px 0 0 18px">
-      <li><strong>Strength to explore:</strong> Tell me about a time you used <?= esc($tm) ?> to solve a real problem — what was the outcome?</li>
-      <?php if ($mm): ?>
-        <li><strong>Skill to check:</strong> How would you get up to speed on <?= esc($mm) ?> in your first 30 days?</li>
-      <?php else: ?>
-        <li><strong>Suggested follow-up:</strong> What would you improve first in this role?</li>
-      <?php endif; ?>
-      <?php if (($match['evidence_strength_score'] ?? 100) < 60): ?>
-        <li><strong>Evidence gap:</strong> Can you share a specific project outcome or metric that shows this in practice?</li>
-      <?php endif; ?>
-    </ol>
-    <p class="purpose" style="margin-top:10px">Decision support only — the recruiter decides.</p>
-  </div>
-</section>
-<?php endif; ?>
 
 <section class="section">
   <div class="card card-tight" style="border-left:3px solid var(--gold)">

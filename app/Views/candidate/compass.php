@@ -3,7 +3,7 @@
 <?php helper('ui'); $first = $paths[0]; ?>
 
 <section class="hero">
-  <div class="section-label">Career Compass · <?= esc($profile['name'] ?? 'You') ?></div>
+  <div class="section-label">Prepare · Choose a direction</div>
   <h1>Where you are. Where you can go. What's next.</h1>
   <p class="purpose">Pick a path, then add a skill and watch your readiness move.</p>
 </section>
@@ -61,7 +61,7 @@
   </div>
 
   <div class="row" style="margin-top:18px">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('match') ?>">Find opportunities →</a>
+    <a class="btn btn-primary btn-lg" href="<?= base_url('match') ?>">Find opportunities →</a>
     <a class="btn btn-ghost" href="<?= base_url('passport') ?>">← Back to portfolio</a>
   </div>
 </section>

@@ -5,7 +5,7 @@
   <h1>Welcome.</h1>
   <p class="lead">This is your candidate hub. Analyse a resume, build one from scratch even with no experience, then see your readiness and the roles you fit.</p>
   <div class="row" style="margin-top:16px;gap:10px;flex-wrap:wrap">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('resume') ?>">Analyze my resume →</a>
+    <a class="btn btn-primary btn-lg" href="<?= base_url('resume') ?>">Analyze my resume →</a>
     <a class="btn btn-ghost" href="<?= base_url('onboard/input') ?>">No resume? Build one →</a>
   </div>
 </section>

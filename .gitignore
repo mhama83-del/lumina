@@ -1,7 +1,11 @@
-writable/cache/
-writable/logs/
-writable/session/
 .env
-vendor/
-_trash/
-*.bak.*
+/vendor/
+/writable/cache/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+/writable/debugbar/*
+!/writable/**/.gitkeep
+/public/uploads/*
+*.log
+.DS_Store

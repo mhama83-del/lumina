@@ -95,7 +95,7 @@
   <div class="card">
     <?= lumina_note('Next best action: ' . esc($nextAction)) ?>
     <div class="row">
-      <a class="btn btn-gold" href="<?= base_url('passport') ?>">Open my Living Portfolio →</a>
+      <a class="btn btn-primary" href="<?= base_url('passport') ?>">Open my Living Portfolio →</a>
       <a class="btn btn-ghost" href="<?= base_url('compass') ?>">See career paths</a>
       <a class="btn btn-ghost" href="<?= base_url('resume') ?>">Refine as a resume</a>
     </div>

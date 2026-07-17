@@ -2,8 +2,9 @@
 <?= $this->section('content') ?>
 <?php helper('ui'); ?>
 
+<?php $hasQuiz = ! empty(session('profile')['quiz_ps']); ?>
 <section class="hero">
-  <div class="section-label">My Career Intelligence · Resume Analysis</div>
+  <div class="section-label">Prepare · Your career evidence</div>
   <h1>Paste your resume. Watch Lumina read it.</h1>
   <p class="purpose">Lumina extracts your skills, scores your readiness, reads your Work Animal, and finds your best match — in seconds.</p>
 </section>
@@ -20,9 +21,10 @@
       <textarea id="resumeText" placeholder="Paste your resume or a summary of your experience here…&#10;&#10;e.g. Final-year Computer Science student. Treasurer of the Robotics Club. Built an attendance app with Python. Led a data analysis project."></textarea>
       <div id="liveHints" class="muted" style="font-size:12px;margin-top:6px;min-height:16px"></div>
       <div style="margin-top:12px" class="row">
-        <button class="btn btn-gold btn-lg" id="analyzeBtn">Analyze with AI →</button>
-        <button class="btn btn-ghost" id="sampleBtn">Use a sample</button>
+        <button class="btn btn-primary btn-lg" id="analyzeBtn">Analyze resume</button>
+        <button class="btn btn-ghost" type="button" id="sampleBtn">Load demo resume</button>
       </div>
+      <div id="demoNote" style="margin-top:10px"></div>
       <p class="muted" style="font-size:12px;margin-top:10px">No resume? Try the <a href="<?= base_url('start') ?>" class="gold">guided No-Resume builder →</a></p>
     </div>
 
@@ -51,7 +53,7 @@
         <div class="muted" style="font-size:12px;margin-bottom:6px">What we noticed:</div>
         <ul id="confirmHighlights" class="muted" style="font-size:13px;margin:0 0 16px;padding-left:18px"></ul>
         <div class="row" style="gap:8px;flex-wrap:wrap">
-          <button class="btn btn-gold" id="confirmGo">Looks good — Analyze with AI →</button>
+          <button class="btn btn-primary" id="confirmGo">Looks good — Analyze resume →</button>
           <button class="btn btn-ghost" id="confirmEdit">← Edit resume</button>
         </div>
       </div>
@@ -115,10 +117,20 @@
 
         <div id="rSaved" class="muted" style="font-size:12px;margin-bottom:10px"></div>
 
-        <div class="row" style="margin-top:6px">
-          <a class="btn btn-gold" href="<?= base_url('compass') ?>">See my career paths →</a>
-          <a class="btn btn-ghost" href="<?= base_url('passport') ?>">View My EDGE Profile →</a>
-        </div>
+        <?php if ($hasQuiz): ?>
+          <p style="margin:0 0 2px">Resume analysed and saved.</p>
+          <p class="muted" style="margin:0 0 12px">Your work-style signals are ready.</p>
+          <div class="row" style="margin-top:6px">
+            <a class="btn btn-primary btn-lg" href="<?= base_url('passport') ?>">Open my Living Portfolio →</a>
+          </div>
+        <?php else: ?>
+          <p style="margin:0 0 2px">Resume analysed and saved.</p>
+          <p class="muted" style="margin:0 0 12px">Next: discover your work-style signals.</p>
+          <div class="row" style="margin-top:6px">
+            <a class="btn btn-primary btn-lg" href="<?= base_url('onboard/animal') ?>">Discover work-style signals →</a>
+          </div>
+          <p class="muted" style="font-size:12px;margin:10px 0 0">After this, you'll see your Living Portfolio. <a href="<?= base_url('passport') ?>">Open my Living Portfolio</a></p>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -139,7 +151,7 @@
 <script>
 const ANALYZE_URL = "<?= base_url('resume/analyze') ?>";
 const PREVIEW_URL = "<?= base_url('resume/preview') ?>";
-const SAMPLE = "Final-year Computer Science student at USM. Treasurer of the Robotics Club for 2 years. Built an attendance app with Python. Volunteered in a community coding programme. Led a small data analysis project and built dashboards for the faculty.";
+const SAMPLE = "Aiman Hakim\nBSc Information Technology, Universiti Sains Malaysia \u00b7 Year 3\nCGPA: 3.62 \u00b7 Career target: Data Analyst\n\nUniversiti Sains Malaysia, BSc Information Technology, 2023-2027. CGPA 3.62.\n\nTreasurer of the Robotics Club for 2 years, managing a RM12,000 annual budget.\nVolunteered in a community coding programme teaching 30 secondary students.\n\nBuilt an attendance app with Python that cut manual roll-call time by 80%.\nRan a faculty data analysis project and built dashboards used by 5 lecturers.\n\nPython, SQL, data analysis, teamwork.";
 
 function donutSVG(pct, color){
   const r=45, c=2*Math.PI*r, off=c*(1-pct/100);
@@ -166,13 +178,30 @@ function showOnly(id){
   ['idle','processing','confirm','results'].forEach(function(k){
     document.getElementById(k).style.display = (k===id) ? 'block' : 'none';
   });
+  // D20: satu CTA primary sahaja. Selepas hasil, Analyze turun jadi ghost —
+  // tetapi kekal boleh diklik supaya calon masih boleh edit dan analisis semula.
+  var ab = document.getElementById('analyzeBtn');
+  if (ab) {
+    if (id === 'results') { ab.className = 'btn btn-ghost'; ab.textContent = 'Analyze updated resume'; }
+    else { ab.className = 'btn btn-primary btn-lg'; ab.textContent = 'Analyze resume'; }
+  }
+}
+
+/** Demo-safe failure: never leave the UI stuck on the processing panel. */
+function failSoft(retryFn){
+  showOnly('idle');
+  var el = document.getElementById('idle');
+  el.innerHTML = 'Could not read that just now. Your text is still in the box.<br>'
+    + '<button class="btn btn-ghost" type="button" id="retryBtn" style="margin-top:10px">Try again</button>';
+  var b = document.getElementById('retryBtn');
+  if (b) b.onclick = retryFn;
 }
 
 /** Step 1: lightweight read — detect name + highlights, let the candidate confirm/edit. */
 function preview(text){
   showOnly('processing');
   const body = new URLSearchParams(); body.append('resume_text', text);
-  fetch(PREVIEW_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body}).then(r=>r.json()).then(function(data){
+  fetch(PREVIEW_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(function(data){
     if(data.error){ showOnly('idle'); document.getElementById('idle').textContent='Please paste some text first.'; return; }
     document.getElementById('nameInput').value = data.name || '';
     document.getElementById('nameInput').dataset.text = text;
@@ -181,16 +210,19 @@ function preview(text){
       ? hi.map(function(h){ return '<li>'+h+'</li>'; }).join('')
       : '<li>No specific highlights detected — that\'s okay, analysis still works.</li>';
     showOnly('confirm');
-  });
+  }).catch(function(){ failSoft(function(){ preview(text); }); });
 }
 
 /** Step 2: full AI analysis (existing pipeline), now carrying the confirmed name. */
 function analyze(text, name){
   showOnly('processing');
   const body = new URLSearchParams(); body.append('resume_text', text); if(name) body.append('name', name);
-  const fetchP = fetch(ANALYZE_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body}).then(r=>r.json());
+  const fetchP = fetch(ANALYZE_URL,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .catch(function(){ return {__failed:true}; });
   runSteps(()=>{
     fetchP.then(data=>{
+      if(data.__failed){ failSoft(function(){ analyze(text, name); }); return; }
       if(data.error){ showOnly('idle'); document.getElementById('idle').textContent='Please paste some text first.'; return; }
       showOnly('results');
       const top = (data.matches && data.matches[0]) || null;
@@ -310,12 +342,16 @@ function analyze(text, name){
 
       // saved
       document.getElementById('rSaved').textContent = data.saved ? ('Saved to your Lumina record (#'+data.saved_id+').') : '';
-    });
+    }).catch(function(){ failSoft(function(){ analyze(text, name); }); });
   });
 }
 
 document.getElementById('analyzeBtn').onclick = ()=>{ const t=document.getElementById('resumeText').value.trim(); if(t) preview(t); };
-document.getElementById('sampleBtn').onclick = ()=>{ document.getElementById('resumeText').value = SAMPLE; preview(SAMPLE); };
+document.getElementById('sampleBtn').onclick = ()=>{
+  document.getElementById('resumeText').value = SAMPLE;
+  document.getElementById('demoNote').innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px"><span>&#10003;</span><span>Demo content loaded &middot; You can still edit it.</span></div>';
+  document.getElementById('resumeText').focus();
+};
 document.getElementById('confirmGo').onclick = ()=>{
   const t = document.getElementById('nameInput').dataset.text || document.getElementById('resumeText').value.trim();
   const n = document.getElementById('nameInput').value.trim();
@@ -355,6 +391,13 @@ document.getElementById('confirmEdit').onclick = ()=>{ showOnly('idle'); };
   ta.addEventListener('input', function () {
     clearTimeout(timer);
     timer = setTimeout(checkText, 600);
+    // D20: resume diubah selepas analysis -> perlu dianalisis semula.
+    var ab = document.getElementById('analyzeBtn');
+    var res = document.getElementById('results');
+    if (ab && res && res.style.display !== 'none') {
+      ab.className = 'btn btn-primary btn-lg';
+      ab.textContent = 'Analyze updated resume';
+    }
   });
 })();
 </script>

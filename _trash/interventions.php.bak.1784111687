@@ -1,0 +1,52 @@
+<?= $this->extend('layouts/main') ?>
+<?= $this->section('content') ?>
+<?php helper('ui'); $uni = $uni ?? ''; $uq = $uni !== '' ? ('?uni='.urlencode($uni)) : ''; ?>
+<section class="hero">
+  <div class="section-label">University · Intervention Plan<?= $uni !== '' ? ' · '.esc($uni) : '' ?></div>
+  <h1>Targeted actions that move the number.</h1>
+  <p class="purpose">Prioritised by impact — the programmes with the most at-risk and needs-a-nudge students, and the one workshop that unlocks the most of them.</p>
+  <div class="row" style="margin-top:12px"><a class="btn btn-ghost" href="<?= base_url('university') . $uq ?>">← Back to dashboard</a></div>
+</section>
+
+<section class="section">
+  <?php if (empty($plan)): ?>
+    <div class="card"><p class="muted">Cohort is on track — no interventions needed right now.</p></div>
+  <?php else: ?>
+    <div class="stack">
+      <?php foreach ($plan as $i => $p): ?>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div class="section-label"><?= esc($p['faculty']) ?></div>
+              <h3 style="margin:2px 0"><?= (int)($i+1) ?>. <?= esc($p['programme']) ?></h3>
+            </div>
+            <div style="text-align:right">
+              <span class="pill risk"><?= (int)$p['target'] ?> students to support</span>
+              <div class="muted" style="font-size:12px;margin-top:4px"><?= (int)$p['atrisk'] ?> at risk</div>
+            </div>
+          </div>
+          <div class="grid grid-3" style="margin-top:12px">
+            <div>
+              <div class="section-label">Skill gap</div>
+              <p><span class="skill inferred"><?= esc($p['skill_gap']) ?></span></p>
+            </div>
+            <div>
+              <div class="section-label">Recommended workshop</div>
+              <p><strong class="gold"><?= esc($p['workshop']) ?></strong></p>
+            </div>
+            <div>
+              <div class="section-label">Expected outcome</div>
+              <p class="muted" style="font-size:13px"><?= esc($p['expected']) ?></p>
+            </div>
+          </div>
+          <?php if (!empty($p['why'])): ?>
+            <div class="section-label" style="margin-top:12px">Why this intervention</div>
+            <p class="muted" style="font-size:13px;margin:0"><?= esc($p['why']) ?></p>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <p class="purpose" style="margin-top:14px">Generated from live cohort readiness. Decision support — the faculty decides what to run.</p>
+  <?php endif; ?>
+</section>
+<?= $this->endSection() ?>

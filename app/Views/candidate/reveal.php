@@ -10,7 +10,7 @@
   <div class="card" style="text-align:center;padding:32px 20px;animation:revealFadeIn .6s ease">
     <?= lumina_note("We read your evidence and found {$skillCount} skill" . ($skillCount === 1 ? '' : 's') . ($animalLabel ? " · Work style: {$animalLabel}" : '') . '.') ?>
     <div class="row" style="justify-content:center;margin-top:16px">
-      <a class="btn btn-gold btn-lg" href="<?= base_url('passport') ?>">View My EDGE Profile →</a>
+      <a class="btn btn-primary btn-lg" href="<?= base_url('passport') ?>">View My EDGE Profile →</a>
     </div>
   </div>
 </section>

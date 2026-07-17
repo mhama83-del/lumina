@@ -5,7 +5,7 @@ helper('ui');
 $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk'];
 ?>
 <section class="hero">
-  <div class="section-label">Smart Matching · <?= esc($profile['name'] ?? 'You') ?></div>
+  <div class="section-label">Apply · Match with intention</div>
   <h1>Opportunities that fit where you're going.</h1>
   <p class="purpose">Matched by readiness and trajectory — not just keywords. <em>Example roles inspired by market patterns — synthetic demo data, not live postings.</em></p>
 </section>
@@ -43,7 +43,7 @@ $fitClass = ['Best fit' => 'ok', 'Growth fit' => 'nudge', 'Stretch fit' => 'risk
     <?php endforeach; ?>
   </div>
   <div class="row" style="margin-top:18px">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('compass') ?>">Improve my match →</a>
+    <a class="btn btn-primary btn-lg" href="<?= base_url('compass') ?>">Improve my match →</a>
     <a class="btn btn-ghost" href="<?= base_url('passport') ?>">← Back to portfolio</a>
   </div>
 </section>

@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 <?php helper('ui'); $uni = $uni ?? ''; $uq = $uni !== '' ? ('?uni='.urlencode($uni)) : ''; ?>
 <section class="hero">
-  <div class="section-label">University · Where Support Is Needed<?= $uni !== '' ? ' · '.esc($uni) : '' ?></div>
+  <div class="section-label">University · Turn cohort signals into support<?= $uni !== '' ? ' · '.esc($uni) : '' ?></div>
   <h1>Where support is needed — and what to do about it.</h1>
   <p class="purpose">Prioritised by impact — the programmes with the most at-risk and needs-a-nudge students, and the one workshop that unlocks the most of them.</p>
   <div class="row" style="margin-top:12px"><a class="btn btn-ghost" href="<?= base_url('university') . $uq ?>">← Back to dashboard</a></div>

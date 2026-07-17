@@ -7,11 +7,11 @@ $uni = $uni ?? '';
 $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 ?>
 <section class="hero">
-  <div class="section-label">For Universities · <?= $uni !== '' ? esc($uni) : 'All universities' ?></div>
+  <div class="section-label">University · Turn cohort signals into support</div>
   <h1>Which talent is almost ready — and what unlocks them.</h1>
   <p class="purpose">Live cohort readiness across your faculties. <?= (int)$total ?> students · <strong class="gold"><?= (int)($noResumePct ?? 0) ?>% have no resume yet</strong> (<?= (int)($noResumeCount ?? 0) ?> students).</p>
   <div class="row" style="margin-top:12px">
-    <a class="btn btn-gold btn-lg" href="<?= base_url('university/interventions') . $uq ?>">See Where Support Is Needed →</a>
+    <a class="btn btn-primary btn-lg" href="<?= base_url('university/interventions') . $uq ?>">See support priorities →</a>
   </div>
 </section>
 

@@ -1,11 +1,13 @@
 /* ============================================================
-   LUMINA — Guided Demo Mode (v2 · ~5 min, comprehensive)
-   Flow: system overview → 1 candidate → 1 industry → 1 university → close.
-   Cross-page tour: persists step in sessionStorage, resumes after nav.
-   Page stays interactive (dim is visual only). Self-contained trigger.
+   LUMINA — Guided Demo (Fasa 5 · 10 canonical steps, ~3 min)
+   Problem → Discover → Read → Trust → Explore → Grow →
+   Match → Prepare → Support → Vision
+   One step = one UI highlight, one short line, one Continue.
+   Uses the preloaded Aiman journey. No live typing.
+   Cross-page: persists step in sessionStorage, resumes after nav.
    ============================================================ */
 (function () {
-  var ROOT = new URL(BASE).pathname.replace(/\/$/, ''); // '' at domain root
+  var ROOT = new URL(BASE).pathname.replace(/\/$/, '');
   function path() {
     var p = location.pathname;
     if (ROOT && p.indexOf(ROOT) === 0) p = p.slice(ROOT.length);
@@ -13,74 +15,46 @@
   }
   function href(target) { return BASE.replace(/\/$/, '') + target; }
 
-  // step.url = page it belongs to; step.nav = URL to reach it (optional); step.chapter = section label
   var STEPS = [
-    // ---------- CHAPTER 1 · System overview ----------
-    { chapter:'Overview', url:'/', sel:'.hero',
-      title:'Meet Lumina',
-      body:'An AI Talent Intelligence Layer for Asia’s Career OS. The principle: <b>hire for trajectory, not just history</b>. Three no-login modes — Candidate, Employer, University — over one shared engine.' },
-    { chapter:'Overview', url:'/', sel:'.grid',
-      title:'One engine, three stakeholders',
-      body:'The same intelligence serves students, employers and universities. We’ll walk one of each — but first, how it thinks.' },
-    { chapter:'Overview', url:'/how-it-works', nav:'/how-it-works', sel:'.section-label',
-      title:'Under the hood',
-      body:'A layered, explainable, API-first design. Evidence is parsed, scored by deterministic engines, then matched — nothing is a black box.' },
-    { chapter:'Overview', url:'/how-it-works', sel:'.mathmap',
-      title:'Every score is traceable',
-      body:'Evidence in → 6 scoring engines → 3 decisions. Each formula is shown with a worked example — judges can verify any number.' },
+    { chapter:'Problem', url:'/', sel:'.hero',
+      title:'Potential is hard to read',
+      body:'Young talent has potential, but a static resume does not always make it readable.' },
 
-    // ---------- CHAPTER 2 · One candidate (Aiman) ----------
-    { chapter:'Candidate', url:'/start', nav:'/start', sel:'.grid',
-      title:'Candidate demo — start from nothing',
-      body:'Meet Aiman, 19, with no resume. He can begin from a Work Animal quiz, a transcript, or just a few questions.' },
-    { chapter:'Candidate', url:'/passport', nav:'/start/sample', sel:'.donut-wrap',
-      title:'A profile from nothing',
-      body:'Lumina read his scattered evidence and scored his readiness — even with no CV.' },
-    { chapter:'Candidate', url:'/passport', sel:'.grid',
-      title:'Inferred skills',
-      body:'Dashed chips are skills Lumina <b>inferred</b> from evidence (e.g. “treasurer” → budgeting). Tap “Why this score?” to see the weighted breakdown.' },
-    { chapter:'Candidate', url:'/compass', nav:'/compass', sel:'.path-card',
-      title:'Three real directions',
-      body:'Career Compass shows realistic paths, how ready he is for each, and the exact gap to close.' },
-    { chapter:'Candidate', url:'/compass', sel:'#gapList',
-      title:'Watch it move',
-      body:'Add a skill and his readiness rises along the 30/60/90 trajectory — that’s trajectory, not just keyword matching.' },
-    { chapter:'Candidate', url:'/match', nav:'/match', sel:'.grid',
-      title:'Opportunities that fit',
-      body:'Best, Growth and Stretch matches — each ranked by readiness and trajectory, each with the reason why.' },
+    { chapter:'Discover', url:'/start', nav:'/start', sel:'.grid',
+      title:'Start from anywhere',
+      body:'Lumina can begin with a resume — or with real activities and experience.' },
 
-    // ---------- CHAPTER 3 · One industry (employer) ----------
-    { chapter:'Employer', url:'/employer', nav:'/employer', sel:'.grid',
-      title:'Industry demo — browse the market',
-      body:'1,450 synthetic job descriptions across 11 domains and 11 countries. Filter by domain, level, country and sector.' },
-    { chapter:'Employer', url:'/employer/role/4904', nav:'/employer/role/4904', sel:'.stack',
-      title:'Rank on fit + trajectory',
-      body:'Open a role and Lumina ranks candidates on a Talent Match Signal (40% skill · 20% evidence · 20% velocity · 10% animal · 5% domain · 5% CGPA).' },
-    { chapter:'Employer', url:'/employer/role/4904', sel:'.stack',
-      title:'Every score opens up',
-      body:'Click “Why?” on any candidate for the exact six-part breakdown — a shortlist a recruiter can defend, surfacing talent from unexpected programmes.' },
+    { chapter:'Read', url:'/passport', nav:'/start/sample', sel:'.hero',
+      title:'A readable Living Portfolio',
+      body:'Scattered evidence becomes a readable Living Portfolio.' },
 
-    // ---------- CHAPTER 4 · One university ----------
-    { chapter:'University', url:'/university', nav:'/university', sel:'.grid',
-      title:'University demo — the whole cohort',
-      body:'1,504 students, 34% with no resume yet — and Lumina still sees them all. Every KPI card is clickable.' },
-    { chapter:'University', url:'/university', sel:'.donut-wrap',
-      title:'Segmented by readiness',
-      body:'On track, needs a nudge, at risk — plus the cohort’s top skill gaps and the single highest-impact intervention.' },
-    { chapter:'University', url:'/university/student/1', nav:'/university/student/1', sel:'.card',
-      title:'Down to one student — the why',
-      body:'Drill into a single at-risk student and see exactly what’s holding their readiness back, with a recommendation tailored to their domain.' },
-    { chapter:'University', url:'/university/interventions', nav:'/university/interventions', sel:'.card',
-      title:'The highest-leverage move',
-      body:'One targeted bootcamp can move hundreds toward career-ready — Lumina names it per programme.' },
+    { chapter:'Trust', url:'/passport', sel:'#cvEvidenceCheck',
+      title:'Every signal shows its evidence',
+      body:'Every signal shows supporting evidence and what can be strengthened.' },
 
-    // ---------- CHAPTER 5 · The brain + close ----------
-    { chapter:'Lumina Graph', url:'/graph', nav:'/graph', sel:'.grid',
-      title:'The brain that learns',
-      body:'Every profile grows the Lumina Graph — canonical skills, how they relate, and the patterns behind them. New skills it has never seen are added automatically.' },
-    { chapter:'Close', url:'/', nav:'/', sel:'.hero',
+    { chapter:'Explore', url:'/compass', nav:'/compass', sel:'.path-card',
+      title:'Practical directions',
+      body:'Career Compass turns the profile into practical directions.' },
+
+    { chapter:'Grow', url:'/compass', sel:'#gapList',
+      title:'Learn, Build, Prove, Apply',
+      body:'The next step is to Learn, Build, Prove and Apply.' },
+
+    { chapter:'Match', url:'/match', nav:'/match', sel:'.grid.grid-3',
+      title:'Roles that fit',
+      body:'Smart Matching shows roles that are Ready Now, Reachable or Longer Path.' },
+
+    { chapter:'Prepare', url:'/match', sel:'[data-title$="interview prep"]',
+      title:'Prepare with real evidence',
+      body:'Preparation comes from the candidate\u2019s actual skills and evidence.' },
+
+    { chapter:'Support', url:'/university/interventions', nav:'/university/interventions', sel:'.card',
+      title:'Where Support Is Needed',
+      body:'Universities see Where Support Is Needed before students are left behind.' },
+
+    { chapter:'Vision', url:'/', nav:'/', sel:'.grid-4',
       title:'One connected platform',
-      body:'From no resume → a direction, a match, and a cohort signal — over a graph that keeps learning. Hire for trajectory, not just history. That’s Lumina.' }
+      body:'Lumina connects candidate growth, employer conversations and university support inside Talentbank Career OS.' }
   ];
 
   var KEY = 'lumina_tour';
@@ -111,13 +85,13 @@
     document.body.appendChild(dim);
     var pop = document.createElement('div'); pop.id = 'tourPop'; pop.className = 'tour-pop';
     pop.innerHTML =
-      '<div class="prog">' + (step.chapter || '') + ' · Step ' + (i + 1) + ' / ' + STEPS.length + '</div>' +
+      '<div class="prog">Step ' + (i + 1) + ' of ' + STEPS.length + ' \u00b7 ' + (step.chapter || '') + '</div>' +
       '<h4>' + step.title + '</h4>' +
       '<p class="muted" style="margin:4px 0 0">' + step.body + '</p>' +
       '<div class="row" style="justify-content:flex-end">' +
         '<button class="btn btn-ghost" id="tourSkip">Skip</button>' +
         (i > 0 ? '<button class="btn btn-ghost" id="tourPrev">Back</button>' : '') +
-        '<button class="btn btn-gold" id="tourNext">' + (i === STEPS.length - 1 ? 'Finish' : 'Next →') + '</button>' +
+        '<button class="btn btn-primary" id="tourNext">' + (i === STEPS.length - 1 ? 'Finish' : 'Continue') + '</button>' +
       '</div>';
     document.body.appendChild(pop);
     document.getElementById('tourNext').onclick = function () { go(i + 1); };
@@ -137,7 +111,6 @@
     stop:  function () { clear(); }
   };
 
-  // self-contained trigger: any [data-tour] element starts the tour
   document.addEventListener('click', function (e) {
     var t = e.target.closest ? e.target.closest('[data-tour]') : null;
     if (t) { e.preventDefault(); window.LuminaTour.start(); }
