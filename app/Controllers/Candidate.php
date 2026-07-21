@@ -194,6 +194,11 @@ class Candidate extends ContinuumController
 
     public function respondClarification(int $id)
     {
+        // Ownership: a candidate may only act on their OWN application (DoD #11).
+        $app = $this->db->table('applications')->where('id', $id)->get()->getRowArray();
+        if (! $app || (int) $app['candidate_id'] !== $this->ctx->subjectId) {
+            return $this->shell('denied', ['reason' => 'Not your application']);
+        }
         $svc = new ApplicationService($this->db, $this->audit);
         $svc->changeState($this->ctx, $id, ApplicationState::UnderReview,
             new \DateTimeImmutable('+3 days'), 'Candidate responded to clarification');

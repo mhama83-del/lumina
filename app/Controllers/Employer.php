@@ -49,8 +49,26 @@ class Employer extends ContinuumController
         return $this->shell('employer_candidate_review', ['view' => $view], 'employer');
     }
 
+    /** Load an application and assert it belongs to the acting employer's tenant, else deny. */
+    private function ownTenantApp(int $applicationId): ?array
+    {
+        $app = $this->db->table('applications')->where('id', $applicationId)->get()->getRowArray();
+        if (! $app) {
+            return null;
+        }
+        try {
+            (new AccessPolicy())->requireEmployerTenant($this->ctx, (int) $app['employer_tenant_id']);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        return $app;
+    }
+
     public function changeStatus(int $applicationId)
     {
+        if (! $this->ownTenantApp($applicationId)) {
+            return $this->shell('denied', ['reason' => 'Application is outside your tenant'], 'employer');
+        }
         $to = ApplicationState::from($this->request->getPost('to') ?? 'under_review');
         $svc = new ApplicationService($this->db, $this->audit);
         $eua = $to->requiresOwnerAndExpectedUpdate() ? new \DateTimeImmutable('+3 days') : null;
@@ -64,6 +82,9 @@ class Employer extends ContinuumController
 
     public function requestClarification(int $applicationId)
     {
+        if (! $this->ownTenantApp($applicationId)) {
+            return $this->shell('denied', ['reason' => 'Application is outside your tenant'], 'employer');
+        }
         $svc = new ApplicationService($this->db, $this->audit);
         $q = $this->request->getPost('question') ?? 'Please add a source for your SQL example.';
         $svc->changeState($this->ctx, $applicationId, ApplicationState::ClarificationRequested,
@@ -73,6 +94,9 @@ class Employer extends ContinuumController
 
     public function releaseFeedback(int $applicationId)
     {
+        if (! $this->ownTenantApp($applicationId)) {
+            return $this->shell('denied', ['reason' => 'Application is outside your tenant'], 'employer');
+        }
         $this->db->table('feedback_records')->insert([
             'application_id' => $applicationId,
             'category' => $this->request->getPost('category') ?? 'role_requirement_not_yet_evidenced',

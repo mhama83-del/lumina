@@ -16,6 +16,13 @@ class ContinuumDemoSeeder extends Seeder
 {
     public function run()
     {
+        // Integrity guard: this seeder TRUNCATES demo tables. Only allow it when this deployment is
+        // explicitly a demo (continuum.demoMode = true). A real deployment (demoMode = false) is
+        // protected from accidental data loss (Phase 1 safe-fixture requirement).
+        if (! (new \Config\Continuum())->demoMode) {
+            throw new \RuntimeException('ContinuumDemoSeeder is blocked because continuum.demoMode is false. '
+                . 'It truncates tables and must only run on a demo/test deployment.');
+        }
         $now = date('Y-m-d H:i:s');
         $db  = $this->db;
         $cp  = new ConsentPreview();
