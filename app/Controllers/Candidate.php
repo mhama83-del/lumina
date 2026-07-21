@@ -122,10 +122,14 @@ class Candidate extends ContinuumController
         if ($this->request->getMethod() === 'post') {
             $cid = $this->ctx->subjectId;
             foreach ($cfg->questions as $q) {
-                $example = trim((string) $this->request->getPost('ex_' . $q['key']));
-                $none    = $this->request->getPost('none_' . $q['key']) ? 0 : 1;
-                if ($example === '' && $none === 1) {
-                    continue; // unanswered and not explicitly skipped -> store nothing
+                $choice = $this->request->getPost('q_' . $q['key']);   // index into options, or null
+                if ($choice === null || $choice === '') {
+                    continue; // unanswered -> store nothing
+                }
+                $idx = (int) $choice;
+                $chosen = $q['options'][$idx] ?? null;
+                if ($chosen === null) {
+                    continue;
                 }
                 // Upsert-by-hand: remove any prior answer for this question, then insert.
                 $this->db->table('survey_responses')
@@ -134,10 +138,10 @@ class Candidate extends ContinuumController
                     'candidate_id'  => $cid,
                     'survey_version'=> $cfg->version,
                     'question_key'  => $q['key'],
-                    'signal'        => $q['signal'],
-                    'reflection_choice' => null,
-                    'short_example' => $example !== '' ? $example : null,
-                    'has_experience'=> $none,
+                    'signal'        => $q['signal'],            // stored server-side; never shown as a "result"
+                    'reflection_choice' => $chosen,
+                    'short_example' => null,
+                    'has_experience'=> 1,
                     'visibility'    => 'candidate_private',
                     'answered_at'   => date('Y-m-d H:i:s'),
                 ]);

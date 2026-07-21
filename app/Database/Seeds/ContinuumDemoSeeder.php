@@ -138,7 +138,7 @@ class ContinuumDemoSeeder extends Seeder
                 for ($k=1; $k<=$count; $k++) {
                     $db->table('survey_responses')->insert([
                         'candidate_id'=>$cand,'survey_version'=>'edge_v2_15q','question_key'=>$prefix[$sig].$k,'signal'=>$sig,
-                        'reflection_choice'=>null,'short_example'=>'Reflected example (synthetic).','has_experience'=>1,
+                        'reflection_choice'=>'Reflected (synthetic)','short_example'=>null,'has_experience'=>1,
                         'visibility'=>'candidate_private','answered_at'=>$now,
                     ]);
                 }

@@ -7,38 +7,58 @@ use CodeIgniter\Config\BaseConfig;
 /**
  * Canonical EDGE survey bank (12_EDGE_SURVEY_BANK.md). ONE versioned source of truth.
  * Replaces all V1 banks. NEVER calls WorkAnimal or any personality service.
- * Reflection choices do NOT award points or imply a better/worse person.
+ *
+ * IMPORTANT (product contract): this is NOT a personality/archetype test. Options are different
+ * VALID approaches to work — none is "better". A chosen option is stored only to (a) record that the
+ * candidate reflected on that EDGE area (drives Meridian reflection coverage) and (b) prompt an
+ * evidence example. Choices are NEVER scored, ranked, or turned into a personality result. The EDGE
+ * signal each question maps to is intentionally hidden from the respondent in the UI.
  */
 class EdgeSurvey extends BaseConfig
 {
     public string $version = 'edge_v2_15q';
 
     public string $intro =
-        'These 15 short reflections help you organise examples of how you approach work. ' .
-        'They are not a personality test, diagnosis or hiring decision.';
+        'Answer quickly and honestly — pick the option closest to how you usually work. ' .
+        'There are no right or wrong answers, and this is not a personality test or a score.';
 
-    public string $skipCopy = 'I have not experienced this yet.';
-    public string $nextCta  = 'Add an example when you are ready.';
+    public string $skipCopy = 'Skip';
+    public string $nextCta  = 'See my map';
 
     /**
-     * @var array<int,array{key:string,signal:string,prompt:string}>
-     * signal values map to Continuum\CorePolicy\Domain\EdgeSignal.
+     * @var array<int,array{key:string,signal:string,prompt:string,options:string[]}>
+     * signal maps to Continuum\CorePolicy\Domain\EdgeSignal — hidden from the UI.
      */
     public array $questions = [
-        ['key' => 'R1', 'signal' => 'reasoning_judgement', 'prompt' => 'When a task is unclear, what is your first step to understand the real problem?'],
-        ['key' => 'R2', 'signal' => 'reasoning_judgement', 'prompt' => 'When two options both seem reasonable, how do you compare the trade-offs before deciding?'],
-        ['key' => 'R3', 'signal' => 'reasoning_judgement', 'prompt' => 'If information conflicts before a deadline, how do you check it and decide what to do next?'],
-        ['key' => 'D1', 'signal' => 'delivery_reliability', 'prompt' => 'When several deadlines overlap, how do you organise the order of work and dependencies?'],
-        ['key' => 'D2', 'signal' => 'delivery_reliability', 'prompt' => 'Before you share or submit work, how do you check that it meets the need and can be used by others?'],
-        ['key' => 'D3', 'signal' => 'delivery_reliability', 'prompt' => 'If a dependency may delay important work, what early action do you take and who needs to know?'],
-        ['key' => 'C1', 'signal' => 'collaboration_communication', 'prompt' => 'If a group is not aligned, how do you help create a shared understanding of the goal and next step?'],
-        ['key' => 'C2', 'signal' => 'collaboration_communication', 'prompt' => 'How would you explain technical or complex work to someone with a different level of familiarity?'],
-        ['key' => 'C3', 'signal' => 'collaboration_communication', 'prompt' => 'If two people believe they own the same task, how would you clarify roles and move the work forward?'],
-        ['key' => 'L1', 'signal' => 'learning_adaptation', 'prompt' => 'When feedback challenges your first idea, how do you understand, test or adapt it?'],
-        ['key' => 'L2', 'signal' => 'learning_adaptation', 'prompt' => 'When you need to learn a new tool or process quickly, how do you begin and apply what you learn?'],
-        ['key' => 'L3', 'signal' => 'learning_adaptation', 'prompt' => 'If circumstances change and the original plan no longer fits, how do you decide what to keep, change or stop?'],
-        ['key' => 'I1', 'signal' => 'initiative_ownership', 'prompt' => 'If you notice a small problem affecting a group or customer, what would you do within the boundaries of your role?'],
-        ['key' => 'I2', 'signal' => 'initiative_ownership', 'prompt' => 'If you see a useful improvement but nobody owns it, how would you start responsibly?'],
-        ['key' => 'I3', 'signal' => 'initiative_ownership', 'prompt' => 'After an improvement is agreed, how would you help ensure there is an owner, a next step and a way to know whether it helped?'],
+        ['key'=>'R1','signal'=>'reasoning_judgement','prompt'=>'When a task is unclear, your first move is usually to…',
+         'options'=>['Ask questions to whoever set it','Break it into smaller parts','Look at similar past examples','List what is known vs unknown']],
+        ['key'=>'R2','signal'=>'reasoning_judgement','prompt'=>'Facing two reasonable options, you tend to…',
+         'options'=>['Weigh the trade-offs on paper','Try a quick small test','Ask someone with more context','Pick and adjust as you learn']],
+        ['key'=>'R3','signal'=>'reasoning_judgement','prompt'=>'When information conflicts before a deadline, you…',
+         'options'=>['Check the most trusted source','Flag it and decide with what you have','Ask the person affected','Note the risk and move on']],
+        ['key'=>'D1','signal'=>'delivery_reliability','prompt'=>'With several overlapping deadlines, you usually…',
+         'options'=>['Order by dependency','Order by impact','Do quick wins first','Ask which matters most']],
+        ['key'=>'D2','signal'=>'delivery_reliability','prompt'=>'Before you submit work, you most often…',
+         'options'=>['Re-check against the need','Ask someone to review','Test it end to end','Ship and refine later']],
+        ['key'=>'D3','signal'=>'delivery_reliability','prompt'=>'If a dependency might delay important work, you…',
+         'options'=>['Tell whoever is affected early','Find a workaround first','Re-plan the timeline','Escalate to the owner']],
+        ['key'=>'C1','signal'=>'collaboration_communication','prompt'=>'When a group is not aligned, you tend to…',
+         'options'=>['Restate the shared goal','Write down the next step','Ask each person their view','Suggest a quick decision']],
+        ['key'=>'C2','signal'=>'collaboration_communication','prompt'=>'Explaining complex work to a non-expert, you…',
+         'options'=>['Use a simple analogy','Start from why it matters','Show a small example','Avoid jargon and check understanding']],
+        ['key'=>'C3','signal'=>'collaboration_communication','prompt'=>'If two people think they own the same task, you…',
+         'options'=>['Clarify roles openly','Ask a lead to decide','Split it clearly','Focus on the next step together']],
+        ['key'=>'L1','signal'=>'learning_adaptation','prompt'=>'When feedback challenges your first idea, you…',
+         'options'=>['Ask what they saw','Test the alternative','Keep what works, change the rest','Sit with it before deciding']],
+        ['key'=>'L2','signal'=>'learning_adaptation','prompt'=>'Needing to learn a new tool fast, you…',
+         'options'=>['Try it hands-on','Follow a short guide','Ask someone who knows','Learn just enough to start']],
+        ['key'=>'L3','signal'=>'learning_adaptation','prompt'=>'When the plan no longer fits, you decide what to…',
+         'options'=>['Keep, change or stop by impact','Ask the team first','Protect the core goal','Restart small']],
+        ['key'=>'I1','signal'=>'initiative_ownership','prompt'=>'Noticing a small problem affecting others, you…',
+         'options'=>['Fix it within your role','Flag it to the owner','Suggest an improvement','Check if others noticed']],
+        ['key'=>'I2','signal'=>'initiative_ownership','prompt'=>'Seeing a useful improvement nobody owns, you…',
+         'options'=>['Start it responsibly','Propose it first','Find who should own it','Pilot it small']],
+        ['key'=>'I3','signal'=>'initiative_ownership','prompt'=>'After an improvement is agreed, you help ensure…',
+         'options'=>['There is a clear owner','There is a next step','There is a way to measure it','Someone follows up']],
     ];
 }
