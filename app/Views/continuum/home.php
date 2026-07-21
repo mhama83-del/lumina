@@ -1,18 +1,21 @@
 <?= $this->extend('continuum/_layout') ?>
 <?= $this->section('content') ?>
-<div class="decision">
-  <h2><?= esc($product->productName) ?> — <?= esc($product->productDescriptor) ?></h2>
-  <p><?= esc($product->productTagline) ?></p>
-</div>
-<div class="card">
-  <p><strong>Career Passport stores the profile. <?= esc($product->productName) ?> turns approved
-  evidence into clearer role actions and accountable outcomes.</strong></p>
-  <ol>
-    <li>Evidence, not personality or black-box ranking.</li>
-    <li>Candidate-controlled sharing.</li>
-    <li>Every application has a next owner and expected update.</li>
-  </ol>
-  <a class="cta" href="/demo/scenarios">Start guided demo</a>
-  <a class="cta secondary" href="/how-it-works">How it works</a>
+<section class="hero">
+  <div class="eyebrow">Evidence-to-Outcome Career Operating Layer</div>
+  <h1>From evidence to <span class="accent">outcome</span>.</h1>
+  <p class="lede">Career Passport stores the profile. Continuum turns candidate-approved evidence into
+     clearer role actions, consent-scoped employer review, and accountable hiring outcomes.</p>
+  <div class="hero-actions">
+    <a class="cta" href="/demo/scenarios">Start guided demo →</a>
+    <a class="cta secondary" href="/how-it-works">How it works</a>
+  </div>
+</section>
+<div class="principles">
+  <div class="principle"><div class="n">01</div><h4>Evidence, not personality</h4>
+    <p>No archetypes, no black-box ranking. Every signal traces to a source the candidate approved.</p></div>
+  <div class="principle"><div class="n">02</div><h4>Candidate-controlled sharing</h4>
+    <p>What the employer sees is exactly what the candidate previewed. Raw survey answers stay private.</p></div>
+  <div class="principle"><div class="n">03</div><h4>Accountable outcomes</h4>
+    <p>Every application shows its current owner and expected update date. No silent ghosting.</p></div>
 </div>
 <?= $this->endSection() ?>
