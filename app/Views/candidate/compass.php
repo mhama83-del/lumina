@@ -3,19 +3,19 @@
 <?php helper('ui'); $first = $paths[0]; ?>
 
 <section class="hero">
-  <div class="section-label">Prepare · Choose a direction</div>
-  <h1>Where you are. Where you can go. What's next.</h1>
-  <p class="purpose">Pick a path, then add a skill and watch your readiness move.</p>
+  <div class="section-label" id="cEyebrow" data-normal="Prepare · Choose a direction" data-progress="Progress · Build your next proof">Prepare · Choose a direction</div>
+  <h1 id="cHeading" data-normal="Where you are. Where you can go. What's next." data-progress="Turn your next skill into visible proof.">Where you are. Where you can go. What's next.</h1>
+  <p class="purpose" id="cSub" data-normal="Pick a path, then add a skill and watch your readiness move." data-progress="Your 30 / 60 / 90-day plan turns a career gap into an action you can show.">Pick a path, then add a skill and watch your readiness move.</p>
 </section>
 
 <section class="section" style="padding-top:6px">
-  <?= lumina_career_journey('apply') ?>
-  <?= lumina_note("Based on your portfolio, here are 3 real directions — and how ready you are for each.") ?>
+  <?= lumina_career_journey('prepare') ?>
+  <?= lumina_note("Your current target is Data Analyst. These are nearby directions based on your portfolio — and how ready you are for each.") ?>
 </section>
 
 <!-- Path cards -->
 <section class="section">
-  <div class="grid grid-3">
+  <div class="grid grid-3" id="recommendedPaths">
     <?php foreach ($paths as $i => $p): ?>
       <div class="card path-card <?= $i === 0 ? 'sel' : '' ?>" data-key="<?= esc($p['key']) ?>" role="button" tabindex="0"
            style="--pc:<?= $p['color'] ?>">
@@ -23,13 +23,20 @@
           <h3 style="margin:0"><?= esc($p['title']) ?></h3>
           <span class="pill <?= $p['label']==='best'?'ok':($p['label']==='growth'?'nudge':'risk') ?>"><?= esc(ucfirst($p['label'])) ?> fit</span>
         </div>
-        <div class="row" style="align-items:flex-end;gap:8px;margin-top:8px">
-          <div style="font-family:var(--font-head);font-weight:800;font-size:30px;color:var(--text)"><?= (int)$p['readiness'] ?>%</div>
-          <div class="muted" style="margin-bottom:5px">ready</div>
+        <div style="margin-top:10px">
+          <?php if ($p['gaps']): $gapCount = count($p['gaps']); ?>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:4px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--pc);flex-shrink:0"></span>
+            <span><strong><?= $gapCount ?></strong> skill<?= $gapCount==1?'':'s' ?> to build: <?= esc(implode(', ', array_map(fn($g)=>$g['label'],$p['gaps']))) ?></span>
+          </div>
+          <div class="muted" style="font-size:12px">A focused 30–60–90 day plan gets you there — tap to see it.</div>
+          <?php else: ?>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0"></span>
+            <span>No gaps — you're ready for this direction.</span>
+          </div>
+          <?php endif; ?>
         </div>
-        <p class="muted" style="margin:6px 0 0">
-          <?php if ($p['gaps']): ?>Gap: <?= esc(implode(', ', array_map(fn($g)=>$g['label'],$p['gaps']))) ?><?php else: ?>No gaps — strong match.<?php endif; ?>
-        </p>
       </div>
     <?php endforeach; ?>
   </div>
@@ -39,7 +46,7 @@
 <section class="section">
   <div class="grid grid-2">
 
-    <div class="card">
+    <div class="card" id="growthPathway">
       <div class="section-label" id="cPathLabel"><?= esc($first['title']) ?></div>
       <div class="donut-wrap" id="cDonut"><?= lumina_donut($first['readiness'], 'Readiness', $first['color']) ?></div>
       <div style="text-align:center;font-size:15px;margin:6px 0 14px" id="deltaTxt"><?= (int)$first['readiness'] ?>%</div>
@@ -54,6 +61,7 @@
       <canvas id="trajChart" height="150"></canvas>
       <h3 style="margin:16px 0 8px">30 / 60 / 90-day plan</h3>
       <div id="planList" class="stack"></div>
+      <a id="cReviewCta" class="btn btn-primary" href="<?= base_url('match') ?>" style="display:none;margin-top:12px">Review opportunities →</a>
       <div id="cStrength" class="muted" style="font-size:13px;margin-top:10px"></div>
       <div id="cUnlocked" class="muted" style="font-size:13px;margin-top:4px"></div>
     </div>
@@ -61,7 +69,7 @@
   </div>
 
   <div class="row" style="margin-top:18px">
-    <a class="btn btn-primary btn-lg" href="<?= base_url('match') ?>">Find opportunities →</a>
+    <a id="cFindBtn" class="btn btn-primary btn-lg" href="<?= base_url('match') ?>">Find opportunities →</a>
     <a class="btn btn-ghost" href="<?= base_url('passport') ?>">← Back to portfolio</a>
   </div>
 </section>
@@ -187,7 +195,7 @@ function selectPath(key){
   document.querySelectorAll('.path-card').forEach(c=>c.classList.toggle('sel', c.dataset.key===active.key));
   document.getElementById('cPathLabel').textContent = active.title;
   setDonut(active.readiness, active.colorHex);
-  setDelta(active.readiness, active.readiness, 0);
+  document.getElementById('deltaTxt').textContent = 'Choose a skill below to preview its impact.';
   buildGaps(active); buildPlan(active); renderChart(active);
   document.getElementById('cStrength').innerHTML = active.strength_to_develop
     ? ('Strength to develop: <strong style="color:var(--text)">'+active.strength_to_develop+'</strong>') : '';
@@ -200,6 +208,39 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('change', e=>{ if(e.target.classList.contains('gap-cb')) recompute(); });
 selectPath(PATHS[0].key);
+
+// ---- Career Action Journey: Progress view via #growthPathway ----
+(function(){
+  function setStage(stage, done){
+    document.querySelectorAll('.career-journey .jstep').forEach(function(a){
+      var s = a.getAttribute('data-journey-stage');
+      var order = {prepare:0, apply:1, perform:2, progress:3};
+      var i = order[s];
+      var dot = a.querySelector('.jdot');
+      a.classList.remove('active','done'); a.removeAttribute('aria-current');
+      if (i < done){ a.classList.add('done'); if(dot) dot.innerHTML = '&#10003;'; }
+      else { if(dot) dot.textContent = (i+1); }
+      if (s === stage){ a.classList.add('active'); a.setAttribute('aria-current','step'); }
+    });
+  }
+  function txt(id, key){
+    var el = document.getElementById(id); if(!el) return;
+    var v = el.getAttribute('data-'+key); if(v!==null) el.textContent = v;
+  }
+  function applyProgress(){
+    var on = (location.hash === '#growthPathway');
+    txt('cEyebrow', on?'progress':'normal');
+    txt('cHeading', on?'progress':'normal');
+    txt('cSub',     on?'progress':'normal');
+    var cta = document.getElementById('cReviewCta'); if(cta) cta.style.display = on?'inline-flex':'none';
+    var fb = document.getElementById('cFindBtn'); if(fb) fb.style.display = on?'none':'inline-flex';
+    if (on){ setStage('progress', 3);
+      var t = document.getElementById('growthPathway'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+    } else { setStage('prepare', 0); }
+  }
+  window.addEventListener('hashchange', applyProgress);
+  applyProgress();
+})();
 
 // ---- Explore Another Career (Strategic B5) ----
 const EXPLORE_URL = "<?= base_url('compass/explore') ?>";
@@ -234,7 +275,7 @@ function renderExplore(e){
   document.getElementById('eUnlocked').innerHTML = e.role_unlocked
     ? ('Unlocks: <strong class="gold">'+e.role_unlocked+'</strong>') : '';
   document.getElementById('eInterviewPrep').innerHTML = (e.interview_prep && e.interview_prep.length)
-    ? '<div class="section-label" style="margin-top:4px">Prepare for interview</div>' + e.interview_prep.map(function(q,i){
+    ? '<div class="section-label" style="margin-top:4px">Questions they might ask</div>' + e.interview_prep.map(function(q,i){
         return '<div class="muted" style="font-size:13px;margin-top:4px">'+(i+1)+'. '+q+'</div>';
       }).join('')
     : '';

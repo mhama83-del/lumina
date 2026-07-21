@@ -2,13 +2,13 @@
 <?= $this->section('content') ?>
 
 <!-- Hero (§5.1) -->
-<section class="hero">
+<section class="hero" id="landingHero">
   <div class="section-label">Built for Talentbank Career OS</div>
   <h1>Make potential readable — before the perfect resume.</h1>
-  <p class="lead">Lumina turns a young person's evidence into a clearer profile, career direction and next action.</p>
+  <p class="lead">Lumina turns scattered evidence into a clear profile, direction and next step.</p>
 
   <div class="row" style="margin-top:18px;gap:10px;flex-wrap:wrap">
-    <a href="#" class="btn btn-primary btn-lg" data-tour="1">Start the guided demo</a>
+    <a href="#" class="btn btn-primary btn-lg" data-tour="1">Take the guided tour</a>
     <a href="<?= base_url('demo/candidate-' . (session('stage') ?? '19-22')) ?>" class="btn btn-ghost">Explore as Candidate</a>
   </div>
 
@@ -49,7 +49,7 @@
 </section>
 
 <!-- Talentbank Career OS value (kekal) -->
-<section class="section">
+<section class="section" id="luminaVision">
   <div class="section-label">A Career Intelligence layer for Talentbank Career OS</div>
   <p class="muted" style="margin-bottom:14px">Lumina plugs into Talentbank to enrich every stakeholder with deeper, evidence-backed intelligence — beyond resumes and keywords.</p>
   <div class="grid grid-4">

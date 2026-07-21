@@ -4,7 +4,7 @@
 helper('ui');
 $p = $profile;
 $riskClass = $risk === 'On track' ? 'ok' : ($risk === 'Needs a nudge' ? 'nudge' : 'risk');
-$evidenceLines = array_filter(array_map('trim', preg_split('/[;.\n]+/', $p['evidence_text'] ?? '')));
+$evidenceLines = array_filter(array_map('trim', preg_split('/[;\n]+|\.(?=\s|$)/', $p['evidence_text'] ?? '')), fn($l) => $l !== '' && !preg_match('/^\d+$/', $l));
 $skillTotal = count($p['skills'] ?? []);
 $skillInferred = 0; foreach (($p['skills'] ?? []) as $s) { if (($s['source'] ?? '') === 'inferred') $skillInferred++; }
 $rc = [
@@ -21,7 +21,7 @@ $cvLeadership = $txt ? $parser->detectLeadership($txt) : [];
 $topSignals = [];
 if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($potentialProfile['top_strengths'], 0, 2);
 ?>
-<section class="hero">
+<section class="hero" id="passportHeader">
   <div class="section-label">Prepare · Your career evidence</div>
   <h1><?= esc($pName ?: 'Your profile') ?></h1>
   <p class="muted" style="margin:2px 0 0">
@@ -48,17 +48,14 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
   <?= lumina_career_journey('prepare') ?>
   <p class="muted" style="font-size:13px;margin:-6px 0 14px">Prepare — make your evidence readable before choosing a direction.</p>
 
-  <div class="grid grid-3">
-    <!-- ===== LEFT 8/12 : digital CV ===== -->
-    <div style="grid-column:span 2;display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <!-- ===== Profil (turun bawah) ===== -->
+    <div style="order:2;display:flex;flex-direction:column;gap:16px">
 
       <div class="card">
         <div class="section-label">Profile summary</div>
         <p style="margin:6px 0 0"><?= esc($pName ?: 'This candidate') ?> is working toward <strong style="color:var(--text)"><?= esc($role['title']) ?></strong>.
         Lumina read <?= (int)$skillTotal ?> skills from the evidence shared<?php if ($skillInferred): ?>, including <?= (int)$skillInferred ?> not listed directly<?php endif; ?>.</p>
-        <?php if (!empty($p['animalLabel'])): ?>
-          <p class="muted" style="font-size:13px;margin-top:8px">Work style: <strong class="gold"><?= esc($p['animalLabel']) ?></strong><?php if (!empty($p['traits'])): ?> — <?= esc(implode(' · ', $p['traits'])) ?><?php endif; ?>. A lightweight signal, not a fixed label.</p>
-        <?php endif; ?>
         <?php if ($topSignals): ?>
           <p class="muted" style="font-size:13px;margin-top:6px">Strongest work-style signals: <?= esc(implode(' · ', $topSignals)) ?>.</p>
         <?php endif; ?>
@@ -105,13 +102,31 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
             data-title="How to read this"
             data-body="&lt;p class=&quot;muted&quot;&gt;Stated: you listed it. Inferred: Lumina read it from your evidence. Supported: strongly backed by the evidence you shared. Needs Evidence: not yet proven — this is your next proof point.&lt;/p&gt;&lt;p class=&quot;muted&quot;&gt;Needs Evidence is not a weakness—it is your next proof point.&lt;/p&gt;">How to read this</button>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;margin-bottom:12px" class="muted">
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#4ade80;display:inline-block"></span>Supported</span>
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:var(--indigo);display:inline-block"></span>Inferred</span>
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#7dd3fc;display:inline-block"></span>Stated</span>
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,.12);display:inline-block"></span>Needs evidence</span>
+        </div>
         <div>
           <?php foreach (($p['skills'] ?? []) as $code => $s):
-              $evLabel = $s['evidence_label'] ?? (($s['source'] ?? '') === 'stated' ? 'Stated' : 'Inferred');
-              $evTitle = !empty($s['from']) ? "{$evLabel} \xc2\xb7 where we found it: {$s['from']}" : $evLabel;
-              echo '<span title="' . esc($evTitle, 'attr') . '">' . lumina_skill(ucwords(str_replace('_', ' ', $code)), $s['source'], $s['confidence']) . '</span>';
-          endforeach; ?>
+            $src  = $s['source'] ?? 'stated';
+            $conf = (float)($s['confidence'] ?? 1);
+            if ($src === 'inferred' && $conf >= 0.75) { $stat='Supported'; $col='#4ade80'; $pct=100; }
+            elseif ($src === 'inferred') { $stat='Inferred'; $col='var(--indigo)'; $pct=max(40,(int)round($conf*100)); }
+            elseif ($src === 'stated' && $conf < 0.4) { $stat='Needs evidence'; $col='rgba(255,255,255,.12)'; $pct=12; }
+            else { $stat='Stated'; $col='#7dd3fc'; $pct=60; }
+            $lab = ucwords(str_replace('_',' ',$code));
+            $from = !empty($s['from']) ? $s['from'] : '';
+          ?>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px" title="<?= esc($from ? "Found in: $from" : $stat, 'attr') ?>">
+            <span style="width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= esc($lab) ?></span>
+            <span style="flex:1;height:9px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden"><span style="display:block;height:100%;width:<?= $pct ?>%;background:<?= $col ?>"></span></span>
+            <span style="width:98px;flex-shrink:0;text-align:right;color:var(--muted);font-size:11px"><?= $stat ?></span>
+          </div>
+          <?php endforeach; ?>
         </div>
+
         <p class="muted" style="font-size:12px;margin-top:10px">Needs Evidence is not a weakness—it is your next proof point.</p>
 
       </div>
@@ -124,49 +139,106 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
       <?php endif; ?>
     </div>
 
-    <!-- ===== RIGHT 4/12 : Lumina insights ===== -->
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <!-- ===== Insights (naik atas) ===== -->
+    <div style="order:1;display:flex;flex-direction:column;gap:16px">
       <div class="card">
         <div class="section-label">Lumina insights</div>
         <h3 style="margin:6px 0 2px">Your readiness today</h3>
-        <p class="muted" style="font-size:13px;margin:0 0 8px">Based on the skills, evidence and activity you have shared.</p>
-        <div class="donut-wrap"><?= lumina_donut($readiness['score'], $role['title'], $role['color']) ?></div>
-        <div class="row" style="justify-content:center;margin-top:8px">
-          <span class="pill <?= $riskClass ?>"><?= esc($risk) ?></span>
+        <p class="muted" style="font-size:13px;margin:0 0 14px">Based on the skills, evidence and activity you have shared.</p>
+        <div class="grid grid-2" style="align-items:start;gap:0">
+          <div style="padding-right:20px;border-right:1px solid var(--line)">
+            <div class="section-label" style="text-align:center;margin-bottom:6px">Readiness</div>
+            <div class="donut-wrap"><?= lumina_donut($readiness['score'], $role['title'], $role['color']) ?></div>
+            <div class="row" style="justify-content:center;margin-top:8px">
+              <span class="pill <?= $riskClass ?>"><?= esc($risk) ?></span>
+            </div>
+                    <div style="margin-top:14px">
+              <?php
+                $rbreak = [
+                  ['Skill coverage', (int)($readiness['coverage'] ?? 0), 40, 'var(--indigo)'],
+                  ['Evidence', (int)($readiness['evidence'] ?? 0), 25, 'var(--teal)'],
+                  ['Activity', (int)($readiness['activity'] ?? 0), 20, '#38BDF8'],
+                  ['Learning pace', (int)($readiness['pace'] ?? 0), 15, '#FB923C'],
+                ];
+              ?>
+              <?php foreach ($rbreak as [$lab,$val,$w,$col]): ?>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+                <span style="width:88px;color:var(--muted);flex-shrink:0"><?= esc($lab) ?></span>
+                <span style="flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden"><span style="display:block;height:100%;width:<?= max(2,min(100,$val)) ?>%;background:<?= $col ?>"></span></span>
+                <span style="width:30px;text-align:right;flex-shrink:0"><strong><?= $val ?></strong></span>
+                <span style="width:34px;text-align:right;color:var(--muted);flex-shrink:0;font-size:11px">×<?= $w ?>%</span>
+              </div>
+              <?php endforeach; ?>
+              <p class="muted" style="font-size:11px;margin:8px 0 0;text-align:center">No black box — each part is visible. You decide what to build next.</p>
+            </div>
+          </div>
+          <?php if (!empty($edgeHas)): ?>
+          <div style="padding-left:20px">
+            <div class="section-label" style="text-align:center;margin-bottom:6px">EDGE work signals</div>
+            <?= \App\Libraries\Edge::spiderDual($edgeSurvey ?? [], $edgeEvidence ?? []) ?>
+            <div class="edge-legend" style="justify-content:center">
+              <span class="edge-leg"><i class="edge-line-survey"></i>Survey</span>
+              <span class="edge-leg"><i class="edge-line-evidence"></i>Evidence</span>
+            </div>
+          </div>
+          <?php endif; ?>
         </div>
         <div class="row" style="justify-content:center;margin-top:8px">
-          <button class="btn btn-ghost" data-why="1">Why this score?</button>
+          <button class="btn btn-ghost" data-why="1">Full formula</button>
         </div>
       </div>
 
-      <?php if (!empty($potentialProfile) && !empty($potentialProfile['has_quiz_data'])): ?>
+      <?php if (!empty($edgeHas)): ?>
+      <div class="card" style="border-left:3px solid var(--indigo)">
+        <p class="muted" style="font-size:12px;margin:0">Three lenses, one story: <strong style="color:var(--text)">EDGE</strong> shows how many examples back each work signal (coverage, not a score) · <strong style="color:var(--text)">Readiness</strong> is how prepared you are for your target · <strong style="color:var(--text)">Smart Matching</strong> shows which roles fit.</p>
+      </div>
       <div class="card">
         <div class="section-label">Lumina EDGE Profile</div>
         <p class="muted" style="font-size:13px;margin:4px 0 8px">A clear view of your strengths, growth areas and work signals.</p>
-        <p class="muted" style="font-size:12px;margin:0 0 8px">Your strongest signals are in <?= esc(implode(' and ', array_slice($potentialProfile['top_strengths'], 0, 2))) ?>.</p>
-        <canvas id="ppRadar" height="200"></canvas>
-        <h3 style="margin:12px 0 6px"><?= esc($potentialProfile['thinking_style']) ?></h3>
-        <?php if (!empty($potentialProfile['animal'])): $ab = $potentialProfile['animal']; ?>
-          <p class="muted" style="font-size:12px;margin:0"><?= esc($ab['line']) ?></p>
-        <?php endif; ?>
-        <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:10px">
-          <?php foreach ($potentialProfile['top_strengths'] as $s): ?><?= lumina_chip($s, 'indigo') ?><?php endforeach; ?>
+        <p class="muted" style="font-size:12px;margin:0 0 8px">Based on your answers and the evidence you chose to share. Add or confirm examples to strengthen each signal.</p>
+        <div class="edge-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">
+          <?php $__ti = 0; foreach (\App\Libraries\Edge::signals() as $__sk => $__sd): ?>
+          <button type="button" class="edge-tab<?= $__ti===0?' active':'' ?>" data-tab="<?= esc($__sk) ?>" style="--tabc:<?= esc($__sd['hex']) ?>"><?= esc($__sd['name']) ?></button>
+          <?php $__ti++; endforeach; ?>
         </div>
-        <div class="section-label" style="margin-top:12px">Growing areas</div>
-        <div class="row" style="flex-wrap:wrap;gap:6px">
-          <?php foreach ($potentialProfile['growing_areas'] as $g): ?><?= lumina_chip($g, 'teal') ?><?php endforeach; ?>
+        <p class="muted" style="font-size:11px;margin:0 0 8px">Tap a signal to see how you approach it and the evidence behind it.</p>
+        <?= \App\Libraries\Edge::cardsV2HTML($edgeSurvey ?? [], $edgeEvidence ?? [], $edgeQuotes ?? []) ?>
+        <p class="muted" style="font-size:11px;margin-top:12px">This is decision support, not a personality test or hiring decision. You choose what to share.</p>
+      </div>
+
+      <div class="grid grid-2" style="align-items:start">
+      <?php $edgeShared = session('edge_shared') ?? false; ?>
+      <div class="card" style="border:1px solid rgba(108,92,231,.35)">
+        <div class="section-label">Share with employers</div>
+        <p class="muted" style="font-size:13px;margin:4px 0 10px">You decide whether an employer sees your EDGE evidence summary. Here is exactly what they would see — nothing more.</p>
+
+        <div style="background:rgba(108,92,231,.06);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:6px">WHAT AN EMPLOYER WOULD SEE</div>
+          <?php
+            $shareSignals = [];
+            foreach (($edgeEvidence ?? []) as $sig => $n) { if ($n > 0) $shareSignals[$sig] = $n; }
+            arsort($shareSignals);
+          ?>
+          <?php if ($shareSignals): ?>
+          <p class="muted" style="font-size:12px;margin:0 0 4px"><strong style="color:var(--text)">Signals with evidence on record:</strong></p>
+          <div style="margin-bottom:8px">
+            <?php foreach (array_slice(array_keys($shareSignals),0,3) as $sig): $sd = \App\Libraries\Edge::signals()[$sig] ?? []; ?><span class="skill" style="border-color:rgba(108,92,231,.4)"><?= esc($sd['name'] ?? $sig) ?> · <?= (int)$shareSignals[$sig] ?> example<?= $shareSignals[$sig]==1?'':'s' ?></span><?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+          <p class="muted" style="font-size:12px;margin:0">Plus your <strong style="color:var(--text)">Questions to Confirm</strong> — behavioural prompts an interviewer can ask. Employers never see your raw survey answers.</p>
         </div>
-        <div class="section-label" style="margin-top:12px">Build next</div>
-        <div class="row" style="flex-wrap:wrap;gap:6px">
-          <?php foreach ($potentialProfile['build_next'] as $b): ?><?= lumina_chip($b, 'violet') ?><?php endforeach; ?>
-        </div>
-        <p class="muted" style="font-size:11px;margin-top:10px"><?= esc($potentialProfile['disclaimer']) ?></p>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:13px">
+          <input type="checkbox" <?= $edgeShared ? 'checked' : '' ?> onchange="fetch('<?= base_url('passport/share-edge') ?>?on='+(this.checked?1:0),{method:'POST'}).then(()=>{document.getElementById('shareState').textContent=this.checked?'Shared for applications':'Not shared';})" style="width:18px;height:18px;accent-color:var(--indigo)">
+          <span>Share my EDGE evidence summary for this application</span>
+        </label>
+        <p class="muted" style="font-size:11px;margin:8px 0 0">Status: <strong id="shareState" style="color:var(--text)"><?= $edgeShared ? 'Shared for applications' : 'Not shared' ?></strong> · Employers cannot reject, sort, or filter by EDGE — it is context for a conversation, not a gate.</p>
       </div>
       <?php else: ?>
       <div class="card">
         <div class="section-label">Lumina EDGE Profile</div>
         <p class="muted" style="font-size:13px;margin:4px 0 10px">Not ready yet — your work-style signals come from a short set of questions.</p>
-        <a class="btn btn-primary" href="<?= base_url('onboard/animal') ?>">Discover your work-style signals</a>
+        <a class="btn btn-primary" href="<?= base_url('onboard/edge') ?>">Discover your work approach</a>
       </div>
       <?php endif; ?>
 
@@ -179,7 +251,9 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
+      </div>
 
+      <div class="grid grid-2">
       <div class="card">
         <div class="section-label">Smart Matching</div>
         <p class="muted" style="font-size:13px;margin:4px 0 8px">See which roles fit you now—and what to build next.</p>
@@ -189,8 +263,9 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
 
       <div class="card">
         <div class="section-label">Next action</div>
-        <a class="btn btn-primary btn-lg" href="<?= base_url('compass') ?>" style="width:100%;justify-content:center">Explore Career Compass</a>
+        <a class="btn btn-primary btn-lg" href="<?= base_url('match') ?>" style="width:100%;justify-content:center">Find opportunities</a>
         <p class="muted" style="font-size:12px;margin:10px 0 0">Choose a direction worth exploring.</p>
+      </div>
       </div>
     </div>
   </div>
@@ -200,30 +275,6 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
   </div>
 </section>
 
-<?php if (!empty($potentialProfile) && !empty($potentialProfile['has_quiz_data'])): ?>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-(function () {
-  var domains = <?= json_encode($potentialProfile['domains']) ?>;
-  var labels = Object.keys(domains).map(function (k) { return k.charAt(0).toUpperCase() + k.slice(1); });
-  var data = Object.values(domains);
-  var css = getComputedStyle(document.documentElement);
-  var indigo = (css.getPropertyValue('--indigo') || '#6C5CE7').trim();
-  var ctx = document.getElementById('ppRadar');
-  if (ctx && window.Chart) {
-    new Chart(ctx, {
-      type: 'radar',
-      data: { labels: labels, datasets: [{ label: 'EDGE Signals', data: data,
-        backgroundColor: 'rgba(108,92,231,.15)', borderColor: indigo, pointBackgroundColor: indigo }] },
-      options: { scales: { r: { min: 0, max: 100, ticks: { display: false },
-          grid: { color: 'rgba(255,255,255,.08)' }, angleLines: { color: 'rgba(255,255,255,.08)' },
-          pointLabels: { color: '#9aa4b2', font: { size: 10 } } } },
-        plugins: { legend: { display: false } } }
-    });
-  }
-})();
-</script>
-<?php endif; ?>
 
 <div class="drawer-backdrop" id="whyBackdrop"></div>
 <aside class="drawer" id="whyDrawer" aria-label="Why this score">
@@ -253,4 +304,25 @@ if (!empty($potentialProfile['top_strengths'])) $topSignals = array_slice($poten
   <p class="muted" style="font-size:12px">Points = component &times; weight; they add up to your readiness. Every component is 0–100. 40% coverage · 25% evidence · 20% activity · 15% pace.</p>
   <p class="purpose" style="margin-top:12px">Decision support only. The number rises as you close gaps — try it in Career Compass.</p>
 </aside>
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.edge-tab');
+  var cards = document.querySelectorAll('.edge-card[data-sig]');
+  if(!tabs.length || !cards.length) return;
+  function show(sig){
+    cards.forEach(function(c){ c.classList.toggle('edge-card-hidden', c.getAttribute('data-sig') !== sig); });
+    tabs.forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-tab') === sig); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ show(t.getAttribute('data-tab')); }); });
+  // Bonus: klik label paksi spider -> tunjuk kad signal itu
+  var spider = document.querySelector('.edge-spider');
+  if(spider){
+    var order = Array.prototype.map.call(tabs, function(t){ return t.getAttribute('data-tab'); });
+    spider.querySelectorAll('text').forEach(function(txt){
+      var nm = (txt.textContent||'').trim().toLowerCase();
+      tabs.forEach(function(t){ if((t.textContent||'').trim().toLowerCase() === nm){ txt.style.cursor='pointer'; txt.addEventListener('click', function(){ show(t.getAttribute('data-tab')); }); } });
+    });
+  }
+})();
+</script>
 <?= $this->endSection() ?>

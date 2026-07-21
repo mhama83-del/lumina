@@ -1,4 +1,13 @@
-<?php $role = session('role') ?? null; $stage = session('stage') ?? '19-22'; ?>
+<?php $role = session('role') ?? null; $stage = session('stage') ?? '19-22';
+// Nav active ikut URI semasa (bukan session yg melekat).
+$__uri = service('uri')->getSegment(1) ?? '';
+$navCtx = '';
+if (in_array($__uri, ['start','resume','passport','compass','onboard'], true)) $navCtx = 'candidate';
+elseif ($__uri === 'employer') $navCtx = 'employer';
+elseif ($__uri === 'university') $navCtx = 'university';
+elseif ($__uri === 'demo') { $seg2 = service('uri')->getSegment(2) ?? ''; if (strpos($seg2,'candidate')===0) $navCtx='candidate'; elseif ($seg2==='employer') $navCtx='employer'; elseif ($seg2==='university') $navCtx='university'; }
+else $navCtx = $role; // fallback ke session utk halaman lain
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,9 +24,9 @@
     <div class="inner">
       <a href="<?= base_url('/') ?>" class="brand">Lumina<span class="dot">.</span></a>
       <div class="role-switch">
-        <a href="<?= base_url('demo/candidate-' . $stage) ?>" class="<?= $role==='candidate'?'active':'' ?>">Candidate</a>
-        <a href="<?= base_url('demo/employer') ?>" class="<?= $role==='employer'?'active':'' ?>">Employer</a>
-        <a href="<?= base_url('demo/university') ?>" class="<?= $role==='university'?'active':'' ?>">University</a>
+        <a href="<?= base_url('demo/candidate-' . $stage) ?>" class="<?= $navCtx==='candidate'?'active':'' ?>">Candidate</a>
+        <a href="<?= base_url('demo/employer') ?>" class="<?= $navCtx==='employer'?'active':'' ?>">Employer</a>
+        <a href="<?= base_url('demo/university') ?>" class="<?= $navCtx==='university'?'active':'' ?>">University</a>
       </div>
       <a href="<?= base_url('how-it-works') ?>" style="color:var(--muted);text-decoration:none;font-size:14px;margin-left:10px" title="System design">How it works</a>
       <a href="<?= base_url('graph') ?>" style="color:var(--muted);text-decoration:none;font-size:14px;margin-left:10px" title="Lumina Graph">Graph</a>

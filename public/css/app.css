@@ -255,6 +255,8 @@ select.field{ appearance:none; }
   display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
 .journey .jstep.active .jdot{ border-color:var(--indigo); background:rgba(108,92,231,.16); color:#fff; }
 .journey .jstep.active{ color:var(--text); }
+.journey .jstep.done{ color:var(--text); }
+.journey .jstep.done .jdot{ border-color:#14b8a6; background:rgba(20,184,166,.15); color:#14b8a6; }
 .journey .jsep{ flex:1; height:1px; min-width:16px; background:var(--border); }
 
 /* pillars + table */
@@ -289,3 +291,89 @@ a:hover > .kpi-link{transform:translateY(-2px);border-color:var(--gold)}
 .mathq{font-size:13.5px;margin:2px 0 8px;color:var(--text)}
 .mathq span{color:var(--gold);font-weight:700;margin-right:4px}
 .mathmap{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin:0 0 14px;text-align:center}
+
+/* ====== EDGE Review table (Fasa 2c) ====== */
+.edge-review{ width:100%; border-collapse:collapse; margin:8px 0; font-size:13px; }
+.edge-review th{ text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-bottom:1px solid rgba(255,255,255,.08); }
+.edge-review td{ padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.05); vertical-align:top; }
+.edge-quote{ color:var(--text); font-style:italic; }
+.edge-chip{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; margin:1px 2px; border:1px solid transparent; white-space:nowrap; }
+.edge-chip[data-sig="reasoning_judgement"]{ background:rgba(108,92,231,.14); color:#a99bff; border-color:rgba(108,92,231,.35); }
+.edge-chip[data-sig="delivery_reliability"]{ background:rgba(20,184,166,.14); color:#5eead4; border-color:rgba(20,184,166,.35); }
+.edge-chip[data-sig="collaboration_communication"]{ background:rgba(253,224,71,.12); color:#fde047; border-color:rgba(253,224,71,.3); }
+.edge-chip[data-sig="learning_adaptation"]{ background:rgba(56,189,248,.14); color:#7dd3fc; border-color:rgba(56,189,248,.35); }
+.edge-chip[data-sig="initiative_ownership"]{ background:rgba(251,146,60,.14); color:#fdba74; border-color:rgba(251,146,60,.35); }
+.edge-status{ font-size:11px; padding:2px 8px; border-radius:6px; white-space:nowrap; }
+.edge-inferred{ background:rgba(56,189,248,.12); color:#7dd3fc; }
+.edge-stated{ background:rgba(148,163,184,.14); color:#cbd5e1; }
+.edge-supported{ background:rgba(34,197,94,.14); color:#4ade80; }
+.edge-needs{ background:rgba(148,163,184,.1); color:#94a3b8; }
+.edge-actions{ white-space:nowrap; }
+.edge-btn{ background:none; border:1px solid rgba(255,255,255,.14); color:var(--muted); padding:3px 10px; border-radius:6px; font-size:12px; cursor:pointer; }
+.edge-btn:hover{ border-color:rgba(255,255,255,.3); color:var(--text); }
+.edge-remove:hover{ border-color:rgba(248,113,113,.4); color:#f87171; }
+.edge-footnote{ font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5; }
+.edge-hint{ font-size:12px; color:#a99bff; margin-bottom:6px; }
+.edge-input{ width:100%; padding:8px 11px; border-radius:8px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--text); font-size:13px; }
+.edge-edit-panel, .edge-add-panel{ background:rgba(108,92,231,.06); border:1px solid rgba(108,92,231,.2); border-radius:10px; padding:11px 13px; margin:4px 0; }
+.edge-add-sugg{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.edge-add-sugg:last-child{ border-bottom:none; }
+.edge-add-sugg .edge-quote{ flex:1; min-width:180px; }
+.btn-sm{ padding:5px 12px; font-size:12px; }
+
+/* ====== EDGE Evidence Map spider (Fasa 3c) ====== */
+.edge-map-wrap{ display:flex; flex-direction:column; align-items:center; margin:8px 0; }
+.edge-spider{ width:100%; max-width:340px; height:auto; }
+.edge-legend{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:6px; }
+.edge-leg{ display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+.edge-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+.edge-l0{ background:rgba(148,163,184,.6); }
+.edge-l1{ background:#cbd5e1; }
+.edge-l2{ background:#7dd3fc; }
+.edge-l3{ background:#4ade80; }
+.edge-alt{ width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; }
+.edge-alt td{ padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.05); color:var(--muted); }
+.edge-alt td:last-child{ text-align:right; color:var(--text); }
+
+/* ====== EDGE cards mind map (Fasa 3d) ====== */
+.edge-cards-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin:12px 0; }
+.edge-card{ background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; }
+.edge-card-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+.edge-card-name{ font-weight:600; font-size:13.5px; line-height:1.3; }
+.edge-card-status{ font-size:11px; padding:2px 8px; border-radius:6px; background:rgba(255,255,255,.06); white-space:nowrap; }
+.edge-card-insight{ font-size:12px; color:var(--muted); margin:6px 0 10px; line-height:1.5; }
+.edge-card-map{ margin:8px 0; }
+.edge-branch{ display:flex; align-items:center; gap:8px; margin:4px 0; }
+.edge-branch-line{ width:20px; height:2px; flex-shrink:0; border-radius:2px; }
+.edge-branch-node{ font-size:12px; font-style:italic; color:#cbd5e1; background:rgba(255,255,255,.04); padding:3px 9px; border-radius:6px; }
+.edge-card-cta{ display:inline-block; margin-top:8px; background:none; border:1px solid rgba(108,92,231,.4); color:#a99bff; padding:5px 12px; border-radius:7px; font-size:12px; cursor:pointer; text-decoration:none; }
+.edge-card-cta:hover{ border-color:rgba(108,92,231,.7); }
+
+/* ====== EDGE v2 dua lapisan (R6) ====== */
+.edge-line-survey{ display:inline-block; width:16px; height:0; border-top:2px dashed #94a3b8; vertical-align:middle; margin-right:4px; }
+.edge-line-evidence{ display:inline-block; width:14px; height:10px; background:rgba(108,92,231,.4); border:1.5px solid #6C5CE7; border-radius:2px; vertical-align:middle; margin-right:4px; }
+.edge-alt th{ text-align:left; padding:5px 8px; font-size:10px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid rgba(255,255,255,.08); }
+.edge-scorebar{ display:grid; grid-template-columns:auto 1fr; gap:5px 8px; align-items:center; margin:8px 0; }
+.edge-sb-label{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+.edge-sb-track{ height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
+.edge-sb-fill{ display:block; height:100%; border-radius:3px; }
+.edge-sb-survey{ background:#94a3b8; }
+.edge-sb-evidence{ background:#6C5CE7; }
+.edge-card-gap{ font-size:11.5px; color:#a99bff; margin:6px 0; font-style:italic; }
+.edge-map-title{ font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin-bottom:4px; }
+
+/* teks galakan card lemah (ganti CTA link) */
+.edge-card-next{ font-size:11.5px; color:var(--muted); margin:8px 0 0; font-style:italic; }
+
+/* Mockup 2: EDGE spider interaktif — tab + kad tunggal */
+.edge-tabs{ display:flex; flex-wrap:wrap; gap:6px; }
+.edge-tab{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); color:var(--muted); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+.edge-tab:hover{ border-color:var(--tabc); color:var(--text); }
+.edge-tab.active{ background:var(--tabc); border-color:var(--tabc); color:#0B1117; }
+.edge-cards-grid{ grid-template-columns:1fr !important; }
+.edge-card-hidden{ display:none !important; }
+
+/* Passport single-column: donut + spider lebih besar & jelas */
+.donut{ width:170px; height:170px; }
+.edge-spider{ max-width:520px; margin:0 auto; display:block; }
+.edge-cards-grid{ max-width:900px; margin-left:auto; margin-right:auto; }

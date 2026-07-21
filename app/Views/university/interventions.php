@@ -14,7 +14,7 @@
   <?php else: ?>
     <div class="stack">
       <?php foreach ($plan as $i => $p): ?>
-        <div class="card">
+        <div class="card"<?= $i === 0 ? ' id="supportPriority"' : '' ?>>
           <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
             <div>
               <div class="section-label"><?= esc($p['faculty']) ?></div>

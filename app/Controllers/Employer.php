@@ -132,6 +132,22 @@ class Employer extends BaseController
         $readiness = $svc->employability($cand);
         $band      = $svc->risk($readiness);
 
+        // ---- Fasa 4: EDGE signals calon untuk HR brief (dari evidence, macam CV) ----
+        $edgeCov = [];
+        foreach (array_keys($explained) as $scode) {
+            foreach (\App\Libraries\Edge::mapSkillToSignal((string)$scode) as $sig) {
+                $edgeCov[$sig] = ($edgeCov[$sig] ?? 0) + 1;
+            }
+        }
+        arsort($edgeCov);
+        $sigDefs2 = \App\Libraries\Edge::signals();
+        $edgeSignals = [];
+        foreach ($edgeCov as $sig => $n) {
+            if ($n < 1) continue;
+            $edgeSignals[] = ['name' => $sigDefs2[$sig]['name'] ?? $sig, 'count' => $n];
+        }
+        $edgeQuotes = \App\Libraries\Edge::evidenceQuotes(array_keys($explained), $s['evidence_text'] ?? '');
+
         $role = null; $match = null;
         if ($roleId) {
             $role = (new EmployerRoleModel())->fullRole($roleId);
@@ -143,6 +159,7 @@ class Employer extends BaseController
             's' => $s, 'explained' => $explained, 'animal' => $animal,
             'projects' => $projects, 'leadership' => $leadership,
             'readiness' => $readiness, 'band' => $band, 'role' => $role, 'match' => $match,
+            'edgeSignals' => $edgeSignals, 'edgeQuotes' => $edgeQuotes,
             'shortlist' => session('shortlist') ?? [],
         ]);
     }

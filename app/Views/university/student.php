@@ -21,7 +21,7 @@
   <div class="grid grid-2">
     <div class="card">
       <div class="section-label">Readiness · why this score</div>
-      <div class="donut-wrap"><?= lumina_donut((int)$ready, 'Employability', 'var(--indigo)') ?></div>
+      <div class="donut-wrap"><?= lumina_donut((int)$ready, 'Readiness', 'var(--indigo)') ?></div>
       <div style="text-align:center;margin:6px 0 10px"><span class="pill <?= $cls ?>"><?= esc($band) ?></span></div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <tbody>
@@ -35,15 +35,10 @@
         <?php endforeach; ?>
         </tbody>
       </table>
-      <p class="muted" style="font-size:12px;margin-top:6px">Field-agnostic employability drives the band; the breakdown shows role readiness for context.</p>
+      <p class="muted" style="font-size:12px;margin-top:6px">Field-agnostic readiness drives the band; the breakdown shows role readiness for context.</p>
     </div>
     <div class="card">
-      <div class="section-label">Work Animal · from evidence</div>
-      <div style="margin-bottom:8px">
-        <span class="skill"><?= esc($animal['primary']['label'] ?? '—') ?> <span class="conf">primary</span></span>
-        <span class="skill"><?= esc($animal['secondary']['label'] ?? '—') ?> <span class="conf">secondary</span></span>
-      </div>
-      <div class="section-label" style="margin-top:8px">Skills detected</div>
+      <div class="section-label">Skills detected</div>
       <div style="margin-bottom:6px">
         <?php foreach ($explained as $code => $sk): ?><?= lumina_skill(\App\Libraries\Catalog::label($code), $sk['source'], $sk['confidence'] ?? 1) ?><?php endforeach; ?>
         <?php if (empty($explained)): ?><span class="muted">No skills detected yet.</span><?php endif; ?>

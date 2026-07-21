@@ -5,7 +5,7 @@
 <section class="hero">
   <div class="section-label">Starter Living Portfolio · No-Resume</div>
   <h1>Here's your starting point.</h1>
-  <p class="purpose">Built from your answers — a readiness baseline, your Work Animal, a resume draft, and the next steps that move your number.</p>
+  <p class="purpose">Built from your answers — a readiness baseline, your work signals, a resume draft, and the next steps that move your number.</p>
 </section>
 
 <section class="section">
@@ -17,21 +17,10 @@
       <div style="text-align:center;margin-top:8px">
         <?php $bc = $band==='On track'?'ok':($band==='Needs a nudge'?'nudge':'risk'); ?>
         <span class="pill <?= $bc ?>"><?= esc($band) ?></span>
-        <span class="muted" style="font-size:12px">employability band</span>
+        <span class="muted" style="font-size:12px">readiness band</span>
       </div>
       <p class="muted" style="text-align:center;margin-top:8px">Career cluster: <strong class="gold"><?= esc($cluster) ?></strong></p>
 
-      <div class="section-label" style="margin-top:16px">Suggested Work Animal · from your answers</div>
-      <div class="card card-tight">
-        <div style="margin-bottom:8px">
-          <span class="skill"><?= esc($animal['primary']['label']) ?> <span class="conf">primary</span></span>
-          <span class="skill"><?= esc($animal['secondary']['label']) ?> <span class="conf">secondary</span></span>
-          <span class="skill"><?= esc($animal['growth']['label']) ?> <span class="conf">growth</span></span>
-        </div>
-        <p class="muted" style="font-size:13px"><?= esc($animal['line']) ?> <span class="gold">Confidence <?= (int)$animal['confidence'] ?>%</span></p>
-        <p class="muted" style="font-size:12px;margin-top:6px">Traits: <?= esc(implode(' · ', $animal['primary']['traits'] ?? [])) ?></p>
-        <?php if (!empty($animal['growthAdvice'])): ?><p class="muted" style="font-size:12px;margin-top:4px">Growth (<?= esc($animal['growth']['label'] ?? '') ?>): <?= esc($animal['growthAdvice']) ?></p><?php endif; ?>
-      </div>
     </div>
 
     <!-- Layer 2: potential skills + resume draft -->

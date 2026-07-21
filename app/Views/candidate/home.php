@@ -30,7 +30,7 @@
 ?>
 <section class="section">
   <div class="section-label">Your Living Portfolio · from your last analysis</div>
-  <div class="grid grid-3">
+  <div class="grid grid-2">
     <div class="card"><div class="donut-wrap"><?= lumina_donut((int) $readiness['score'], 'Adaptive Readiness', 'var(--indigo)') ?></div></div>
     <div class="card">
       <h3>Living Portfolio</h3>
@@ -40,7 +40,6 @@
       <?php endforeach; ?>
       <div style="margin-top:10px"><a class="btn btn-ghost" href="<?= base_url('passport') ?>">Open portfolio →</a></div>
     </div>
-    <?= lumina_kpi($animal['label'] ?? '—', 'Work Animal', 'from your evidence') ?>
   </div>
 </section>
 <?php endif; ?>
@@ -50,7 +49,7 @@
   <div class="grid grid-3">
     <a class="card" href="<?= base_url('resume') ?>" style="text-decoration:none">
       <h3>Analyze my resume <span class="gold">· AI</span></h3>
-      <p class="muted">Paste a resume — Lumina extracts skills, your 12-type Work Animal, readiness, role matches, feedback and the next best action.</p>
+      <p class="muted">Paste a resume — Lumina extracts skills, your EDGE work signals, readiness, role matches, feedback and the next best action.</p>
     </a>
     <a class="card" href="<?= base_url('onboard/input') ?>" style="text-decoration:none">
       <h3>No resume? Build one</h3>
@@ -69,8 +68,8 @@
       <p class="muted">Opportunities ranked by fit and trajectory — each with the reason why, not just a keyword match.</p>
     </a>
     <a class="card" href="<?= base_url('start') ?>" style="text-decoration:none">
-      <h3>Discover my Work Animal</h3>
-      <p class="muted">Not sure where to start? Take the quick tap-quiz to find your work style, then build from there.</p>
+      <h3>Discover my EDGE signals</h3>
+      <p class="muted">Not sure where to start? Answer a short set of questions to see your work signals, then build from there.</p>
     </a>
   </div>
 </section>

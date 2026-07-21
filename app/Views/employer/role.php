@@ -45,19 +45,49 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
       <ul class="muted" style="font-size:13px;padding-left:18px;margin:0"><?php foreach ($ev as $x): ?><li><?= esc($x) ?></li><?php endforeach; ?></ul>
     </div>
 
-    <!-- Animal fit + JD text -->
+    <!-- Role Context Card (Fasa 4) -->
     <div class="card">
-      <div class="section-label">Work Animal fit</div>
-      <div style="margin-bottom:8px">
-        <span class="skill"><?= esc($af['preferred_primary_animal'] ?? '—') ?> <span class="conf">primary</span></span>
-        <span class="skill"><?= esc($af['preferred_secondary_animal'] ?? '—') ?> <span class="conf">secondary</span></span>
-        <?php foreach ($accept as $a): ?><span class="skill inferred"><?= esc($a) ?></span> <?php endforeach; ?>
+      <div class="section-label">Role context</div>
+      <p class="muted" style="font-size:12px;margin:2px 0 10px">Describes what the job demands — not the candidate's personality.</p>
+
+      <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:3px">ROLE PURPOSE</div>
+      <p style="font-size:14px;margin:0 0 12px"><?= esc($roleContext['purpose'] ?? $role['synthetic_jd_text']) ?></p>
+
+      <?php if (!empty($roleContext['core_skills'])): ?>
+      <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:4px">CORE SKILLS</div>
+      <div style="margin-bottom:12px">
+        <?php foreach ($roleContext['core_skills'] as $ck): ?><span class="skill"><?= esc(ucwords(str_replace(['_','-'],' ',$ck))) ?></span><?php endforeach; ?>
       </div>
-      <p class="muted" style="font-size:13px"><strong>Team fit:</strong> <?= esc($af['team_fit_note'] ?? '') ?></p>
-      <p class="muted" style="font-size:13px"><strong>Consideration:</strong> <?= esc($af['poor_fit_risk'] ?? '') ?></p>
+      <?php endif; ?>
+
+      <?php if (!empty($roleContext['edge_relevance'])): ?>
+      <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:4px">RELEVANT EDGE SIGNALS <span style="font-weight:400;color:var(--muted)">· how this role tends to work</span></div>
+      <div style="margin-bottom:12px">
+        <?php foreach ($roleContext['edge_relevance'] as $er): ?><span class="skill" style="border-color:rgba(108,92,231,.4)"><?= esc($er) ?></span><?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+
+      <?php if (!empty($roleContext['work_context'])): ?>
+      <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:4px">CRITICAL WORK CONTEXT</div>
+      <ul style="margin:0 0 12px;padding-left:18px">
+        <?php foreach (array_slice($roleContext['work_context'],0,4) as $wc): ?><li class="muted" style="font-size:13px;margin-bottom:3px"><?= esc($wc) ?></li><?php endforeach; ?>
+      </ul>
+      <?php endif; ?>
+
+      <?php if (!empty($roleContext['evidence_ex'])): ?>
+      <div style="font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:4px">EVIDENCE EXAMPLES <span style="font-weight:400;color:var(--muted)">· what a candidate could show</span></div>
+      <ul style="margin:0 0 12px;padding-left:18px">
+        <?php foreach ($roleContext['evidence_ex'] as $ee): ?><li class="muted" style="font-size:13px;margin-bottom:3px"><?= esc($ee) ?></li><?php endforeach; ?>
+      </ul>
+      <?php endif; ?>
+
+      <div class="section-label" style="margin-top:6px">Team & fit notes</div>
+      <p class="muted" style="font-size:13px"><strong>Team fit:</strong> <?= esc(preg_replace('/\s*\((?:Lion|Eagle|Wolf|Owl|Dolphin|Peacock|Elephant|Horse|Ant|Cheetah|Fox|Octopus)\)/i', '', $af['team_fit_note'] ?? '')) ?></p>
+      <p class="muted" style="font-size:13px"><strong>Consideration:</strong> <?= esc(preg_replace('/\s*\((?:Lion|Eagle|Wolf|Owl|Dolphin|Peacock|Elephant|Horse|Ant|Cheetah|Fox|Octopus)\)/i', '', $af['poor_fit_risk'] ?? '')) ?></p>
+
       <div class="section-label" style="margin-top:10px">Synthetic JD</div>
       <p class="muted" style="font-size:13px"><?= esc($role['synthetic_jd_text']) ?></p>
-      <p class="purpose" style="font-size:12px;margin-top:8px">Source: <?= esc($role['source_reference']) ?> · synthetic listing.</p>
+      <p class="purpose" style="font-size:12px;margin-top:8px">Source: <?= esc($role['source_reference']) ?> · synthetic listing · reviewed <?= date('M Y') ?>.</p>
     </div>
   </div>
 </section>
@@ -67,27 +97,37 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
     <div class="section-label">Ranked candidates · Talent Match Signal</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">
       <span class="skill" style="font-size:11px">Skill 40%</span>
-      <span class="skill" style="font-size:11px">Evidence 20%</span>
+      <span class="skill" style="font-size:11px">Evidence 30%</span>
       <span class="skill" style="font-size:11px">Learning velocity 20%</span>
-      <span class="skill" style="font-size:11px">Work-Animal fit 10%</span>
       <span class="skill" style="font-size:11px">Domain 5%</span>
       <span class="skill" style="font-size:11px">CGPA 5%</span>
     </div>
-    <p class="muted" style="font-size:12px;margin:0 0 12px">Each candidate's <strong>“Why?”</strong> shows this exact breakdown. Bands: 85+ Strong · 70–84 Good · 55–69 Potential · 40–54 Needs Development · below 40 Weak.</p>
+    <p class="muted" style="font-size:12px;margin:0 0 12px">Each candidate's <strong>“Why?”</strong> shows this exact breakdown. Bands: 85+ Strong · 70–84 Good · 55–69 Emerging · 40–54 Developing · below 40 Early-stage.</p>
     <form method="get" action="<?= base_url('employer/compare') ?>" id="cmpForm">
       <input type="hidden" name="role_id" value="<?= (int)$role['id'] ?>">
       <div class="row" style="justify-content:space-between;align-items:center;margin:8px 0;flex-wrap:wrap;gap:8px">
         <span class="muted" style="font-size:13px">Tick 2–4 candidates, then compare.</span>
         <button class="btn btn-gold" type="submit" id="cmpBtn" disabled>Compare selected (<span id="cmpN">0</span>) →</button>
       </div>
-      <div class="stack">
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px">
+        <thead><tr style="border-bottom:2px solid var(--line)">
+          <th style="padding:6px 6px 6px 0"></th>
+          <th style="padding:6px 6px;text-align:left;color:var(--muted);font-size:11px;font-weight:700">MATCH</th>
+          <th style="padding:6px 6px;text-align:left;color:var(--muted);font-size:11px;font-weight:700">CANDIDATE</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-size:11px;font-weight:700" title="Skill">SKL</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-size:11px;font-weight:700" title="Evidence">EVD</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-size:11px;font-weight:700" title="Velocity">VEL</th>
+          <th style="padding:6px 6px;text-align:left;color:var(--muted);font-size:11px;font-weight:700">TOP GAP</th>
+          <th style="padding:6px 0;text-align:right;color:var(--muted);font-size:11px;font-weight:700"></th>
+        </tr></thead>
+        <tbody>
         <?php foreach ($ranked as $i => $c):
           $lab = strtolower($c['fit_label']); $cls = str_contains($lab,'strong')?'ok':(str_contains($lab,'good')||str_contains($lab,'potential')?'nudge':'risk');
           $wrows = [
             ['Skill', (int)$c['skill_match_score'], 40],
-            ['Evidence', (int)$c['evidence_strength_score'], 20],
+            ['Evidence', (int)$c['evidence_strength_score'], 30],
             ['Learning velocity', (int)$c['learning_velocity_score'], 20],
-            ['Work-Animal fit', (int)$c['animal_fit_score'], 10],
             ['Domain', (int)$c['domain_fit_score'], 5],
             ['CGPA', (int)$c['academic_fit_score'], 5],
           ];
@@ -115,21 +155,38 @@ $pillFor = fn($v)=> $v>=75?'ok':($v>=50?'nudge':'risk');
                 . '<p class="purpose" style="margin-top:10px">Decision support only — the recruiter decides.</p>';
           $isShort = in_array($c['id'], $shortlist, true);
         ?>
-          <div class="card card-tight" style="display:flex;align-items:center;gap:12px">
-            <input type="checkbox" class="cmpChk" name="ids[]" value="<?= (int)$c['id'] ?>" style="width:18px;height:18px;flex:0 0 auto">
-            <div class="ring <?= $i===0?'gold':'' ?>"><?= (int)$c['match_score'] ?></div>
-            <div style="flex:1;min-width:0">
-              <strong><?= esc($c['name']) ?></strong>
-              <span class="pill <?= $cls ?>" style="margin-left:6px"><?= esc($c['fit_label']) ?></span>
-              <div class="muted" style="font-size:13px"><?= esc($c['university']) ?> · <?= esc($c['programme']) ?> · <?= esc($c['animal']) ?>
-                <?php if ($c['missing_skills']): ?> · gap: <?= esc(implode(', ', array_slice($c['missing_skills'],0,3))) ?><?php endif; ?>
-              </div>
-            </div>
-            <a class="btn btn-ghost" href="<?= base_url('employer/candidate/'.(int)$c['id'].'?role_id='.(int)$role['id']) ?>">Profile</a>
-            <button class="btn btn-ghost" type="button" data-drawer="1" data-title="<?= esc($c['name'].' — why', 'attr') ?>" data-body="<?= esc($body,'attr') ?>">Why?</button>
-            <a class="btn <?= $isShort?'btn-gold':'btn-ghost' ?>" href="<?= base_url('employer/shortlist?id='.(int)$c['id'].'&role_id='.(int)$role['id']) ?>"><?= $isShort?'★':'☆' ?></a>
-          </div>
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 6px 8px 0;vertical-align:middle"><input type="checkbox" class="cmpChk" name="ids[]" value="<?= (int)$c['id'] ?>" style="width:17px;height:17px"></td>
+            <td style="padding:8px 6px;vertical-align:middle"><div class="ring <?= $i===0?'gold':'' ?>" style="width:38px;height:38px;font-size:14px"><?= (int)$c['match_score'] ?></div></td>
+            <td style="padding:8px 6px;vertical-align:middle;min-width:130px">
+              <strong style="font-size:13px"><?= esc($c['name']) ?></strong>
+              <span class="pill <?= $cls ?>" style="margin-left:4px;font-size:10px"><?= esc($c['fit_label']) ?></span>
+              <div class="muted" style="font-size:11px"><?= esc($c['programme']) ?></div>
+            </td>
+            <?php
+              $bars = [
+                ['S', (int)$c['skill_match_score'], 'var(--indigo)'],
+                ['E', (int)$c['evidence_strength_score'], 'var(--teal)'],
+                ['V', (int)$c['learning_velocity_score'], '#38BDF8'],
+              ];
+              foreach ($bars as [$bl,$bv,$bc]):
+            ?>
+            <td style="padding:8px 4px;vertical-align:middle;text-align:center" title="<?= $bl==='S'?'Skill':($bl==='E'?'Evidence':'Velocity') ?>: <?= $bv ?>">
+              <div style="width:40px;height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin:0 auto 2px"><div style="height:100%;width:<?= max(3,min(100,$bv)) ?>%;background:<?= $bc ?>"></div></div>
+              <span style="font-size:10px;color:var(--muted)"><?= $bv ?></span>
+            </td>
+            <?php endforeach; ?>
+            <td style="padding:8px 6px;vertical-align:middle;font-size:11px;color:var(--muted);max-width:110px"><?= $c['missing_skills'] ? esc($c['missing_skills'][0]) : '—' ?></td>
+            <td style="padding:8px 0 8px 6px;vertical-align:middle;white-space:nowrap">
+              <button class="btn btn-ghost" type="button" data-drawer="1" style="padding:3px 8px;font-size:12px" data-title="<?= esc($c['name'].' — why', 'attr') ?>" data-body="<?= esc($body,'attr') ?>">Why?</button>
+              <a class="btn btn-ghost" href="<?= base_url('employer/candidate/'.(int)$c['id'].'?role_id='.(int)$role['id']) ?>" style="padding:3px 8px;font-size:12px">Profile</a>
+              <a class="btn <?= $isShort?'btn-gold':'btn-ghost' ?>" href="<?= base_url('employer/shortlist?id='.(int)$c['id'].'&role_id='.(int)$role['id']) ?>" style="padding:3px 7px;font-size:12px"><?= $isShort?'★':'☆' ?></a>
+            </td>
+          </tr>
+
         <?php endforeach; ?>
+        </tbody>
+      </table>
       </div>
     </form>
   </div>

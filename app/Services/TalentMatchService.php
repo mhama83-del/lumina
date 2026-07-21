@@ -114,14 +114,13 @@ class TalentMatchService
         $domain   = $this->domainFit($cand, $role);
         $cgpa     = $this->cgpaFit($cand, $role);
 
-        $total = (int) round(0.40 * $skillScore + 0.20 * $evidence + 0.20 * $velocity + 0.10 * $animal + 0.05 * $domain + 0.05 * $cgpa);
+        $total = (int) round(0.40 * $skillScore + 0.30 * $evidence + 0.20 * $velocity + 0.05 * $domain + 0.05 * $cgpa);
         $label = self::label($total);
 
         $topMatched = array_slice($matched, 0, 2);
         $explain = ($topMatched ? 'Strong on ' . implode(' & ', $topMatched) . '. ' : '')
                  . ($partial ? 'Related skills toward ' . implode(', ', array_slice($partial, 0, 2)) . ' (via Lumina Graph). ' : '')
                  . "{$skillScore}% skill match, evidence {$evidence}, velocity {$velocity}, "
-                 . 'animal ' . ($cand['animal'] ?? '—') . ' vs ' . ($role['animal']['preferred_primary_animal'] ?? '—')
                  . ($missing ? '. Gaps: ' . implode(', ', array_slice($missing, 0, 3)) . '.' : '.');
 
         return [
@@ -144,9 +143,9 @@ class TalentMatchService
     {
         if ($total >= 85) return 'Strong Match';
         if ($total >= 70) return 'Good Match';
-        if ($total >= 55) return 'Potential Match';
-        if ($total >= 40) return 'Needs Development';
-        return 'Weak Match';
+        if ($total >= 55) return 'Emerging';
+        if ($total >= 40) return 'Developing';
+        return 'Early-stage';
     }
 
     private function evidenceStrength(array $cand, string $text): int

@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Libraries\WorkAnimal;
+use App\Libraries\Edge;
 use App\Libraries\Explain;
 use App\Services\ScoreService;
 
 class Candidate extends BaseController
 {
     private const SAMPLE_MYCSD =
-        'Treasurer of the Robotics Club for 2 years; volunteered in a community coding programme; '
-      . 'built an attendance app; led a small data analysis project for the faculty.';
+        'Treasurer of the Computer Science Society for 2 years, managing an RM6,000 annual budget; '
+      . 'volunteered in a community coding programme teaching Python to 30 secondary students; '
+      . 'built a faculty attendance web app that cut manual roll-call time by 80%; '
+      . 'led a student data analysis project, building dashboards used by 5 lecturers.';
 
     /** The 11 Lumina domains (ISCED-F 2013 grounded). */
     private const VALID_DOMAINS = [
@@ -67,6 +70,13 @@ class Candidate extends BaseController
             $profile['traits']      = $a['traits'];
             $profile['domains']     = $a['domains'];
             $profile['quiz_ps']     = WorkAnimal::psScore(array_values($answers));
+            // Fasa 1 (Lumina EDGE): survey menghasilkan status 'stated'.
+            // Animal/quiz_ps kekal di belakang sehingga Fasa 3 (spider ganti radar).
+            // R6: edge status lama tak digunakan lagi (guna edge_survey_raw + surveyScore).
+            // Kekal observe untuk keserasian, dilindungi try.
+            try { $profile['edge'] = Edge::observe($answers, Edge::items('set1')); } catch (\Throwable $e) { $profile['edge'] = []; }
+            // R6: simpan jawapan mentah untuk surveyScore (5 domain).
+            $profile['edge_survey_raw'] = array_values($answers);
 
             // Fasa 3 addendum: calon yang SUDAH ada evidence (datang daripada
             // resume) tidak perlu input evidence kedua. Bina semula blok EDGE
@@ -87,9 +97,9 @@ class Candidate extends BaseController
             session()->set('profile', $profile);
             return redirect()->to(base_url('onboard/input'));
         }
-        return view('candidate/animal', [
-            'title'     => 'Lumina · Work Animal',
-            'questions' => WorkAnimal::questions(),
+        return view('candidate/edge', [
+            'title' => 'Lumina · Discover your work approach',
+            'items' => Edge::itemsV2(),
         ]);
     }
 
@@ -138,6 +148,11 @@ class Candidate extends BaseController
         return view('candidate/input', [
             'title'  => 'Lumina · Build your portfolio',
             'sample' => self::SAMPLE_MYCSD,
+            'personaEvidence' => [
+                'aiman'  => ['text' => $this->personaResume('aiman'),  'pName' => 'Aiman Hakim',                'pProgramme' => 'BSc Information Technology',       'pUniversity' => 'Universiti Sains Malaysia',        'pYear' => 'Year 3', 'pCgpa' => '3.62'],
+                'nurul'  => ['text' => $this->personaResume('nurul'),  'pName' => 'Nurul Aisyah binti Rahman',  'pProgramme' => 'BBA (Hons) Marketing',             'pUniversity' => 'Universiti Teknologi MARA (UiTM)', 'pYear' => 'Year 3', 'pCgpa' => '3.48'],
+                'weijie' => ['text' => $this->personaResume('weijie'), 'pName' => 'Tan Wei Jie',                'pProgramme' => 'BEng (Hons) Electrical Engineering', 'pUniversity' => 'Universiti Teknologi Malaysia (UTM)', 'pYear' => 'Year 4', 'pCgpa' => '3.71'],
+            ],
         ]);
     }
 
@@ -166,10 +181,23 @@ class Candidate extends BaseController
             'role'      => $role,
             'whyText'   => Explain::readiness($readiness),
             'potentialProfile' => $profile['potential_profile'] ?? null,
+            // R6 (EDGE dua lapisan): survey + evidence coverage.
+            'edgeSurvey'   => Edge::surveyScore($profile['edge_survey_raw'] ?? []),
+            'edgeEvidence' => Edge::evidenceCoverage($profile['edge_skills_raw'] ?? []),
+            'edgeQuotes'   => Edge::evidenceQuotes($profile['edge_skills_raw'] ?? [], $profile['evidence_text'] ?? ''),
+            'edgeHas'      => ! empty($profile['edge_survey_raw']) || ! empty($profile['edge_skills_raw']),
         ]);
     }
 
     // ---------- Fasa 4: Career Compass ----------
+    /** Fasa 4: calon pilih share EDGE evidence summary dengan employer (consent). */
+    public function shareEdge()
+    {
+        $on = (int) $this->request->getGet('on') === 1;
+        session()->set('edge_shared', $on);
+        return $this->response->setJSON(['ok' => true, 'shared' => $on]);
+    }
+
     public function compass()
     {
         // Fasa 3 (D18): tiada auto-load sample.
@@ -283,6 +311,7 @@ class Candidate extends BaseController
         $traj      = $this->trajectoryFor($svc, $cand, $role, $gap);
         $extras    = $this->growthExtras($potentialProfile, $traj, $role['title']);
 
+
         // Explorer-specific, positive-only labels — cosmetic remap only,
         // reuses the Protected Baseline match() label/thresholds as-is.
         $fitLabel = [
@@ -353,6 +382,20 @@ class Candidate extends BaseController
         foreach ($opps as $i => &$o) { $o['fit'] = $display[$i] ?? 'Fit'; }
         unset($o);
 
+        // Fasa 6.2 L4: jambatan Catalog -> employer_roles DB untuk JD penuh (3 opp sahaja).
+        $rm = new \App\Models\EmployerRoleModel();
+        foreach ($opps as $i => &$o) {
+            $o['role_id'] = null; $o['full'] = null;
+            try {
+                $found = $rm->browse(['q' => $o['title']], 1, 0);
+                if (! empty($found[0]['id'])) {
+                    $o['role_id'] = (int) $found[0]['id'];
+                    $o['full']    = $rm->fullRole($o['role_id']);
+                }
+            } catch (\Throwable $e) { $o['role_id'] = null; $o['full'] = null; }
+        }
+        unset($o);
+
         return view('candidate/match', [
             'title'   => 'Lumina · Smart Matching',
             'profile' => $profile,
@@ -384,7 +427,18 @@ class Candidate extends BaseController
     // ---------- Resume Analysis (v1 feature, simulated AI) ----------
     public function resume()
     {
-        return view('candidate/resume', ['title' => 'Lumina · Resume Analysis']);
+        // Fasa 6.2: buka /resume = mula persona baharu. Reset medan
+        // persona-specific (quiz_ps, animal, skills, evidence, identiti)
+        // supaya persona baharu tidak warisi persona sebelumnya. Kekal stage.
+        session()->set('profile', ['stage' => session('stage') ?? '19-22']);
+        return view('candidate/resume', [
+            'title' => 'Lumina · Resume Analysis',
+            'personaResumes' => [
+                'aiman'  => $this->personaResume('aiman'),
+                'nurul'  => $this->personaResume('nurul'),
+                'weijie' => $this->personaResume('weijie'),
+            ],
+        ]);
     }
 
     /**
@@ -426,7 +480,7 @@ class Candidate extends BaseController
             $skip = false;
             foreach ($stop as $sw) { if (str_contains($lc, $sw)) { $skip = true; break; } }
             if ($skip) continue;
-            if (preg_match('/^([A-Z][a-zA-Z\'\-]+(?:\s+[A-Z][a-zA-Z\'\-]+){1,3})$/', $line, $m)) {
+            if (preg_match('/^([A-Z][a-zA-Z\'\-]+(?:\s+(?:binti|bin|a\/l|a\/p|al|[A-Z][a-zA-Z\'\-]+)){1,4})$/', $line, $m)) {
                 return $m[1];
             }
         }
@@ -441,7 +495,13 @@ class Candidate extends BaseController
     {
         $text = trim((string) $this->request->getPost('resume_text'));
         if ($text === '') return $this->response->setJSON(['error' => 'empty']);
+        // Fasa 6.2: analyze resume baharu = profil fresh. Buang medan persona
+        // sebelumnya (quiz_ps, animal, identiti) supaya tukar persona tidak warisi
+        // data lama. Kekalkan stage/role sahaja.
+        $keep = ['stage' => session('profile')['stage'] ?? (session('stage') ?? '19-22')];
+        session()->set('profile', $keep);
         $confirmedName = trim((string) $this->request->getPost('name'));
+        if ($confirmedName === '') { $confirmedName = $this->extractName($text); }
 
         $svc       = new ScoreService();
         $parser    = new \App\Services\ResumeParserService();
@@ -630,6 +690,12 @@ class Candidate extends BaseController
             'graph_added'    => count($graphLearn['added_skills']),
             'graph_stats'    => $graphStats,
             'graph_new_skills' => $graphNew,
+            // Fasa 2c (EDGE): Review suggestions + Add cadangan + footnote.
+            'edge_suggestions' => Edge::suggestions(session('profile')['edge'] ?? []),
+            'edge_add'         => Edge::addSuggestions($this->edgePersona()),
+            'edge_signals'     => $this->edgeSignalNames(),
+            'edge_hints'       => Edge::editHints(),
+            'edge_footnote'    => 'Lumina links parts of your CV to work signals. These are early suggestions you can keep, edit, remove, or add to. Nothing here is a fixed judgement.',
         ]);
     }
 
@@ -772,6 +838,10 @@ class Candidate extends BaseController
         // skill is then labelled with its canonical evidence status.
         // Additive — readiness()/match() only read 'confidence'/'source'.
         $skills = $svc->inferSkillsExplained($text, $stated);
+        // Fasa 2 (EDGE): infer signal daripada evidence RAW (sebelum jadi label).
+        $edgeInferred = Edge::inferFromEvidence($skills);
+        // R6: simpan skills RAW (ada 'from' quote) untuk evidenceCoverage + card evidence list.
+        $edgeSkillsRaw = $skills;
         $skills = (new \App\Services\EvidenceCheckService())->label($skills, $verified, $text);
         $profile = session('profile') ?? [];
         $profile = array_merge($profile, [
@@ -780,6 +850,12 @@ class Candidate extends BaseController
             'animal'        => $animal ?? ($profile['animal'] ?? null),
             'evidence_text' => $text,
             'skills'        => $skills,
+            'edge'          => Edge::merge(session('profile')['edge'] ?? [], $edgeInferred),
+            'edge_skills_raw' => $edgeSkillsRaw,
+            // B1: auto-isi survey approach untuk persona demo (jika calon belum jawab).
+            'edge_survey_raw' => (! empty(session('profile')['edge_survey_raw']))
+                ? session('profile')['edge_survey_raw']
+                : (($dp = $this->edgePersonaFromName($name ?: '')) !== 'self' ? Edge::demoResponses($dp) : []),
             'verified'      => $verified,
             'target_domain' => $this->normaliseDomain($domain),
             // Fasa 3 (L5): medan identiti untuk header digital-CV.
@@ -1248,6 +1324,96 @@ class Candidate extends BaseController
         ];
     }
 
+    /**
+     * Fasa 6.2 — 3 persona demo pilihan (Aiman/Nurul/Wei Jie).
+     * Berasingan daripada samplePreset() stage-based. quiz_ps di-set berbeza
+     * supaya radar/animal dikira berbeza oleh WorkAnimal — tidak hardcode.
+     * Match dikira sistem daripada evidence (bukan hardcode).
+     */
+    /** Fasa 6.2 — resume penuh berstruktur untuk /resume demo (3 persona). */
+    private function personaResume(string $key): string
+    {
+        $r = [
+            'aiman'  => 'Aiman Hakim
+BSc Information Technology, Universiti Sains Malaysia · Year 3
+CGPA: 3.62 · Career target: Data Analyst
+
+Universiti Sains Malaysia, BSc Information Technology, 2023-2027. CGPA 3.62.
+
+Treasurer of the Computer Science Society for 2 years, managing an RM6,000 annual budget.
+Volunteered in a community coding programme teaching Python to 30 secondary students.
+
+Built a faculty attendance web app with Python that cut manual roll-call time by 80%.
+Led a student data analysis project and built dashboards used by 5 lecturers.
+
+Python, SQL, data analysis, teamwork.',
+            'nurul'  => 'Nurul Aisyah binti Rahman
+BBA (Hons) Marketing, Universiti Teknologi MARA (UiTM) · Year 3
+CGPA: 3.48 · Career target: Marketing Executive
+
+Universiti Teknologi MARA (UiTM), BBA (Hons) Marketing, 2023-2026. CGPA 3.48.
+
+President of the Entrepreneurship Club, leading a committee of 12 members for one year.
+Organised the faculty Market Day, managing an RM8,000 budget and generating RM11,500 in sales.
+
+Led a 5-person team for a digital marketing campaign that grew a client Instagram following from 400 to 3,200 in three months.
+Marketing intern at a retail startup, running social media content and weekly sales reports.
+
+Social media marketing, campaign planning, public speaking, event management, budgeting.',
+            'weijie' => 'Tan Wei Jie
+BEng (Hons) Electrical Engineering, Universiti Teknologi Malaysia (UTM) · Year 4
+CGPA: 3.71 · Career target: Electrical Engineer
+
+Universiti Teknologi Malaysia (UTM), BEng (Hons) Electrical Engineering, 2022-2026. CGPA 3.71.
+
+Vice-president of the IEEE student branch, organising two technical workshops.
+Finalist in the national RoboCon robotics competition, responsible for the motor control circuit.
+
+Final year project: designed an IoT-based energy monitoring system using ESP32 and current sensors, reducing lab equipment idle power by 22%.
+Built a line-following robot with embedded C and designed its PCB from schematic to layout.
+Internship at a power systems firm, assisting with circuit testing and PCB inspection.
+
+Circuit design, embedded C, PCB design, MATLAB, IoT, microcontrollers.',
+        ];
+        return $r[$key] ?? $r['aiman'];
+    }
+
+    private function personaPreset(string $key): array
+    {
+        $personas = [
+            'aiman' => [
+                'name' => 'Aiman Hakim', 'university' => 'Universiti Sains Malaysia',
+                'programme' => 'BSc Information Technology', 'cgpa' => '3.62', 'study_year' => 'Year 3',
+                'evidence_text' => self::SAMPLE_MYCSD,
+                'stated' => ['python', 'teamwork'], 'domain' => 'Data', 'verified' => 1,
+                'quiz_ps' => ['thinking' => 6, 'execution' => 4, 'leadership' => 3],
+            ],
+            'nurul' => [
+                'name' => 'Nurul Aisyah binti Rahman', 'university' => 'Universiti Teknologi MARA (UiTM)',
+                'programme' => 'BBA (Hons) Marketing', 'cgpa' => '3.48', 'study_year' => 'Year 3',
+                'evidence_text' => 'President of the Entrepreneurship Club, leading a committee of 12 members for one year; '
+        . 'organised the faculty Market Day, managing an RM8,000 budget and generating RM11,500 in sales; '
+        . 'led a 5-person team for a semester-long digital marketing campaign that grew a client Instagram following from 400 to 3,200 in three months; '
+        . 'marketing intern at a retail startup, running social media content and weekly sales reports; '
+        . 'coordinated three campus events with external sponsors and vendors.',
+                'stated' => ['communication', 'teamwork'], 'domain' => 'Business', 'verified' => 1,
+                'quiz_ps' => ['leadership' => 7, 'people' => 5, 'execution' => 3],
+            ],
+            'weijie' => [
+                'name' => 'Tan Wei Jie', 'university' => 'Universiti Teknologi Malaysia (UTM)',
+                'programme' => 'BEng (Hons) Electrical Engineering', 'cgpa' => '3.71', 'study_year' => 'Year 4',
+                'evidence_text' => 'Final year project: designed an IoT-based energy monitoring system using ESP32 and current sensors, reducing lab equipment idle power by 22%; '
+        . 'finalist in the national RoboCon robotics competition, responsible for the motor control circuit; '
+        . 'vice-president of the IEEE student branch, organising two technical workshops; '
+        . 'internship at a power systems firm, assisting with circuit testing and PCB inspection; '
+        . 'built a line-following robot with embedded C and designed its PCB from schematic to layout.',
+                'stated' => ['problem_solving', 'teamwork'], 'domain' => 'Engineering', 'verified' => 1,
+                'quiz_ps' => ['thinking' => 6, 'execution' => 5, 'adaptability' => 3],
+            ],
+        ];
+        return $personas[$key] ?? $personas['aiman'];
+    }
+
     private function samplePreset(string $stage): array
     {
         $presets = [
@@ -1260,4 +1426,98 @@ class Candidate extends BaseController
         ];
         return $presets[$stage] ?? $presets['19-22'];
     }
+
+    /** Detect persona dari nama profil (untuk cadangan Add demo). */
+    private function edgePersonaFromName(string $name): string
+    {
+        $n = strtolower($name);
+        if (strpos($n, 'aiman') !== false) return 'aiman';
+        if (strpos($n, 'nurul') !== false) return 'nurul';
+        if (strpos($n, 'wei jie') !== false || strpos($n, 'weijie') !== false) return 'weijie';
+        return 'self';
+    }
+
+    private function edgePersona(): string
+    {
+        $n = strtolower(session('profile')['name'] ?? '');
+        if (strpos($n, 'aiman') !== false) return 'aiman';
+        if (strpos($n, 'nurul') !== false) return 'nurul';
+        if (strpos($n, 'wei jie') !== false || strpos($n, 'weijie') !== false) return 'weijie';
+        return 'self';
+    }
+
+    /** Nama 5 signal EDGE untuk chip table. */
+    private function edgeSignalNames(): array
+    {
+        $out = [];
+        foreach (Edge::order() as $sk) { $out[$sk] = Edge::signalName($sk); }
+        return $out;
+    }
+
+    /**
+     * Fasa 2c: simpan tindakan Review (Keep/Remove/Edit/Add) ke profile['edge'].
+     * JSON body: {action:'remove'|'add'|'edit', id?, quote?, signals?, outcome?}
+     */
+    public function edgeaction()
+    {
+        $in = $this->request->getJSON(true) ?? [];
+        $action = $in['action'] ?? '';
+        $profile = session('profile') ?? [];
+        $edge = $profile['edge'] ?? [];
+        if (! $edge && $action !== 'add') { return $this->response->setJSON(['ok'=>false,'msg'=>'no_edge']); }
+
+        if ($action === 'remove') {
+            // buang evidence yang quote-nya sepadan id (id = urutan suggestion)
+            $targetQuote = $in['quote'] ?? null;
+            // jika id sahaja, kita padam ikut quote yang dihantar semula; fallback: guna suggestions
+            $sug = Edge::suggestions($edge);
+            foreach ($sug as $row) {
+                if ((string)$row['id'] === (string)($in['id'] ?? '')) { $targetQuote = $row['quote']; break; }
+            }
+            if ($targetQuote !== null) {
+                foreach ($edge as $k => $sig) {
+                    if (empty($sig['evidence'])) continue;
+                    $edge[$k]['evidence'] = array_values(array_filter($sig['evidence'], function($ev) use ($targetQuote) {
+                        return ($ev['quote'] ?? '') !== $targetQuote;
+                    }));
+                    // turunkan status jika tiada evidence lagi
+                    if (empty($edge[$k]['evidence']) && ($edge[$k]['status'] ?? '') === 'inferred') {
+                        $edge[$k]['status'] = empty($edge[$k]['responses']) ? 'needs' : 'stated';
+                    }
+                }
+            }
+        } elseif ($action === 'add') {
+            $quote = trim((string)($in['quote'] ?? ''));
+            $signals = $in['signals'] ?? [];
+            if ($quote !== '' && $signals) {
+                foreach ($signals as $sig) {
+                    if (! isset($edge[$sig])) { $edge[$sig] = ['status'=>'needs','evidence'=>[],'responses'=>[]]; }
+                    $edge[$sig]['evidence'][] = ['quote'=>$quote,'skill'=>'self_added','source'=>'supported'];
+                    $edge[$sig]['status'] = 'supported';
+                }
+            }
+        } elseif ($action === 'edit') {
+            $outcome = trim((string)($in['outcome'] ?? ''));
+            $sug = Edge::suggestions($edge);
+            $targetQuote = null;
+            foreach ($sug as $row) { if ((string)$row['id'] === (string)($in['id'] ?? '')) { $targetQuote = $row['quote']; break; } }
+            if ($targetQuote !== null && $outcome !== '') {
+                foreach ($edge as $k => $sig) {
+                    if (empty($sig['evidence'])) continue;
+                    foreach ($edge[$k]['evidence'] as $i => $ev) {
+                        if (($ev['quote'] ?? '') === $targetQuote) {
+                            $edge[$k]['evidence'][$i]['outcome'] = $outcome;
+                            $edge[$k]['evidence'][$i]['source'] = 'supported';
+                            $edge[$k]['status'] = 'supported';
+                        }
+                    }
+                }
+            }
+        }
+
+        $profile['edge'] = $edge;
+        session()->set('profile', $profile);
+        return $this->response->setJSON(['ok'=>true]);
+    }
+
 }

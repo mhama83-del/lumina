@@ -24,14 +24,6 @@
             <input class="field" type="text" name="g_programme" placeholder="e.g. BSc Computer Science">
           </div>
           <div>
-            <label class="fl">Year / stage</label>
-            <select class="field" name="g_stage">
-              <?php foreach (['16-18','19-22','23-28','26-28+'] as $s): ?>
-                <option value="<?= $s ?>" <?= (session('stage')??'19-22')===$s?'selected':'' ?>><?= $s ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div>
             <label class="fl">CGPA <span class="muted">(optional)</span></label>
             <input class="field" type="text" name="g_cgpa" placeholder="e.g. 3.50">
           </div>
@@ -103,7 +95,9 @@
       <div class="tabpanel active" id="panel-paste">
         <label class="fl">Paste your clubs, projects, or experience (1–3 sentences is enough)</label>
         <div class="row" style="margin:0 0 10px">
-          <button class="btn btn-ghost" type="button" id="demoEvidenceBtn">Use demo answers</button>
+          <button class="btn btn-ghost" type="button" data-persona-ev="aiman">Aiman · IT</button>
+          <button class="btn btn-ghost" type="button" data-persona-ev="nurul">Nurul · Business</button>
+          <button class="btn btn-ghost" type="button" data-persona-ev="weijie">Wei Jie · Engineering</button>
           <button class="btn btn-ghost" type="button" id="fillSelfBtn">Fill it myself</button>
         </div>
         <div id="evidenceNote"></div>
@@ -143,22 +137,22 @@
 </section>
 <script>
 (function () {
-  var DEMO_EVIDENCE = <?= json_encode($sample) ?>;
+  var PERSONA_EVIDENCE = <?= json_encode($personaEvidence ?? []) ?>;
   var ta = document.getElementById('evidenceText');
   var note = document.getElementById('evidenceNote');
-  var demoBtn = document.getElementById('demoEvidenceBtn');
   var selfBtn = document.getElementById('fillSelfBtn');
-  if (!ta || !demoBtn) return;
-  demoBtn.onclick = function () {
-    ta.value = DEMO_EVIDENCE;
-    var demo = { pName:'Aiman Hakim', pProgramme:'BSc Information Technology',
-                 pUniversity:'Universiti Sains Malaysia', pYear:'Year 3', pCgpa:'3.62' };
-    Object.keys(demo).forEach(function (k) {
-      var el = document.getElementById(k); if (el) el.value = demo[k];
-    });
-    note.innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px;margin:0 0 12px"><span>&#10003;</span><span>Demo mode &middot; Sample answers can still be edited.</span></div>';
-    ta.focus();
-  };
+  if (!ta) return;
+  document.querySelectorAll('[data-persona-ev]').forEach(function (b) {
+    b.onclick = function () {
+      var p = PERSONA_EVIDENCE[b.getAttribute('data-persona-ev')] || {};
+      ta.value = p.text || '';
+      ['pName','pProgramme','pUniversity','pYear','pCgpa'].forEach(function (k) {
+        var el = document.getElementById(k); if (el && p[k]) el.value = p[k];
+      });
+      note.innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px;margin:0 0 12px"><span>&#10003;</span><span>Demo mode &middot; Sample answers can still be edited.</span></div>';
+      ta.focus();
+    };
+  });
   selfBtn.onclick = function () {
     ta.value = ''; note.innerHTML = '';
     ['pName','pProgramme','pUniversity','pYear','pCgpa'].forEach(function (k) {

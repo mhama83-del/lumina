@@ -16,15 +16,15 @@
   function href(target) { return BASE.replace(/\/$/, '') + target; }
 
   var STEPS = [
-    { chapter:'Problem', url:'/', sel:'.hero',
+    { chapter:'Problem', url:'/', sel:'#landingHero',
       title:'Potential is hard to read',
       body:'Young talent has potential, but a static resume does not always make it readable.' },
 
-    { chapter:'Discover', url:'/start', nav:'/start', sel:'.grid',
+    { chapter:'Discover', url:'/start', nav:'/start', sel:'#entryChoices',
       title:'Start from anywhere',
       body:'Lumina can begin with a resume — or with real activities and experience.' },
 
-    { chapter:'Read', url:'/passport', nav:'/start/sample', sel:'.hero',
+    { chapter:'Read', url:'/passport', nav:'/start/sample', sel:'#passportHeader',
       title:'A readable Living Portfolio',
       body:'Scattered evidence becomes a readable Living Portfolio.' },
 
@@ -32,27 +32,27 @@
       title:'Every signal shows its evidence',
       body:'Every signal shows supporting evidence and what can be strengthened.' },
 
-    { chapter:'Explore', url:'/compass', nav:'/compass', sel:'.path-card',
+    { chapter:'Explore', url:'/compass', nav:'/compass', sel:'#recommendedPaths',
       title:'Practical directions',
       body:'Career Compass turns the profile into practical directions.' },
 
-    { chapter:'Grow', url:'/compass', sel:'#gapList',
+    { chapter:'Grow', url:'/compass', sel:'#growthPathway',
       title:'Learn, Build, Prove, Apply',
       body:'The next step is to Learn, Build, Prove and Apply.' },
 
-    { chapter:'Match', url:'/match', nav:'/match', sel:'.grid.grid-3',
+    { chapter:'Match', url:'/match', nav:'/match', sel:'#smartMatchResults',
       title:'Roles that fit',
       body:'Smart Matching shows roles that are Ready Now, Reachable or Longer Path.' },
 
-    { chapter:'Prepare', url:'/match', sel:'[data-title$="interview prep"]',
+    { chapter:'Prepare', url:'/match', sel:"#interviewPreparation",
       title:'Prepare with real evidence',
       body:'Preparation comes from the candidate\u2019s actual skills and evidence.' },
 
-    { chapter:'Support', url:'/university/interventions', nav:'/university/interventions', sel:'.card',
+    { chapter:'Support', url:'/university/interventions', nav:'/university/interventions', sel:'#supportPriority',
       title:'Where Support Is Needed',
       body:'Universities see Where Support Is Needed before students are left behind.' },
 
-    { chapter:'Vision', url:'/', nav:'/', sel:'.grid-4',
+    { chapter:'Vision', url:'/', nav:'/', sel:'#luminaVision',
       title:'One connected platform',
       body:'Lumina connects candidate growth, employer conversations and university support inside Talentbank Career OS.' }
   ];

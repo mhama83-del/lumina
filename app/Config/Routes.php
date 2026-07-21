@@ -32,8 +32,10 @@ $routes->get('employer/shortlist',   'Employer::shortlist');
 $routes->get('start',           'Candidate::start');
 $routes->get('start/sample',    'Candidate::sample');
 $routes->match(['get', 'post'], 'onboard/animal', 'Candidate::animal');
+$routes->match(['get', 'post'], 'onboard/edge', 'Candidate::animal');
 $routes->match(['get', 'post'], 'onboard/input',  'Candidate::input');
 $routes->get('passport',        'Candidate::passport');
+$routes->post('passport/share-edge', 'Candidate::shareEdge');
 $routes->get('resume',          'Candidate::resume');
 $routes->post('resume/analyze', 'Candidate::resumeAnalyze');
 $routes->post('resume/preview', 'Candidate::resumePreview');
@@ -53,3 +55,4 @@ $routes->get('api/cohort-insight',     'Api::cohortInsight');
 // ---- Later ----
 $routes->get('match',   'Candidate::smatch');
 $routes->get('placed',  'Candidate::placed');
+$routes->post('candidate/edgeaction', 'Candidate::edgeaction');

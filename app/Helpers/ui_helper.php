@@ -93,24 +93,34 @@ if (! function_exists('lumina_career_journey')) {
      * (same visual language as lumina_journey()) — additive, does not
      * change that function. Non-active steps are clickable links.
      */
-    function lumina_career_journey(string $active): string
+    function lumina_career_journey(string $active, int $done = 0): string
     {
+        // done = bilangan stage yang ditanda sebagai kedudukan-terdahulu dalam
+        // naratif journey. Ia BUKAN bukti completion calon — tiada session, DB
+        // atau logic completion. Semata-mata penanda naratif untuk paparan.
         $steps = [
-            ['prepare',  'Prepare',  base_url('passport')],
-            ['apply',    'Apply',    base_url('compass')],
-            ['perform',  'Perform',  base_url('match')],
-            ['progress', 'Progress', base_url('compass')],
+            ['prepare',  'Prepare',  base_url('passport'),                          null],
+            ['apply',    'Apply',    base_url('match'),                             null],
+            ['perform',  'Perform',  base_url('match') . '#interviewPreparation',   'Perform — prepare to show your evidence in an interview'],
+            ['progress', 'Progress', base_url('compass') . '#growthPathway',        null],
         ];
         $html = '<div class="journey career-journey">';
-        foreach ($steps as $i => [$key, $label, $url]) {
-            $isActive = ($key === $active);
+        foreach ($steps as $i => [$key, $label, $url, $aria]) {
             if ($i > 0) $html .= '<div class="jsep"></div>';
-            $inner = '<span class="jdot">' . ($i + 1) . '</span><span>' . esc($label) . '</span>';
-            if ($isActive) {
-                $html .= '<div class="jstep active">' . $inner . '</div>';
-            } else {
-                $html .= '<a href="' . esc($url, 'attr') . '" class="jstep" style="text-decoration:none;color:inherit">' . $inner . '</a>';
-            }
+            $isActive = ($key === $active);
+            $isDone   = ($i < $done);
+            $cls = 'jstep' . ($isActive ? ' active' : '') . ($isDone ? ' done' : '');
+            $dot = $isDone ? '&#10003;' : ($i + 1);
+            $inner = '<span class="jdot">' . $dot . '</span><span>' . esc($label) . '</span>';
+            $attr = ' href="' . esc($url, 'attr') . '"'
+                  . ' class="' . $cls . '"'
+                  . ' data-journey-stage="' . $key . '"'
+                  . ($isActive ? ' aria-current="step"' : '')
+                  . ($aria ? ' aria-label="' . esc($aria, 'attr') . '"' : '')
+                  . ' style="text-decoration:none;color:inherit"';
+            // Semua stage = <a> (termasuk aktif) supaya kekal boleh diklik
+            // selepas JS menukar state hash.
+            $html .= '<a' . $attr . '>' . $inner . '</a>';
         }
         return $html . '</div>';
     }

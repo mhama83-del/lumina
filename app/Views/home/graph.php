@@ -35,7 +35,7 @@ $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
       <div class="card card-tight" style="border-left:3px solid <?= $dc ?>">
         <div class="row" style="justify-content:space-between;align-items:center">
           <strong><?= esc($s['label']) ?> <span class="skill inferred" style="font-size:10px">new</span></strong>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:<?= $dc ?>"><?= esc(strtoupper($s['domain'] ?: '—')) ?></span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.02em;color:<?= $dc ?>;text-align:right;flex-shrink:0"><?= esc(strtoupper($s['domain'] ?: '—')) ?></span>
         </div>
         <div class="muted" style="font-size:12px;margin-top:6px"><strong>Connects to:</strong>
           <?= !empty($s['related']) ? esc(implode(', ', array_map($hz, array_slice($s['related'],0,5)))) : 'building connections…' ?>
@@ -78,7 +78,7 @@ $renderSkills = function (array $codes, int $limit = 5) use ($freshSet) {
       <div class="card card-tight" style="border-left:3px solid <?= $dc ?>">
         <div class="row" style="justify-content:space-between;align-items:center">
           <strong style="font-size:13px"><?= esc(str_replace('JD: ', '', $p['programme'])) ?><?php if ($isFresh): ?> <span class="skill inferred" style="font-size:9px">new</span><?php endif; ?></strong>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.03em;color:<?= $dc ?>"><?= esc(strtoupper($p['domain'])) ?></span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.02em;color:<?= $dc ?>;text-align:right;flex-shrink:0"><?= esc(strtoupper($p['domain'])) ?></span>
         </div>
         <div class="muted" style="font-size:12px;margin-top:6px"><?= $renderSkills($ts, 5) ?></div>
         <div class="muted" style="font-size:10px;margin-top:4px">updated <?= esc($p['updated_at'] ?? '') ?></div>

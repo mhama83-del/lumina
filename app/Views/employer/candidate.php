@@ -23,19 +23,32 @@ $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('emplo
       <div style="text-align:center;margin-top:6px"><span class="pill <?= $bandCls ?>"><?= esc($band) ?></span></div>
     </div>
     <div class="card">
-      <div class="section-label">Work Animal · from evidence</div>
-      <div style="margin-bottom:6px">
-        <span class="skill"><?= esc($animal['primary']['label']) ?> <span class="conf">primary</span></span>
-        <span class="skill"><?= esc($animal['secondary']['label']) ?> <span class="conf">secondary</span></span>
-        <span class="skill"><?= esc($animal['growth']['label']) ?> <span class="conf">growth</span></span>
-      </div>
-      <p class="muted" style="font-size:12px"><?= esc($animal['primary']['role'] ?? '') ?> · confidence <?= (int)($animal['confidence'] ?? 0) ?>%</p>
-    </div>
-    <div class="card">
       <div class="section-label">Evidence signals</div>
       <p class="muted" style="font-size:13px"><?= count($projects) ?> project(s) · <?= count($leadership) ?> leadership signal(s) · <?= count($explained) ?> skills detected</p>
       <p class="muted" style="font-size:12px;margin-top:6px">Has resume: <?= !empty($s['has_resume']) ? 'Yes' : 'No — profile built from evidence' ?></p>
     </div>
+    <?php if (!empty($edgeSignals)): ?>
+    <div class="card">
+      <div class="section-label">EDGE signals · from this candidate's evidence</div>
+      <p class="muted" style="font-size:12px;margin:2px 0 10px">How this candidate tends to work, read from their evidence. Coverage of examples on record — not a personality score. Use it to guide questions, not to rank.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <?php foreach ($edgeSignals as $es): ?>
+        <tr>
+          <td style="padding:4px 8px 4px 0"><strong><?= esc($es['name']) ?></strong></td>
+          <td style="padding:4px 0;color:var(--muted)"><?= (int)$es['count'] ?> example<?= $es['count']==1?'':'s' ?> on record</td>
+        </tr>
+        <?php endforeach; ?>
+      </table>
+      <?php $hasQuote = false; foreach (($edgeQuotes ?? []) as $qq) { $qv = trim(is_array($qq) ? ($qq['quote'] ?? $qq['text'] ?? (string)reset($qq)) : (string)$qq); if ($qv !== '') { $hasQuote = true; break; } } ?>
+      <?php if ($hasQuote): ?>
+      <div class="section-label" style="margin-top:10px;font-size:11px">Evidence examples</div>
+      <ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0 0">
+        <?php foreach (array_slice($edgeQuotes,0,4) as $q): $qt = trim(is_array($q) ? ($q['quote'] ?? $q['text'] ?? (string)reset($q)) : (string)$q); if ($qt === '') continue; ?><li>"<?= esc($qt) ?>"</li><?php endforeach; ?>
+      </ul>
+      <?php endif; ?>
+      <p class="purpose" style="font-size:11px;margin-top:10px">Review, don't auto-decide · This is context for a conversation, not a hiring gate.</p>
+    </div>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -43,9 +56,8 @@ $backUrl = $role ? base_url('employer/role/'.(int)$role['id']) : base_url('emplo
 <?php
   $wrows = [
     ['Skill', (int)$match['skill_match_score'], 40],
-    ['Evidence', (int)$match['evidence_strength_score'], 20],
+    ['Evidence', (int)$match['evidence_strength_score'], 30],
     ['Learning velocity', (int)$match['learning_velocity_score'], 20],
-    ['Work-Animal fit', (int)$match['animal_fit_score'], 10],
     ['Domain', (int)$match['domain_fit_score'], 5],
     ['CGPA', (int)$match['academic_fit_score'], 5],
   ];

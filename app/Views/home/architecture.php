@@ -3,9 +3,9 @@
 <?php
 helper('ui');
 $layers = [
-  ['1','Input Layer','Resume paste · No-Resume guided form · MyCSD transcript · Work Animal tap-quiz','indigo',''],
+  ['1','Input Layer','Resume paste · No-Resume guided form · MyCSD transcript · EDGE survey','indigo',''],
   ['2','Evidence Parser','Infers skills from free-text evidence; detects projects, leadership and activities — even with no resume.','indigo','AI-ready'],
-  ['3','Skill Taxonomy + Work Animal Engine','Normalised skill vocabulary + 12-archetype behavioural signal (primary / secondary / growth).','teal','AI-ready'],
+  ['3','Skill Taxonomy + EDGE Signals','Normalised skill vocabulary + 5-signal evidence layer (survey approach vs CV evidence coverage).','teal','AI-ready'],
   ['4','Scoring Engines','Career Readiness · Learning Velocity · Talent Match Signal — deterministic and fully explainable.','teal',''],
   ['5','Data Layer','Candidate profiles + 1,000-JD synthetic employer database + 1,500-student cohort (MySQL).','gold',''],
   ['6','Matching Engine','Candidate ↔ role, with weighted contributions, skill overlap, gaps and reasons.','gold',''],
@@ -44,12 +44,12 @@ $layers = [
     <div class="card">
       <div class="section-label">Career Readiness</div>
       <p style="font-size:14px">Skill coverage <strong>40%</strong> + Evidence <strong>25%</strong> + Activity <strong>20%</strong> + Learning pace <strong>15%</strong></p>
-      <p class="muted" style="font-size:13px">Bands: 0–49 At Risk · 50–74 Needs a Nudge · 75–100 On Track.</p>
+      <p class="muted" style="font-size:13px">Bands: 0–49 Needs Support · 50–74 Building · 75–100 On Track.</p>
     </div>
     <div class="card">
       <div class="section-label">Talent Match Signal</div>
-      <p style="font-size:14px">Skill <strong>40%</strong> + Evidence <strong>20%</strong> + Learning velocity <strong>20%</strong> + Work-Animal fit <strong>10%</strong> + Domain <strong>5%</strong> + CGPA <strong>5%</strong></p>
-      <p class="muted" style="font-size:13px">Bands: 85+ Strong · 70–84 Good · 55–69 Potential · 40–54 Needs Development · &lt;40 Weak.</p>
+      <p style="font-size:14px">Skill <strong>40%</strong> + Evidence <strong>30%</strong> + Learning velocity <strong>20%</strong> + Domain <strong>5%</strong> + CGPA <strong>5%</strong></p>
+      <p class="muted" style="font-size:13px">Bands: 85+ Strong · 70–84 Good · 55–69 Emerging · 40–54 Developing · &lt;40 Early-stage.</p>
     </div>
   </div>
 </section>
@@ -76,13 +76,13 @@ pace     = Fast 80 · Steady 60 · Building 40</div>
 coverage 50 · evidence 85 · activity 60 · pace 60
 = 0.40×50 + 0.25×85 + 0.20×60 + 0.15×60
 = 20 + 21 + 12 + 9   →   62%  ·  Needs a nudge</div>
-      <p class="muted" style="font-size:12px">Bands: 0–49 At Risk · 50–74 Needs a Nudge · 75–100 On Track. &nbsp;<strong>Shown on:</strong> candidate Living Portfolio → "Why this score?"</p>
+      <p class="muted" style="font-size:12px">Bands: 0–49 Needs Support · 50–74 Building · 75–100 On Track. &nbsp;<strong>Shown on:</strong> candidate Living Portfolio → "Why this score?"</p>
     </div>
 
     <div class="card">
-      <div class="section-label">2 · Employability</div>
-      <p class="mathq"><span>Q.</span> Across a whole cohort, how employable is each student <em>regardless of one role</em> — so every faculty is judged fairly?</p>
-      <div class="mathbox">Employability = min(100, 6·#skills + 8·verified
+      <div class="section-label">2 · Cohort Readiness</div>
+      <p class="mathq"><span>Q.</span> Across a whole cohort, how career-ready is each student <em>regardless of one role</em> — so every faculty is judged fairly?</p>
+      <div class="mathbox">Readiness = min(100, 6·#skills + 8·verified
               + 9·projects + 8·activities + paceBonus)
 
 paceBonus = Fast 18 · Steady 12 · Building 4</div>
@@ -90,7 +90,7 @@ paceBonus = Fast 18 · Steady 12 · Building 4</div>
 5 skills · not yet verified · 1 project · 1 activity · Building
 = min(100, 6×5 + 8×0 + 9×1 + 8×1 + 4)
 = 30 + 0 + 9 + 8 + 4   →   51  ·  Needs a nudge</div>
-      <p class="muted" style="font-size:12px">Field-agnostic. &nbsp;<strong>Shown on:</strong> University dashboard segmentation (On track / nudge / at risk).</p>
+      <p class="muted" style="font-size:12px">Field-agnostic. &nbsp;<strong>Shown on:</strong> University dashboard segmentation (On track / building / needs support).</p>
     </div>
 
     <div class="card">
@@ -116,21 +116,19 @@ diversity 60 · domainProg 75
     <div class="card">
       <div class="section-label">4 · Talent Match Signal</div>
       <p class="mathq"><span>Q.</span> For a given job, how well does this candidate fit — on skills <em>and</em> trajectory — with a defensible reason?</p>
-      <div class="mathbox">Match = 0.40·skill + 0.20·evidence + 0.20·velocity
-      + 0.10·animalFit + 0.05·domainFit + 0.05·cgpaFit
+      <div class="mathbox">Match = 0.40·skill + 0.30·evidence + 0.20·velocity
+      + 0.05·domainFit + 0.05·cgpaFit
 
 skill     = 100·credit ÷ required  (exact 1.0 · graph-adjacent 0.5)
             + prefs + keyword hits            (cap 100)
-evidence  = employability + numbers + action verbs  (cap 100)
+evidence  = readiness + numbers + action verbs  (cap 100)
 velocity  = engine 3 above
-animalFit = 100 primary · 85 secondary · 60 same-category
-            · 50 acceptable · 0 poor-fit
 domainFit = 100 same domain / programme · else 40
 cgpaFit   = 100 meets min · scaled below · 70 unknown</div>
       <div class="mathbox eg">See it live — click <strong>"Why?"</strong> on any ranked candidate.
 Lumina prints these six numbers for that exact
 person against that exact role — nothing hidden.</div>
-      <p class="muted" style="font-size:12px">Bands: 85+ Strong · 70–84 Good · 55–69 Potential · 40–54 Needs Development · &lt;40 Weak. &nbsp;<strong>Shown on:</strong> every employer role page.</p>
+      <p class="muted" style="font-size:12px">Bands: 85+ Strong · 70–84 Good · 55–69 Emerging · 40–54 Developing · &lt;40 Early-stage. &nbsp;<strong>Shown on:</strong> every employer role page.</p>
     </div>
 
     <div class="card" style="grid-column:1 / -1">

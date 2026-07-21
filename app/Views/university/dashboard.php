@@ -49,7 +49,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 <section class="section">
   <div class="grid grid-2">
     <div class="card">
-      <div class="section-label">Employability by faculty</div>
+      <div class="section-label">Readiness by faculty</div>
       <canvas id="facChart" height="170"></canvas>
     </div>
     <div class="card">
@@ -58,19 +58,15 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
       <div class="row" style="justify-content:center;gap:14px;margin-top:10px">
         <a class="pill ok" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('On track').($uni!==''?'&uni='.urlencode($uni):'') ?>">On track <?= (int)$bands['On track'] ?></a>
         <a class="pill nudge" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('Needs a nudge').($uni!==''?'&uni='.urlencode($uni):'') ?>">Needs a nudge <?= (int)$bands['Needs a nudge'] ?></a>
-        <a class="pill risk" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('At risk').($uni!==''?'&uni='.urlencode($uni):'') ?>">At risk <?= (int)$bands['At risk'] ?></a>
+        <a class="pill risk" style="text-decoration:none" href="<?= base_url('university/students').'?band='.urlencode('At risk').($uni!==''?'&uni='.urlencode($uni):'') ?>">Needs support <?= (int)$bands['At risk'] ?></a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Work Animal distribution + Top skill gaps -->
+<!-- Top skill gaps -->
 <section class="section">
-  <div class="grid grid-2">
-    <div class="card">
-      <div class="section-label">Work Animal distribution · cohort</div>
-      <canvas id="animalChart" height="180"></canvas>
-    </div>
+  <div class="grid">
     <div class="card">
       <div class="section-label">Top skill gaps · across cohort</div>
       <?php foreach (($topGaps ?? []) as $g): ?>
@@ -133,7 +129,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 <section class="section">
   <div class="grid grid-2">
     <div class="card">
-      <div class="section-label">Students needing support · At risk</div>
+      <div class="section-label">Students needing support</div>
       <div class="stack">
         <?php foreach (($needSupport ?? []) as $s): ?>
           <a class="card card-tight" href="<?= base_url('university/student/'.(int)($s['id'] ?? 0)) ?>" style="display:flex;align-items:center;gap:12px;text-decoration:none">
@@ -148,7 +144,7 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
     <div class="card">
       <div class="section-label">Top skill gap · by programme</div>
       <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
-        <thead><tr><th style="text-align:left;padding:8px;color:var(--muted)">Programme</th><th style="padding:8px;color:var(--muted)">Gap</th><th style="padding:8px;color:var(--muted)">At risk</th></tr></thead>
+        <thead><tr><th style="text-align:left;padding:8px;color:var(--muted)">Programme</th><th style="padding:8px;color:var(--muted)">Gap</th><th style="padding:8px;color:var(--muted)">Priority</th></tr></thead>
         <tbody>
           <?php foreach (($gapsByProgramme ?? []) as $g): ?>
             <tr><td style="padding:8px"><a href="<?= base_url('university/students').'?programme='.urlencode($g['programme']).'&gap='.urlencode($g['code'] ?? '').($uni!==''?'&uni='.urlencode($uni):'') ?>" class="gold" style="text-decoration:none"><?= esc($g['programme']) ?></a></td><td style="padding:8px;text-align:center"><span class="skill inferred"><?= esc($g['gap']) ?></span></td><td style="padding:8px;text-align:center"><?= (int)$g['atrisk'] ?>/<?= (int)$g['total'] ?></td></tr>
@@ -164,7 +160,6 @@ $uq  = $uni !== '' ? ('?uni=' . urlencode($uni)) : '';
 <script>
 const FAC = <?= json_encode($faculty) ?>;
 const BANDS = <?= json_encode(array_values($bands)) ?>;
-const ANIMALS = <?= json_encode($animalDist ?? []) ?>;
 new Chart(document.getElementById('facChart'), {
   type:'bar',
   data:{ labels:Object.keys(FAC), datasets:[{ data:Object.values(FAC), backgroundColor:'#6D5DFB', borderRadius:6 }] },
@@ -173,14 +168,8 @@ new Chart(document.getElementById('facChart'), {
 });
 new Chart(document.getElementById('segChart'), {
   type:'doughnut',
-  data:{ labels:['On track','Needs a nudge','At risk'], datasets:[{ data:BANDS, backgroundColor:['#2E9E5B','#E0A82E','#E0526B'], borderColor:'#111A2E', borderWidth:3 }] },
+  data:{ labels:['On track','Needs a nudge','Needs support'], datasets:[{ data:BANDS, backgroundColor:['#2E9E5B','#E0A82E','#E0526B'], borderColor:'#111A2E', borderWidth:3 }] },
   options:{ plugins:{legend:{display:false}}, cutout:'62%' }
-});
-new Chart(document.getElementById('animalChart'), {
-  type:'bar',
-  data:{ labels:Object.keys(ANIMALS), datasets:[{ data:Object.values(ANIMALS), backgroundColor:'#14B8A6', borderRadius:5 }] },
-  options:{ plugins:{legend:{display:false}},
-    scales:{ x:{grid:{display:false},ticks:{color:'#9AA4B8',maxRotation:60,minRotation:45}}, y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9AA4B8'}} } }
 });
 </script>
 <section class="section" style="padding-top:0">

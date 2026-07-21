@@ -36,8 +36,6 @@
           'Skill match'       => fn($c)=> '<span class="pill '.$pill($c['skill_match_score']).'">'.$c['skill_match_score'].'%</span>',
           'Evidence strength' => fn($c)=> '<span class="pill '.$pill($c['evidence_strength_score']).'">'.$c['evidence_strength_score'].'</span>',
           'Learning velocity' => fn($c)=> '<span class="pill '.$pill($c['learning_velocity_score']).'">'.$c['learning_velocity_score'].'</span>',
-          'Work Animal'       => fn($c)=> '<span class="skill">'.esc($c['animal']).'</span>',
-          'Animal fit'        => fn($c)=> '<span class="pill '.$pill($c['animal_fit_score']).'">'.$c['animal_fit_score'].'</span>',
           'Domain fit'        => fn($c)=> '<span class="pill '.$pill($c['domain_fit_score']).'">'.$c['domain_fit_score'].'</span>',
           'Academic fit'      => fn($c)=> '<span class="pill '.$pill($c['academic_fit_score']).'">'.$c['academic_fit_score'].'</span>',
         ];
@@ -50,7 +48,7 @@
         <?php foreach ($cands as $c): ?><?= $cs ?><span class="muted" style="font-size:12px"><?= esc($c['explanation']) ?></span></td><?php endforeach; ?></tr>
       </tbody>
     </table>
-    <p class="purpose" style="margin-top:12px">Every number traces to skills, evidence, trajectory, animal fit, domain and CGPA — no black box.</p>
+    <p class="purpose" style="margin-top:12px">Every number traces to skills, evidence, trajectory, domain and CGPA — no black box.</p>
   </div>
   <?php endif; ?>
 </section>

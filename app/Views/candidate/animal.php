@@ -14,7 +14,7 @@
 <section class="section">
   <div id="quizNote"></div>
   <div class="section-label" id="quizCounter">0 of <?= count($questions) ?> completed</div>
-  <form method="post" action="<?= base_url('onboard/animal') ?>" id="animalForm">
+  <form method="post" action="<?= base_url('onboard/edge') ?>" id="animalForm">
     <?php foreach ($questions as $qi => $q): ?>
       <div class="card q" style="margin-bottom:14px">
         <div class="q-title"><?= esc($q['q']) ?></div>

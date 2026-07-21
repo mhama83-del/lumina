@@ -5,8 +5,8 @@
 <?php $hasQuiz = ! empty(session('profile')['quiz_ps']); ?>
 <section class="hero">
   <div class="section-label">Prepare · Your career evidence</div>
-  <h1>Paste your resume. Watch Lumina read it.</h1>
-  <p class="purpose">Lumina extracts your skills, scores your readiness, reads your Work Animal, and finds your best match — in seconds.</p>
+  <h1>Paste your resume. Make your evidence readable.</h1>
+  <p class="purpose">Lumina reads the evidence in your resume, shows your readiness, and points to your next step.</p>
 </section>
 
 <section class="section" style="padding-top:6px">
@@ -18,14 +18,16 @@
     <!-- Input -->
     <div class="card">
       <div class="section-label">Your resume</div>
-      <textarea id="resumeText" placeholder="Paste your resume or a summary of your experience here…&#10;&#10;e.g. Final-year Computer Science student. Treasurer of the Robotics Club. Built an attendance app with Python. Led a data analysis project."></textarea>
+      <textarea id="resumeText" placeholder="Paste your resume or a summary of your experience here…&#10;&#10;e.g. Final-year Information Technology student. Treasurer of the Robotics Club. Built an attendance app with Python. Led a faculty data-analysis project."></textarea>
       <div id="liveHints" class="muted" style="font-size:12px;margin-top:6px;min-height:16px"></div>
       <div style="margin-top:12px" class="row">
         <button class="btn btn-primary btn-lg" id="analyzeBtn">Analyze resume</button>
-        <button class="btn btn-ghost" type="button" id="sampleBtn">Load demo resume</button>
+        <button class="btn btn-ghost" type="button" data-persona="aiman">Aiman · IT</button>
+        <button class="btn btn-ghost" type="button" data-persona="nurul">Nurul · Business</button>
+        <button class="btn btn-ghost" type="button" data-persona="weijie">Wei Jie · Engineering</button>
       </div>
       <div id="demoNote" style="margin-top:10px"></div>
-      <p class="muted" style="font-size:12px;margin-top:10px">No resume? Try the <a href="<?= base_url('start') ?>" class="gold">guided No-Resume builder →</a></p>
+      <p class="muted" style="font-size:12px;margin-top:10px">No resume yet? <a href="<?= base_url('start') ?>">Start without a resume →</a></p>
     </div>
 
     <!-- Processing + confirm + results -->
@@ -40,7 +42,7 @@
         <div class="ai-step" data-s="0"><span class="ai-step-dot"></span> Reading your resume…</div>
         <div class="ai-step" data-s="1"><span class="ai-step-dot"></span> Extracting explicit skills…</div>
         <div class="ai-step" data-s="2"><span class="ai-step-dot"></span> Inferring hidden skills from evidence…</div>
-        <div class="ai-step" data-s="3"><span class="ai-step-dot"></span> Reading your Work Animal…</div>
+        <div class="ai-step" data-s="3"><span class="ai-step-dot"></span> Reading your evidence…</div>
         <div class="ai-step" data-s="4"><span class="ai-step-dot"></span> Matching to roles &amp; scoring readiness…</div>
       </div>
 
@@ -67,10 +69,6 @@
         <div id="rField" style="text-align:center;margin:6px 0 2px"></div>
         <div id="rCluster" style="text-align:center;margin:0 0 14px"></div>
 
-        <!-- Layer 2 · Work Animal -->
-        <div class="section-label">Your Work Animal · from evidence</div>
-        <div id="rAnimal" style="margin-bottom:14px"></div>
-
         <!-- Top matches -->
         <div class="section-label">Top role matches · from the taxonomy</div>
         <div id="rMatches" class="stack" style="margin-bottom:12px"></div>
@@ -82,6 +80,9 @@
 
         <!-- Evidence: projects + leadership -->
         <div id="rEvidence"></div>
+
+        <!-- EDGE Review (Fasa 2c): Review what Lumina saw -->
+        <div id="rEdgeReview" style="margin-bottom:14px"></div>
 
         <!-- Feedback -->
         <div class="section-label">Resume feedback</div>
@@ -127,7 +128,7 @@
           <p style="margin:0 0 2px">Resume analysed and saved.</p>
           <p class="muted" style="margin:0 0 12px">Next: discover your work-style signals.</p>
           <div class="row" style="margin-top:6px">
-            <a class="btn btn-primary btn-lg" href="<?= base_url('onboard/animal') ?>">Discover work-style signals →</a>
+            <a class="btn btn-primary btn-lg" href="<?= base_url('onboard/edge') ?>">Discover your work approach →</a>
           </div>
           <p class="muted" style="font-size:12px;margin:10px 0 0">After this, you'll see your Living Portfolio. <a href="<?= base_url('passport') ?>">Open my Living Portfolio</a></p>
         <?php endif; ?>
@@ -148,9 +149,11 @@
   </div>
 </section>
 
+<script src="<?= base_url('js/edge-review.js') ?>"></script>
 <script>
 const ANALYZE_URL = "<?= base_url('resume/analyze') ?>";
 const PREVIEW_URL = "<?= base_url('resume/preview') ?>";
+const EDGE_ACTION_URL = "<?= base_url('candidate/edgeaction') ?>";
 const SAMPLE = "Aiman Hakim\nBSc Information Technology, Universiti Sains Malaysia \u00b7 Year 3\nCGPA: 3.62 \u00b7 Career target: Data Analyst\n\nUniversiti Sains Malaysia, BSc Information Technology, 2023-2027. CGPA 3.62.\n\nTreasurer of the Robotics Club for 2 years, managing a RM12,000 annual budget.\nVolunteered in a community coding programme teaching 30 secondary students.\n\nBuilt an attendance app with Python that cut manual roll-call time by 80%.\nRan a faculty data analysis project and built dashboards used by 5 lecturers.\n\nPython, SQL, data analysis, teamwork.";
 
 function donutSVG(pct, color){
@@ -235,7 +238,7 @@ function analyze(text, name){
         const r=45,c=2*Math.PI*r; v.style.strokeDashoffset=(c*(1-data.readiness/100)).toFixed(1); t.textContent=data.readiness+'%'; }, 60);
 
       // band + cluster
-      document.getElementById('rBand').innerHTML = '<span class="pill '+pillClass(data.band)+'">'+data.band+'</span> <span class="muted" style="font-size:12px">employability band</span>';
+      document.getElementById('rBand').innerHTML = '<span class="pill '+pillClass(data.band)+'">'+data.band+'</span> <span class="muted" style="font-size:12px">readiness band</span>';
       document.getElementById('rCluster').innerHTML = data.career_cluster ? ('Career cluster: <strong class="gold">'+data.career_cluster+'</strong>') : '';
 
       // field alignment
@@ -243,21 +246,8 @@ function analyze(text, name){
 
       // benchmark
       if(data.cohort && data.cohort.size){ var cb=data.cohort;
-        document.getElementById('rBench').innerHTML = '<div style="background:rgba(108,92,231,.10);border:1px solid rgba(108,92,231,.35);border-radius:10px;padding:10px 13px;font-size:13px">Benchmarked against <strong>'+cb.size+'</strong> '+cb.domain+' students in the cohort: your readiness <strong class="gold">'+cb.you+'%</strong> is higher than <strong>'+cb.percentile+'%</strong> of them (cohort average '+cb.avg+'%).</div>'; }
+        document.getElementById('rBench').innerHTML = '<div style="background:rgba(108,92,231,.10);border:1px solid rgba(108,92,231,.35);border-radius:10px;padding:10px 13px;font-size:13px">Benchmarked against <strong>'+cb.size+'</strong> '+cb.domain+' students in the demo cohort: your readiness <strong class="gold">'+cb.you+'%</strong> is higher than <strong>'+cb.percentile+'%</strong> of them (cohort average '+cb.avg+'%).</div>'; }
       else { document.getElementById('rBench').innerHTML=''; }
-
-      // Work Animal
-      if(data.animal){ var a=data.animal;
-        var chip=function(x,role){ return '<span class="skill">'+x.label+' <span class="conf">'+role+'</span></span>'; };
-        document.getElementById('rAnimal').innerHTML =
-          '<div class="card card-tight">'+
-          '<div style="margin-bottom:8px">'+chip(a.primary,'primary')+' '+chip(a.secondary,'secondary')+' '+chip(a.growth,'growth')+'</div>'+
-          '<div class="muted" style="font-size:13px">'+a.line+' <span class="gold">Confidence '+a.confidence+'%</span></div>'+
-          '<div class="muted" style="font-size:12px;margin-top:6px">Traits: '+(a.primary.traits||[]).join(' · ')+'</div>'+
-          '<div class="muted" style="font-size:12px;margin-top:4px">'+(a.primary.role||'')+(a.careerFit? ' · Career fit: '+a.careerFit.join(', '):'')+'</div>'+
-          (a.growthAdvice? '<div class="muted" style="font-size:12px;margin-top:4px">Growth ('+(a.growth?a.growth.label:'')+'): '+a.growthAdvice+'</div>':'')+
-          '</div>';
-      }
 
       // top-3 role matches
       document.getElementById('rMatches').innerHTML = (data.matches||[]).map(function(m,i){
@@ -319,6 +309,9 @@ function analyze(text, name){
         return '<div class="muted" style="font-size:13px;margin-bottom:6px">'+(i+1)+'. '+q+'</div>';
       }).join('');
 
+      // EDGE Review (Fasa 2c)
+      renderEdgeReview(data);
+
       // internships
       document.getElementById('rInternships').innerHTML = (data.internships||[]).map(function(x){return '<span class="skill">'+x+'</span>';}).join(' ');
 
@@ -347,11 +340,15 @@ function analyze(text, name){
 }
 
 document.getElementById('analyzeBtn').onclick = ()=>{ const t=document.getElementById('resumeText').value.trim(); if(t) preview(t); };
-document.getElementById('sampleBtn').onclick = ()=>{
-  document.getElementById('resumeText').value = SAMPLE;
-  document.getElementById('demoNote').innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px"><span>&#10003;</span><span>Demo content loaded &middot; You can still edit it.</span></div>';
-  document.getElementById('resumeText').focus();
-};
+const PERSONA_RESUMES = <?= json_encode($personaResumes ?? []) ?>;
+document.querySelectorAll('[data-persona]').forEach(function(b){
+  b.onclick = function(){
+    var key = b.getAttribute('data-persona');
+    document.getElementById('resumeText').value = PERSONA_RESUMES[key] || '';
+    document.getElementById('demoNote').innerHTML = '<div style="display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;padding:9px 13px;border-radius:10px;font-size:13px"><span>&#10003;</span><span>Demo content loaded &middot; You can still edit it.</span></div>';
+    document.getElementById('resumeText').focus();
+  };
+});
 document.getElementById('confirmGo').onclick = ()=>{
   const t = document.getElementById('nameInput').dataset.text || document.getElementById('resumeText').value.trim();
   const n = document.getElementById('nameInput').value.trim();

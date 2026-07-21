@@ -119,7 +119,7 @@ class University extends BaseController
             ['n' => (string) $total,                'l' => 'Students active',       't' => 'this cohort',         'href' => $sUrl([])],
         ];
 
-        // ---- Fasa 5: cohort extras (No-Resume %, animal distribution, gaps, support) ----
+        // ---- Fasa 5: cohort extras (No-Resume %, gaps, support) ----
         $snap = (new UniversityInsightService())->snapshot($uni !== '' ? $uni : null);
 
         return view('university/dashboard', array_merge([
