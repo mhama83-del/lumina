@@ -1,0 +1,42 @@
+/* Continuum design tokens (07_UX_UI_AND_PERSONAS.md). Light mode first; semantic + text labels. */
+:root{
+  --bg:#f7f8fa; --surface:#ffffff; --text:#1a2230; --muted:#5b6675; --border:#dfe4ea;
+  --brand:#2b5ce6; --brand-ink:#1b3fa8;
+  --success:#177245; --warning:#9a6a00; --attention:#8a4b00; --error:#b11226;
+  /* evidence label colours (paired with text labels, never colour alone) */
+  --lbl-needs:#8a4b00; --lbl-stated:#5b6675; --lbl-inferred:#6b4fbb; --lbl-supported:#177245; --lbl-verified:#1b3fa8;
+  --radius:10px; --space:16px; --focus:#2b5ce6;
+  --font:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5}
+a{color:var(--brand-ink)}
+.container{max-width:960px;margin:0 auto;padding:var(--space)}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.topbar .brand{font-weight:700}
+.topbar .status{color:var(--muted);font-size:.85rem}
+.nav a{margin-right:14px;text-decoration:none;color:var(--brand-ink);font-weight:600;font-size:.95rem}
+.demobar{background:#fff8e6;border:1px solid #f0d78a;border-radius:var(--radius);padding:8px 12px;margin:12px 0;font-size:.9rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--space);margin:14px 0}
+.decision{border-left:4px solid var(--brand);background:#eef3ff;border-radius:var(--radius);padding:14px 16px;margin:14px 0}
+.decision h2{margin:.2rem 0;font-size:1.05rem}
+.cta{display:inline-block;background:var(--brand);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;border:0;font-weight:600;cursor:pointer}
+.cta.secondary{background:#fff;color:var(--brand-ink);border:1px solid var(--brand)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.82rem;border:1px solid var(--border);background:#fff}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.lbl-needs .dot{background:var(--lbl-needs)} .lbl-stated .dot{background:var(--lbl-stated)}
+.lbl-inferred .dot{background:var(--lbl-inferred)} .lbl-supported .dot{background:var(--lbl-supported)}
+.lbl-verified .dot{background:var(--lbl-verified)}
+.gate-review_now{border-color:var(--success);color:var(--success)}
+.gate-review_with_questions{border-color:var(--warning);color:var(--warning)}
+.gate-candidate_action_suggested{border-color:var(--attention);color:var(--attention)}
+table{width:100%;border-collapse:collapse} th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);font-size:.92rem}
+.req-row{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;margin:8px 0}
+.suff{font-variant-numeric:tabular-nums;font-weight:700}
+.muted{color:var(--muted)} .small{font-size:.85rem}
+.empty{border:1px dashed var(--border);border-radius:var(--radius);padding:24px;text-align:center;color:var(--muted)}
+.timeline{list-style:none;padding-left:0}
+.timeline li{border-left:2px solid var(--border);padding:6px 0 12px 14px;position:relative}
+.timeline li::before{content:"";position:absolute;left:-6px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--brand)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
