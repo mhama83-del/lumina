@@ -38,8 +38,24 @@ class Continuum extends BaseConfig
     {
         parent::__construct();
         // Allow environment overrides without touching code.
-        $this->demoMode        = (bool) (env('continuum.demoMode', $this->demoMode));
+        // NOTE: env() returns strings, so "(bool) 'false'" would be TRUE. Parse strictly instead,
+        // so continuum.demoMode = false genuinely disables the Scenario Switcher (security).
+        $this->demoMode        = self::envBool('continuum.demoMode', $this->demoMode);
         $this->passportAdapter = (string) (env('continuum.passportAdapter', $this->passportAdapter));
-        $this->trendDataEnabled= (bool) (env('continuum.trendDataEnabled', $this->trendDataEnabled));
+        $this->trendDataEnabled= self::envBool('continuum.trendDataEnabled', $this->trendDataEnabled);
+        $this->mentoringEnabled= self::envBool('continuum.mentoringEnabled', $this->mentoringEnabled);
+    }
+
+    /** Interpret an env flag as a real boolean. Accepts 1/0, true/false, yes/no, on/off (any case). */
+    private static function envBool(string $key, bool $default): bool
+    {
+        $raw = env($key, null);
+        if ($raw === null) {
+            return $default;
+        }
+        if (is_bool($raw)) {
+            return $raw;
+        }
+        return in_array(strtolower(trim((string) $raw)), ['1', 'true', 'yes', 'on'], true);
     }
 }

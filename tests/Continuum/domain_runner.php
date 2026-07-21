@@ -90,6 +90,9 @@ check('inferred unconfirmed => 0', $lp->sufficiency(EvidenceLabel::Inferred, can
 check('inferred confirmed => 1', $lp->sufficiency(EvidenceLabel::Inferred, candidateConfirmed: true) === 1);
 check('supported w/ approved source => 2', $lp->sufficiency(EvidenceLabel::Supported, sourceLinkedAndApproved: true) === 2);
 check('human verified => 3', $lp->sufficiency(EvidenceLabel::HumanVerified, humanVerified: true) === 3);
+// BUGFIX: a HumanVerified label WITHOUT a valid verifier must NOT silently earn Supported (2) credit.
+check('HV unverified, no source => 1', $lp->sufficiency(EvidenceLabel::HumanVerified, humanVerified: false, sourceLinkedAndApproved: false) === 1);
+check('HV unverified, w/ approved source => 2', $lp->sufficiency(EvidenceLabel::HumanVerified, humanVerified: false, sourceLinkedAndApproved: true) === 2);
 // Candidate cannot self-promote to Supported without approved source
 check('stated->supported blocked w/o source', $lp->canTransition(EvidenceLabel::Stated, EvidenceLabel::Supported, hasApprovedSource: false) === false);
 check('stated->supported ok w/ source', $lp->canTransition(EvidenceLabel::Stated, EvidenceLabel::Supported, hasApprovedSource: true) === true);

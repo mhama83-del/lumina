@@ -111,6 +111,83 @@ class Candidate extends ContinuumController
         return $this->shell('candidate_application', ['appView' => $view, 'appId' => $id]);
     }
 
+    /**
+     * Guided Evidence Survey (15Q). GET renders the bank; POST persists reflections to
+     * survey_responses (candidate_private). Answering drives the Meridian *reflection* layer.
+     * Reflections never award points and never call any personality logic.
+     */
+    public function survey()
+    {
+        $cfg = new \Config\EdgeSurvey();
+        if ($this->request->getMethod() === 'post') {
+            $cid = $this->ctx->subjectId;
+            foreach ($cfg->questions as $q) {
+                $example = trim((string) $this->request->getPost('ex_' . $q['key']));
+                $none    = $this->request->getPost('none_' . $q['key']) ? 0 : 1;
+                if ($example === '' && $none === 1) {
+                    continue; // unanswered and not explicitly skipped -> store nothing
+                }
+                // Upsert-by-hand: remove any prior answer for this question, then insert.
+                $this->db->table('survey_responses')
+                    ->where('candidate_id', $cid)->where('question_key', $q['key'])->delete();
+                $this->db->table('survey_responses')->insert([
+                    'candidate_id'  => $cid,
+                    'survey_version'=> $cfg->version,
+                    'question_key'  => $q['key'],
+                    'signal'        => $q['signal'],
+                    'reflection_choice' => null,
+                    'short_example' => $example !== '' ? $example : null,
+                    'has_experience'=> $none,
+                    'visibility'    => 'candidate_private',
+                    'answered_at'   => date('Y-m-d H:i:s'),
+                ]);
+            }
+            $this->audit->record($this->ctx, 'survey.responses_saved', 'candidate', (string) $cid);
+            return redirect()->to('/candidate/evidence')->with('ok', 'Survey saved — your reflection layer is updated.');
+        }
+        // Prefill any existing answers.
+        $existing = [];
+        foreach ($this->db->table('survey_responses')->where('candidate_id', $this->ctx->subjectId)->get()->getResultArray() as $r) {
+            $existing[$r['question_key']] = $r;
+        }
+        return $this->shell('candidate_survey', ['cfg' => $cfg, 'existing' => $existing]);
+    }
+
+    /**
+     * Add a candidate-confirmed evidence claim, optionally with a candidate-approved source.
+     * Label is derived honestly: a claim with an approved source is Supported; otherwise Stated.
+     * The candidate can NEVER self-assign Human Verified here (EvidenceLabelPolicy, 05 §3).
+     */
+    public function addEvidence()
+    {
+        $cid    = $this->ctx->subjectId;
+        $signal = (string) $this->request->getPost('signal');
+        $text   = trim((string) $this->request->getPost('claim_text'));
+        $skill  = $this->request->getPost('taxonomy_skill_id');
+        $srcEx  = trim((string) $this->request->getPost('source_excerpt'));
+        if ($text === '' || $signal === '') {
+            return redirect()->to('/candidate/evidence')->with('error', 'Add a short description of what you did.');
+        }
+        $label = $srcEx !== '' ? 'supported' : 'stated';
+        $this->db->table('evidence_claims')->insert([
+            'candidate_id'=>$cid,'signal'=>$signal,'label'=>$label,'claim_text'=>$text,
+            'confirmation_state'=>'confirmed','taxonomy_skill_id'=>$skill ?: null,'created_at'=>date('Y-m-d H:i:s'),
+        ]);
+        $claimId = $this->db->insertID();
+        if ($srcEx !== '') {
+            $this->db->table('evidence_sources')->insert([
+                'candidate_id'=>$cid,'type'=>'link','locator'=>(string) ($this->request->getPost('source_locator') ?: 'candidate-provided'),
+                'excerpt'=>$srcEx,'added_by'=>'candidate','consentable'=>1,'created_at'=>date('Y-m-d H:i:s'),
+            ]);
+            $this->db->table('evidence_links')->insert([
+                'claim_id'=>$claimId,'source_id'=>$this->db->insertID(),'rationale'=>'Candidate-linked source',
+                'provenance'=>'candidate_approved','verified_by'=>null,'created_at'=>date('Y-m-d H:i:s'),
+            ]);
+        }
+        $this->audit->record($this->ctx, 'evidence.claim_added', 'evidence_claim', (string) $claimId);
+        return redirect()->to('/candidate/evidence')->with('ok', 'Evidence added.');
+    }
+
     public function respondClarification(int $id)
     {
         $svc = new ApplicationService($this->db, $this->audit);

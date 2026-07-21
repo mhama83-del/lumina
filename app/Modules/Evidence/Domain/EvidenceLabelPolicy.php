@@ -37,8 +37,10 @@ final class EvidenceLabelPolicy
             EvidenceLabel::Inferred      => $candidateConfirmed ? 1 : 0,
             // Supported requires source-linked AND candidate-approved.
             EvidenceLabel::Supported     => $sourceLinkedAndApproved ? 2 : 1,
-            // Human Verified requires an authorised verifier on a specific source/claim.
-            EvidenceLabel::HumanVerified => $humanVerified ? 3 : 2,
+            // Human Verified is 3 only with an authorised verifier. If the verifier fact is absent
+            // the claim CANNOT silently earn Supported (2) credit — it degrades to what its source
+            // situation actually supports (2 only if a candidate-approved source exists, else 1).
+            EvidenceLabel::HumanVerified => $humanVerified ? 3 : ($sourceLinkedAndApproved ? 2 : 1),
         };
     }
 

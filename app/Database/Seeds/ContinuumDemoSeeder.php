@@ -120,6 +120,31 @@ class ContinuumDemoSeeder extends Seeder
             ]);
         }
 
+        // ---- Guided-survey reflections (drive the Meridian reflection layer) ----
+        // Map: candidate => [signal => how many of that signal's 3 questions they reflected on].
+        $reflect = [
+            1 => ['reasoning_judgement'=>3,'delivery_reliability'=>3,'collaboration_communication'=>2,'learning_adaptation'=>2,'initiative_ownership'=>1],
+            2 => ['reasoning_judgement'=>2,'delivery_reliability'=>3,'collaboration_communication'=>1,'learning_adaptation'=>2,'initiative_ownership'=>2],
+            3 => ['collaboration_communication'=>3,'learning_adaptation'=>3,'reasoning_judgement'=>1,'initiative_ownership'=>1],
+            4 => ['reasoning_judgement'=>3,'delivery_reliability'=>2,'learning_adaptation'=>1],
+            5 => ['initiative_ownership'=>3,'delivery_reliability'=>2,'reasoning_judgement'=>1],
+            7 => ['delivery_reliability'=>3,'reasoning_judgement'=>2,'initiative_ownership'=>1],
+            8 => ['collaboration_communication'=>3,'delivery_reliability'=>1],
+            // c09_nadia: intentionally no reflections (empty-state demo).
+        ];
+        $prefix = ['reasoning_judgement'=>'R','delivery_reliability'=>'D','collaboration_communication'=>'C','learning_adaptation'=>'L','initiative_ownership'=>'I'];
+        foreach ($reflect as $cand=>$sigs) {
+            foreach ($sigs as $sig=>$count) {
+                for ($k=1; $k<=$count; $k++) {
+                    $db->table('survey_responses')->insert([
+                        'candidate_id'=>$cand,'survey_version'=>'edge_v2_15q','question_key'=>$prefix[$sig].$k,'signal'=>$sig,
+                        'reflection_choice'=>null,'short_example'=>'Reflected example (synthetic).','has_experience'=>1,
+                        'visibility'=>'candidate_private','answered_at'=>$now,
+                    ]);
+                }
+            }
+        }
+
         // ---- Roles across three employers ----
         // role 1 / rv1 — Nova (t1) Data Analyst  (amina's demo role — unchanged shape)
         $this->role($db,$now,1,1,1,'data-analyst','Data Analyst',
